@@ -12,45 +12,49 @@
 /// ----------------------------------------------------------------------------- ///
 
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.20;
 
-import { IHashToken } from "../interfaces/IHash.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import { ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
-import { ERC20Votes } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
-import { Ownable2Step } from "@openzeppelin/contracts/access/Ownable2Step.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "../interfaces/IHash.sol";
 
-contract NostraToken is IHashToken, Ownable2Step, ERC20Votes {
+contract HashToken is IHashToken, Ownable2Step, ERC20Permit, ERC20Votes {
     using SafeERC20 for IERC20;
 
-    string private _name;
-    string private _symbol;
+    constructor(
+        address admin
+    ) ERC20("Hash Token", "HASH") Ownable(admin) ERC20Permit("Hash Token") {}
 
-    uint256 public constant override INITIAL_SUPPLY = 100_000_000e18;
+    function mint(address to, uint256 amount) public onlyOwner {
+        _mint(to, amount);
+    }
 
-    constructor(address admin) ERC20("Hash Token", "HASH") ERC20Permit("Hash Token") {    
-        _mint(admin, INITIAL_SUPPLY);
-        _transferOwnership(admin);
+    function _update(
+        address from,
+        address to,
+        uint256 value
+    ) internal override(ERC20, ERC20Votes) {
+        super._update(from, to, value);
+    }
+
+    function nonces(
+        address owner
+    ) public view override(ERC20Permit, Nonces) returns (uint256) {
+        return super.nonces(owner);
     }
 
     function burn(uint256 amount) external override {
         _burn(msg.sender, amount);
     }
 
-    function rescueTokens(IERC20 token, address to) external override onlyOwner {
+    function rescueTokens(IERC20 token, address to) external override {
         uint256 amount = token.balanceOf(address(this));
         token.safeTransfer(to, amount);
 
         emit TokensRescued(to, amount);
-    }
-
-    function name() public view virtual override returns (string memory) {
-        return _name;
-    }
-
-    function symbol() public view virtual override returns (string memory) {
-        return _symbol;
     }
 }

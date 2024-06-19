@@ -1,10 +1,9 @@
-// SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.19;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { IERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
 
-interface IHashToken is IERC20, IERC20Permit {
+interface IHashToken is IERC20{
 
     /// @dev Triggered when minting is attempted to a zero address.
     error HashToken__MintingToZeroAddressNotAllowed();
@@ -16,9 +15,6 @@ interface IHashToken is IERC20, IERC20Permit {
     /// @param to The address receiving the rescued tokens.
     /// @param amount The amount of tokens rescued.
     event TokensRescued(address to, uint256 amount);
-
-    /// @dev Returns the initial token supply minted upon deployment.
-    function INITIAL_SUPPLY() external view returns (uint256);
 
     /// @dev Destroys `amount` tokens from the caller's balance.
     /// @param amount The number of tokens to burn.
