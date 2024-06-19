@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity = 0.8.26;
+pragma solidity ^0.8.20;
 
 contract HashWallet {
 
@@ -43,38 +43,38 @@ contract HashWallet {
     Transaction[] public transactions;
 
     modifier onlyOwner() {
-        require(isOwner[msg.sender], HashWallet__CallerIsNotOwner());
+        if(!isOwner[msg.sender]) revert HashWallet__CallerIsNotOwner();
         _;
     }
 
     modifier txExists(uint256 _txIndex) {
-        require(_txIndex < transactions.length, HashWallet__TxDoesNotExists());
+        if(_txIndex > transactions.length) revert HashWallet__TxDoesNotExists();
         _;
     }
 
     modifier notExecuted(uint256 _txIndex) {
-        require(!transactions[_txIndex].executed, HashWallet__TxAlreadyExecuted());
+        if(transactions[_txIndex].executed) revert HashWallet__TxAlreadyExecuted();
         _;
     }
 
     modifier notConfirmed(uint256 _txIndex) {
-        require(!isConfirmed[_txIndex][msg.sender], HashWallet__TxAlreadyConfirmed());
+        if(isConfirmed[_txIndex][msg.sender]) revert HashWallet__TxAlreadyConfirmed();
         _;
     }
 
     constructor(address[] memory _owners, uint256 _numConfirmationsRequired) {
-        require(_owners.length > 0, HashWallet__NotEnoughOwners());
-        require(
-            _numConfirmationsRequired > 0
-                && _numConfirmationsRequired <= _owners.length,
+        if(_owners.length <= 0) revert HashWallet__NotEnoughOwners();
+        if(
+            _numConfirmationsRequired <= 0
+                && _numConfirmationsRequired >= _owners.length) revert
             HashWallet__InvallidPermissionNumber()
-        );
+        ;
 
         for (uint256 i = 0; i < _owners.length; i++) {
             address owner = _owners[i];
 
-            require(owner != address(0), HashWallet__AddressZero());
-            require(!isOwner[owner], HashWallet__AddressNotUnique());
+            if(owner == address(0)) revert HashWallet__AddressZero();
+            if(isOwner[owner]) revert HashWallet__AddressNotUnique();
 
             isOwner[owner] = true;
             owners.push(owner);
@@ -124,16 +124,16 @@ contract HashWallet {
     {
         Transaction storage transaction = transactions[_txIndex];
 
-        require(
-            transaction.numConfirmations >= numConfirmationsRequired,
+        if(
+            transaction.numConfirmations <= numConfirmationsRequired) revert
             HashWallet__InvallidPermissionNumber()
-        );
+        ;
 
         transaction.executed = true;
 
         (bool success,) =
             transaction.to.call{value: transaction.value}(transaction.data);
-        require(success, HashWallet__TxFailed());
+        if(!success) revert HashWallet__TxFailed();
 
         emit ExecuteTransaction(msg.sender, _txIndex);
     }
@@ -146,7 +146,7 @@ contract HashWallet {
     {
         Transaction storage transaction = transactions[_txIndex];
 
-        require(isConfirmed[_txIndex][msg.sender], HashWallet__TxNotConfirmed());
+        if(!isConfirmed[_txIndex][msg.sender]) revert HashWallet__TxNotConfirmed();
 
         transaction.numConfirmations -= 1;
         isConfirmed[_txIndex][msg.sender] = false;
