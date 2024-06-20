@@ -43,7 +43,7 @@ contract HashToken is IHashToken, Ownable2Step, ERC20Permit, ERC20Votes {
         _burn(msg.sender, amount);
     }
 
-    function rescueTokens(IERC20 token, address to) external override {
+    function rescueTokens(IERC20 token, address to) external override onlyOwner {
         uint256 amount = token.balanceOf(address(this));
         token.safeTransfer(to, amount);
 
