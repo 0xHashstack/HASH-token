@@ -24,12 +24,10 @@ contract ClaimsContract is Ownable {
         token = IERC20(_token);
     }
 
-    function addAllocation(
-        address _recipient,
-        uint256 _amount,
-        uint256 _vestingStart,
-        uint256 _vestingDuration
-    ) external onlyOwner {
+    function addAllocation(address _recipient, uint256 _amount, uint256 _vestingStart, uint256 _vestingDuration)
+        external
+        onlyOwner
+    {
         require(_recipient != address(0), "Invalid recipient");
         require(_amount > 0, "Invalid amount");
 
@@ -42,7 +40,8 @@ contract ClaimsContract is Ownable {
         require(allocation.recipient == msg.sender, "Not authorized");
         require(block.timestamp >= allocation.vestingStart, "Vesting not started");
 
-        uint256 vestedAmount = allocation.amount * (block.timestamp - allocation.vestingStart) / (allocation.vestingDuration);
+        uint256 vestedAmount =
+            allocation.amount * (block.timestamp - allocation.vestingStart) / (allocation.vestingDuration);
         uint256 unreleasedAmount = vestedAmount - token.balanceOf(address(this));
         require(unreleasedAmount > 0, "No tokens to release");
 

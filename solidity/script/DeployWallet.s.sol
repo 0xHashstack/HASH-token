@@ -11,7 +11,7 @@ contract DeployToken is Script {
         address[] memory owners;
         uint256 confirmations = 2;
         vm.startBroadcast(deployerPrivateKey);
-        
+
         console2.log(".......... Deploying Contract .........");
 
         HashWallet wallet = new HashWallet(owners, confirmations);

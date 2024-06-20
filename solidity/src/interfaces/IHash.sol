@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface IHashToken is IERC20{
-
+interface IHashToken is IERC20 {
     /// @dev Triggered when minting is attempted to a zero address.
     error HashToken__MintingToZeroAddressNotAllowed();
 
