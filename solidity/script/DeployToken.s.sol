@@ -6,10 +6,11 @@ import {console2} from "forge-std/Console2.sol";
 import {HashToken} from "../src/token/HashToken.sol";
 
 contract DeployToken is Script {
-    function run() external {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address wallet = vm.envAddress("WALLET_ADDRESS");
-        vm.startBroadcast(deployerPrivateKey);
+    function run() external returns (HashToken) {
+        // uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        // address wallet = vm.envAddress("WALLET_ADDRESS");
+        address wallet = makeAddr("user");
+        vm.startBroadcast( /*deployerPrivateKey*/ );
 
         console2.log(".......... Deploying Contract .........");
 
@@ -18,5 +19,6 @@ contract DeployToken is Script {
         vm.stopBroadcast();
 
         console2.log("Contract Deployed to", address(token));
+        return token;
     }
 }

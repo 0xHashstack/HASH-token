@@ -101,7 +101,7 @@ contract HashWallet {
     function executeTransaction(uint256 _txIndex) public onlyOwner txExists(_txIndex) notExecuted(_txIndex) {
         Transaction storage transaction = transactions[_txIndex];
 
-        if (transaction.numConfirmations <= numConfirmationsRequired) revert HashWallet__InvallidPermissionNumber();
+        if (transaction.numConfirmations < numConfirmationsRequired) revert HashWallet__InvallidPermissionNumber();
 
         transaction.executed = true;
 

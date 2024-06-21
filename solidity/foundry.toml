@@ -6,4 +6,9 @@ libs = ["lib"]
 [profile.solc]
 version = "0.8.26"
 
+remappings = [
+    "@openzeppelin=lib/openzeppelin-contracts",
+    "forge-std=lib/forge-std",
+]
+
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
