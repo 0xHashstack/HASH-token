@@ -60,7 +60,7 @@ mod HashToken {
         minter: ContractAddress,
         upgrader: ContractAddress,
     ) {
-        self.erc20.initializer("HashToken", "HASH");
+        self.erc20.initializer("Hash Token", "HASH");
         self.accesscontrol.initializer();
 
         self.accesscontrol._grant_role(DEFAULT_ADMIN_ROLE, default_admin);
