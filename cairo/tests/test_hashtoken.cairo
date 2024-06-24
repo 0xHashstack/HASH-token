@@ -23,17 +23,11 @@ fn UPGRADER() -> ContractAddress {
 }
 
 fn deploy_contract() -> ContractAddress {
-    println!("deploy0");
     let contract = declare("HashToken").unwrap();
-    println!("deploy1");
     let mut calldata = Default::default();
-    println!("deploy2");
     Serde::serialize(@OWNER(), ref calldata);
-    println!("deploy3");
     Serde::serialize(@MINTER(), ref calldata);
-    println!("deploy4");
     Serde::serialize(@UPGRADER(), ref calldata);
-    println!("deploy5");
     let (contract_address, _) = contract.deploy(@calldata).unwrap();
     contract_address
 }
@@ -70,11 +64,11 @@ fn test_permissioned_burn() {
 
     start_prank(CheatTarget::One(contract_address), minter);
     hashTokenDispatcher.permissioned_mint(upgrader, 1000000);
-    hashTokenDispatcher.permissioned_burn(upgrader, 1000000);
+    hashTokenDispatcher.permissioned_burn(upgrader, 500000);
     stop_prank(CheatTarget::One(contract_address));
 
     let bal = erc20Dispatcher.balance_of(upgrader);
-    assert_eq!(bal, 0);
+    assert_eq!(bal, 500000);
 }
 
 #[test]
@@ -82,20 +76,38 @@ fn test_permissioned_burn() {
 fn test_increase_allowance() {
     let contract_address = deploy_contract();
     let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
-
+    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+    
     let upgrader = UPGRADER();
+    let minter = MINTER();
 
+    start_prank(CheatTarget::One(contract_address), minter);
     hashTokenDispatcher.increase_allowance(upgrader, 1000000);
+    hashTokenDispatcher.increase_allowance(upgrader, 500000);
+    stop_prank(CheatTarget::One(contract_address));
+
+    let allowance = erc20Dispatcher.allowance(minter, upgrader);
+
+    assert_eq!(allowance, 1500000);
 }
 
 #[test]
 #[fork(url: "https://starknet-mainnet.public.blastapi.io/rpc/v0_7", block_id: BlockId::Number(634119))]
 fn test_decrease_allowance() {
+    
     let contract_address = deploy_contract();
     let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
+    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
 
     let upgrader = UPGRADER();
+    let minter = MINTER();
 
+    start_prank(CheatTarget::One(contract_address), minter);
     hashTokenDispatcher.increase_allowance(upgrader, 1000000);
     hashTokenDispatcher.decrease_allowance(upgrader, 500000);
+    stop_prank(CheatTarget::One(contract_address));
+
+    let allowance = erc20Dispatcher.allowance(minter, upgrader);
+
+    assert_eq!(allowance, 500000);
 }

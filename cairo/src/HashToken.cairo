@@ -86,7 +86,7 @@ mod HashToken {
         }
         fn permissioned_burn(ref self: ContractState, account: ContractAddress, amount: u256) {
             self.accesscontrol.assert_only_role(MINTER_ROLE);
-            self.erc20._burn(get_caller_address(), amount);
+            self.erc20._burn(account, amount);
         }
     }
 
