@@ -25,6 +25,16 @@ contract WalletTest is Test {
         token = new HashToken(address(wallet));
     }
 
+    function testContractInitizization() public view {
+        address[] memory addr = wallet.getOwners();
+
+        assertEq(addr[0], alice);
+        assertEq(addr[1], bob);
+        assertEq(addr[2], charlie);
+
+        assertEq(wallet.numConfirmationsRequired(), 2);
+    }
+
     function testFailsIfTransactionIsNotSubmittedByOwner() public {
         bytes memory data = abi.encodeWithSignature("mint(address,uint256)", address(token), amount);
         vm.startPrank(user);
@@ -126,12 +136,12 @@ contract WalletTest is Test {
 
         wallet.revokeConfirmation(0);
 
-        (,,,,uint256 conformations) = wallet.getTransaction(0);
+        (,,,, uint256 conformations) = wallet.getTransaction(0);
 
         assertEq(conformations, 0);
     }
 
-    function testTransactionCount() public{
+    function testTransactionCount() public {
         bytes memory data = abi.encodeWithSignature("mint(address,uint256)", address(token), amount);
         // 1. submit the transaction with one of the users
         vm.startPrank(alice);
@@ -147,7 +157,7 @@ contract WalletTest is Test {
         // 3. Excecute the transaction as 2/3 of multisig confimed the transaction
         wallet.executeTransaction(0);
 
-        assertEq(wallet.getTransactionCount(),1);
+        assertEq(wallet.getTransactionCount(), 1);
     }
 
     function testGetOwners() public view {
@@ -229,5 +239,31 @@ contract WalletTest is Test {
 
         // 3. Excecute the transaction as 2/3 of multisig confimed the transaction
         wallet.executeTransaction(1);
+    }
+
+    function testBurnThroughWallet() public {
+        bytes memory data = abi.encodeWithSignature("mint(address,uint256)", user, amount);
+        // 1. submit the transaction with one of the users
+        vm.startPrank(alice);
+        wallet.submitTransaction(address(token), 0, data);
+
+        // 2. confirm the trasaction to cross the multisig threshold
+        wallet.confirmTransaction(0);
+        vm.stopPrank();
+
+        vm.startPrank(bob);
+        wallet.confirmTransaction(0);
+
+        // 3. Excecute the transaction as 2/3 of multisig confimed the transaction
+        wallet.executeTransaction(0);
+        vm.stopPrank();
+
+        assertEq(token.balanceOf(user), amount);
+
+        // Now burn the tokens from the user
+        uint256 amountToBurn = 1e18;
+        vm.startPrank(user);
+        token.burn(amountToBurn);
+        assertEq(token.balanceOf(user), amount - amountToBurn);
     }
 }
