@@ -236,17 +236,30 @@ fn test_permissionedMint() {
 
 #[test]
 #[fork(url: "https://starknet-mainnet.public.blastapi.io/rpc/v0_7", block_id: BlockId::Number(634119))]
-fn upgrade() {
+fn test_upgrade() {
     let contract_address = deploy_contract();
     let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
     let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+    let upgradeDispatcher = IUpgradeableDispatcher {contract_address};
     let minter = MINTER();
     let upgrader = UPGRADER();
-    let alice = contract_address_const::<013579>();
 
     start_prank(CheatTarget::One(contract_address), minter);
     hashTokenDispatcher.permissioned_mint(upgrader, 1000000);
     stop_prank(CheatTarget::One(contract_address));
+
+    let bal_before = erc20Dispatcher.balance_of(upgrader);
+
+    let contract_new = declare("MockHashToken").unwrap();
+    let class_hash = contract_new.class_hash;
+
+    start_prank(CheatTarget::One(contract_address), upgrader);
+    upgradeDispatcher.upgrade(class_hash);
+    stop_prank(CheatTarget::One(contract_address));
+
+    let bal_after = erc20Dispatcher.balance_of(upgrader);
+
+    assert_eq!(bal_before, bal_after);
 
 
 

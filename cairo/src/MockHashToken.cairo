@@ -4,7 +4,7 @@ const MINTER_ROLE: felt252 = selector!("MINTER_ROLE");
 const UPGRADER_ROLE: felt252 = selector!("UPGRADER_ROLE");
 
 #[starknet::contract]
-mod HashToken {
+mod MockHashToken {
     use starknet::{ClassHash, ContractAddress, get_caller_address};
     use openzeppelin::access::accesscontrol::{AccessControlComponent, DEFAULT_ADMIN_ROLE};
     use openzeppelin::introspection::src5::SRC5Component;
