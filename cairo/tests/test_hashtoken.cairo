@@ -235,7 +235,6 @@ fn test_permissionedMint() {
 }
 
 #[test]
-#[fork(url: "https://starknet-mainnet.public.blastapi.io/rpc/v0_7", block_id: BlockId::Number(634119))]
 fn test_upgrade() {
     let contract_address = deploy_contract();
     let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
