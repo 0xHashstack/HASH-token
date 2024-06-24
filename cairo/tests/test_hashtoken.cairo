@@ -10,6 +10,8 @@ use cairo::interfaces::IHashToken::{IHashToken, IHashTokenCamel};
 use cairo::interfaces::IHashToken::{IHashTokenCamelDispatcher, IHashTokenCamelDispatcherTrait};
 use cairo::interfaces::IHashToken::{IHashTokenDispatcher, IHashTokenDispatcherTrait};
 use openzeppelin::token::erc20::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
+use openzeppelin::upgrades::interface::IUpgradeable;
+use openzeppelin::upgrades::interface::{IUpgradeableDispatcher, IUpgradeableDispatcherTrait};
 
 fn OWNER() -> ContractAddress {
     'owner'.try_into().unwrap()
@@ -246,4 +248,22 @@ fn test_permissionedMint() {
 
     let bal = erc20Dispatcher.balance_of(upgrader);
     assert_eq!(bal, 1000000);
+}
+
+#[test]
+#[fork(url: "https://starknet-mainnet.public.blastapi.io/rpc/v0_7", block_id: BlockId::Number(634119))]
+fn upgrade() {
+    let contract_address = deploy_contract();
+    let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
+    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+    let minter = MINTER();
+    let upgrader = UPGRADER();
+    let alice = contract_address_const::<013579>();
+
+    start_prank(CheatTarget::One(contract_address), minter);
+    hashTokenDispatcher.permissioned_mint(upgrader, 1000000);
+    stop_prank(CheatTarget::One(contract_address));
+
+
+
 }
