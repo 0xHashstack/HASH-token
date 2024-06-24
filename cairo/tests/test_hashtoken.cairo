@@ -6,7 +6,8 @@ use snforge_std::{
     start_prank, stop_prank, CheatTarget, CheatSpan, start_mock_call, stop_mock_call, prank
 };
 
-use cairo::interfaces::IHashToken::IHashToken;
+use cairo::interfaces::IHashToken::{IHashToken, IHashTokenCamel};
+use cairo::interfaces::IHashToken::{IHashTokenCamelDispatcher, IHashTokenCamelDispatcherTrait};
 use cairo::interfaces::IHashToken::{IHashTokenDispatcher, IHashTokenDispatcherTrait};
 use openzeppelin::token::erc20::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
 
@@ -77,7 +78,7 @@ fn test_increase_allowance() {
     let contract_address = deploy_contract();
     let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
     let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
-    
+
     let upgrader = UPGRADER();
     let minter = MINTER();
 
@@ -110,4 +111,139 @@ fn test_decrease_allowance() {
     let allowance = erc20Dispatcher.allowance(minter, upgrader);
 
     assert_eq!(allowance, 500000);
+}
+
+#[test]
+#[fork(url: "https://starknet-mainnet.public.blastapi.io/rpc/v0_7", block_id: BlockId::Number(634119))]
+fn test_name() {
+    let contract_address = deploy_contract();
+    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+
+    let name = erc20Dispatcher.name();
+    println!("name {:?}", name);
+}
+
+#[test]
+#[fork(url: "https://starknet-mainnet.public.blastapi.io/rpc/v0_7", block_id: BlockId::Number(634119))]
+fn test_symbol() {
+    let contract_address = deploy_contract();
+    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+
+    let symbol = erc20Dispatcher.symbol();
+    println!("symbol {:?}", symbol);
+}
+
+#[test]
+#[fork(url: "https://starknet-mainnet.public.blastapi.io/rpc/v0_7", block_id: BlockId::Number(634119))]
+fn test_decimals() {
+    let contract_address = deploy_contract();
+    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+
+    let decimals = erc20Dispatcher.decimals();
+    println!("decimals {:?}", decimals);
+}
+
+#[test]
+#[fork(url: "https://starknet-mainnet.public.blastapi.io/rpc/v0_7", block_id: BlockId::Number(634119))]
+fn test_transfer() {
+    let contract_address = deploy_contract();
+    let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
+    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+    let minter = MINTER();
+    let upgrader = UPGRADER();
+    let alice = contract_address_const::<013579>();
+
+    start_prank(CheatTarget::One(contract_address), minter);
+    hashTokenDispatcher.permissioned_mint(upgrader, 1000000);
+    stop_prank(CheatTarget::One(contract_address));
+
+    start_prank(CheatTarget::One(contract_address), upgrader);
+    erc20Dispatcher.transfer(alice, 400000);
+    stop_prank(CheatTarget::One(contract_address));
+
+    let alice_bal = erc20Dispatcher.balance_of(alice);
+
+    assert_eq!(alice_bal, 400000);
+
+}
+
+#[test]
+#[fork(url: "https://starknet-mainnet.public.blastapi.io/rpc/v0_7", block_id: BlockId::Number(634119))]
+fn test_transfer_from() {
+    let contract_address = deploy_contract();
+    let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
+    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+    let minter = MINTER();
+    let upgrader = UPGRADER();
+    let alice = contract_address_const::<013579>();
+
+    start_prank(CheatTarget::One(contract_address), minter);
+    hashTokenDispatcher.permissioned_mint(upgrader, 1000000);
+    stop_prank(CheatTarget::One(contract_address));
+
+    start_prank(CheatTarget::One(contract_address), upgrader);
+    erc20Dispatcher.approve(alice, 400000);
+    stop_prank(CheatTarget::One(contract_address));
+
+    start_prank(CheatTarget::One(contract_address), alice);
+    erc20Dispatcher.transfer_from(upgrader, alice, 300000);
+    stop_prank(CheatTarget::One(contract_address));
+
+    let alice_bal = erc20Dispatcher.balance_of(alice);
+
+    assert_eq!(alice_bal, 300000);
+}
+
+
+#[test]
+#[fork(url: "https://starknet-mainnet.public.blastapi.io/rpc/v0_7", block_id: BlockId::Number(634119))]
+fn test_total_supply() {
+    let contract_address = deploy_contract();
+    let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
+    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+    let minter = MINTER();
+    let upgrader = UPGRADER();
+    let alice = contract_address_const::<013579>();
+    let bob = contract_address_const::<02468>();
+    let charlie = contract_address_const::<090909>();
+
+
+
+    start_prank(CheatTarget::One(contract_address), minter);
+    hashTokenDispatcher.permissioned_mint(upgrader, 1000000);
+    stop_prank(CheatTarget::One(contract_address));
+
+    start_prank(CheatTarget::One(contract_address), minter);
+    hashTokenDispatcher.permissioned_mint(alice, 1000000);
+    stop_prank(CheatTarget::One(contract_address));
+
+    start_prank(CheatTarget::One(contract_address), minter);
+    hashTokenDispatcher.permissioned_mint(bob, 1000000);
+    stop_prank(CheatTarget::One(contract_address));
+
+    start_prank(CheatTarget::One(contract_address), bob);
+    erc20Dispatcher.transfer(charlie, 500000);
+    stop_prank(CheatTarget::One(contract_address));
+
+    let total_supply = erc20Dispatcher.total_supply();
+
+    assert_eq!(total_supply, 3000000);
+}
+
+#[test]
+#[fork(url: "https://starknet-mainnet.public.blastapi.io/rpc/v0_7", block_id: BlockId::Number(634119))]
+fn test_permissionedMint() {
+    let contract_address = deploy_contract();
+    let hashTokenDispatcher = IHashTokenCamelDispatcher {contract_address};
+    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+    let default_admin = OWNER();
+    let minter = MINTER();
+    let upgrader = UPGRADER();
+
+    start_prank(CheatTarget::One(contract_address), minter);
+    hashTokenDispatcher.permissionedMint(upgrader, 1000000);
+    stop_prank(CheatTarget::One(contract_address));
+
+    let bal = erc20Dispatcher.balance_of(upgrader);
+    assert_eq!(bal, 1000000);
 }
