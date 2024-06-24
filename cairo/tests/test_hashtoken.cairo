@@ -1,6 +1,4 @@
 use starknet::{ContractAddress, ClassHash, contract_address::{contract_address_const}};
-use starknet::{get_contract_address, get_block_timestamp};
-use snforge_std::BlockId;
 use snforge_std::{declare, ContractClassTrait, store, replace_bytecode};
 use snforge_std::{
     start_prank, stop_prank, CheatTarget, CheatSpan, start_mock_call, stop_mock_call, prank
@@ -34,12 +32,10 @@ fn deploy_contract() -> ContractAddress {
 }
 
 #[test]
-#[fork(url: "https://starknet-mainnet.public.blastapi.io/rpc/v0_7", block_id: BlockId::Number(634119))]
 fn test_permissioned_mint() {
     let contract_address = deploy_contract();
     let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
     let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
-    let default_admin = OWNER();
     let minter = MINTER();
     let upgrader = UPGRADER();
 
@@ -53,13 +49,11 @@ fn test_permissioned_mint() {
 
 
 #[test]
-#[fork(url: "https://starknet-mainnet.public.blastapi.io/rpc/v0_7", block_id: BlockId::Number(634119))]
 fn test_permissioned_burn() {
     let contract_address = deploy_contract();
     let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
     let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
 
-    let default_admin = OWNER();
     let minter = MINTER();
     let upgrader = UPGRADER();
 
@@ -73,7 +67,6 @@ fn test_permissioned_burn() {
 }
 
 #[test]
-#[fork(url: "https://starknet-mainnet.public.blastapi.io/rpc/v0_7", block_id: BlockId::Number(634119))]
 fn test_increase_allowance() {
     let contract_address = deploy_contract();
     let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
@@ -93,7 +86,6 @@ fn test_increase_allowance() {
 }
 
 #[test]
-#[fork(url: "https://starknet-mainnet.public.blastapi.io/rpc/v0_7", block_id: BlockId::Number(634119))]
 fn test_decrease_allowance() {
     
     let contract_address = deploy_contract();
@@ -114,37 +106,33 @@ fn test_decrease_allowance() {
 }
 
 #[test]
-#[fork(url: "https://starknet-mainnet.public.blastapi.io/rpc/v0_7", block_id: BlockId::Number(634119))]
 fn test_name() {
     let contract_address = deploy_contract();
     let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
 
     let name = erc20Dispatcher.name();
-    println!("name {:?}", name);
+    assert_eq!(name, "Hash Token");
 }
 
 #[test]
-#[fork(url: "https://starknet-mainnet.public.blastapi.io/rpc/v0_7", block_id: BlockId::Number(634119))]
 fn test_symbol() {
     let contract_address = deploy_contract();
     let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
 
     let symbol = erc20Dispatcher.symbol();
-    println!("symbol {:?}", symbol);
+    assert_eq!(symbol, "HASH");
 }
 
 #[test]
-#[fork(url: "https://starknet-mainnet.public.blastapi.io/rpc/v0_7", block_id: BlockId::Number(634119))]
 fn test_decimals() {
     let contract_address = deploy_contract();
     let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
 
     let decimals = erc20Dispatcher.decimals();
-    println!("decimals {:?}", decimals);
+    assert_eq!(decimals, 18);
 }
 
 #[test]
-#[fork(url: "https://starknet-mainnet.public.blastapi.io/rpc/v0_7", block_id: BlockId::Number(634119))]
 fn test_transfer() {
     let contract_address = deploy_contract();
     let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
@@ -168,7 +156,6 @@ fn test_transfer() {
 }
 
 #[test]
-#[fork(url: "https://starknet-mainnet.public.blastapi.io/rpc/v0_7", block_id: BlockId::Number(634119))]
 fn test_transfer_from() {
     let contract_address = deploy_contract();
     let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
@@ -196,7 +183,6 @@ fn test_transfer_from() {
 
 
 #[test]
-#[fork(url: "https://starknet-mainnet.public.blastapi.io/rpc/v0_7", block_id: BlockId::Number(634119))]
 fn test_total_supply() {
     let contract_address = deploy_contract();
     let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
@@ -231,12 +217,10 @@ fn test_total_supply() {
 }
 
 #[test]
-#[fork(url: "https://starknet-mainnet.public.blastapi.io/rpc/v0_7", block_id: BlockId::Number(634119))]
 fn test_permissionedMint() {
     let contract_address = deploy_contract();
     let hashTokenDispatcher = IHashTokenCamelDispatcher {contract_address};
     let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
-    let default_admin = OWNER();
     let minter = MINTER();
     let upgrader = UPGRADER();
 
