@@ -312,31 +312,10 @@ fn test_fail_zero_address_transfer() {
     stop_prank(CheatTarget::One(contract_address));
 }
 
-
-// #[test]
-// #[should_panic(expected: ('ERC20: transfer to 0', ))]
-// fn test_fail_same_address_transfer() {
-//     let contract_address = deploy_contract();
-//     let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
-//     let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
-//     let minter = MINTER();
-//     let upgrader = UPGRADER();
-
-//     start_prank(CheatTarget::One(contract_address), minter);
-//     hashTokenDispatcher.permissioned_mint(upgrader, 1000000);
-//     stop_prank(CheatTarget::One(contract_address));
-
-//     start_prank(CheatTarget::One(contract_address), upgrader);
-//     erc20Dispatcher.transfer(upgrader, 400000);
-//     stop_prank(CheatTarget::One(contract_address));
-
-// }
-
 #[test]
 #[should_panic(expected: ('ERC20: insufficient balance',))]
 fn test_fail_zero_balance_transfer() {
     let contract_address = deploy_contract();
-    let hashTokenDispatcher = IHashTokenDispatcher { contract_address };
     let erc20Dispatcher = ERC20ABIDispatcher { contract_address };
     let upgrader = UPGRADER();
     let alice = contract_address_const::<013579>();
