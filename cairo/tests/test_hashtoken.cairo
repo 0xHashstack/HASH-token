@@ -176,7 +176,7 @@ fn test_increase_allowance() {
 }
 
 #[test]
-#[should_panic(expected: ('ERC20: approve to 0)',))]
+#[should_panic(expected: ('ERC20: approve to 0',))]
 fn test_fail_zero_address_increase_allowance() {
     let contract_address = deploy_contract();
     let hashTokenDispatcher = IHashTokenDispatcher { contract_address };
