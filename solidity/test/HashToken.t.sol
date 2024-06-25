@@ -17,6 +17,22 @@ contract HashTokenTest is Test {
         token = tokenScript.run();
     }
 
+    function testName() public view {
+        assertEq(token.name(), "Hash Token");
+    }
+
+    function testSymbol() public view {
+        assertEq(token.symbol(),"HASH");
+    }
+
+    function testDecimals() public view {
+        assertEq(token.decimals(),18);
+    }
+
+    function testInitialSupply() public view{
+        assertEq(token.totalSupply(),0);
+    }
+
     function testMint() public {
         uint256 amount = 1e18;
         vm.startPrank(user);
