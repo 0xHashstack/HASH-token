@@ -37,8 +37,8 @@ fn deploy_contract() -> ContractAddress {
 #[test]
 fn test_permissioned_mint() {
     let contract_address = deploy_contract();
-    let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
-    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+    let hashTokenDispatcher = IHashTokenDispatcher { contract_address };
+    let erc20Dispatcher = ERC20ABIDispatcher { contract_address };
     let minter = MINTER();
     let upgrader = UPGRADER();
 
@@ -52,10 +52,10 @@ fn test_permissioned_mint() {
 
 
 #[test]
-#[should_panic(expected: ('Caller is missing role', ))]
+#[should_panic(expected: ('Caller is missing role',))]
 fn test_fail_role_permissioned_mint() {
     let contract_address = deploy_contract();
-    let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
+    let hashTokenDispatcher = IHashTokenDispatcher { contract_address };
     let upgrader = UPGRADER();
     let pranker = contract_address_const::<013579>();
 
@@ -66,17 +66,16 @@ fn test_fail_role_permissioned_mint() {
 
 
 #[test]
-#[should_panic(expected: ('ERC20: mint to 0', ))]
+#[should_panic(expected: ('ERC20: mint to 0',))]
 fn test_fail_zero_address_permissioned_mint() {
     let contract_address = deploy_contract();
-    let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
+    let hashTokenDispatcher = IHashTokenDispatcher { contract_address };
     let minter = MINTER();
     let zero_address = contract_address_const::<0>();
 
     start_prank(CheatTarget::One(contract_address), minter);
     hashTokenDispatcher.permissioned_mint(zero_address, 1000000);
     stop_prank(CheatTarget::One(contract_address));
-
 }
 
 // #[test]
@@ -92,13 +91,11 @@ fn test_fail_zero_address_permissioned_mint() {
 //     stop_prank(CheatTarget::One(contract_address));
 // }
 
-
-
 #[test]
 fn test_permissioned_burn() {
     let contract_address = deploy_contract();
-    let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
-    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+    let hashTokenDispatcher = IHashTokenDispatcher { contract_address };
+    let erc20Dispatcher = ERC20ABIDispatcher { contract_address };
 
     let minter = MINTER();
     let upgrader = UPGRADER();
@@ -114,10 +111,10 @@ fn test_permissioned_burn() {
 
 
 #[test]
-#[should_panic(expected: ('Caller is missing role', ))]
+#[should_panic(expected: ('Caller is missing role',))]
 fn test_fail_role_permissioned_burn() {
     let contract_address = deploy_contract();
-    let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
+    let hashTokenDispatcher = IHashTokenDispatcher { contract_address };
     let upgrader = UPGRADER();
     let minter = MINTER();
     let pranker = contract_address_const::<013579>();
@@ -133,10 +130,10 @@ fn test_fail_role_permissioned_burn() {
 
 
 #[test]
-#[should_panic(expected: ('ERC20: burn from 0', ))]
+#[should_panic(expected: ('ERC20: burn from 0',))]
 fn test_fail_zero_address_permissioned_burn() {
     let contract_address = deploy_contract();
-    let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
+    let hashTokenDispatcher = IHashTokenDispatcher { contract_address };
     let minter = MINTER();
     let zero_address = contract_address_const::<0>();
 
@@ -146,10 +143,10 @@ fn test_fail_zero_address_permissioned_burn() {
 }
 
 #[test]
-#[should_panic(expected: ('ERC20: insufficient balance', ))]
+#[should_panic(expected: ('ERC20: insufficient balance',))]
 fn test_fail_zero_balance_permissioned_burn() {
     let contract_address = deploy_contract();
-    let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
+    let hashTokenDispatcher = IHashTokenDispatcher { contract_address };
     let minter = MINTER();
     let upgrader = UPGRADER();
 
@@ -159,12 +156,11 @@ fn test_fail_zero_balance_permissioned_burn() {
 }
 
 
-
 #[test]
 fn test_increase_allowance() {
     let contract_address = deploy_contract();
-    let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
-    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+    let hashTokenDispatcher = IHashTokenDispatcher { contract_address };
+    let erc20Dispatcher = ERC20ABIDispatcher { contract_address };
 
     let upgrader = UPGRADER();
     let minter = MINTER();
@@ -180,10 +176,10 @@ fn test_increase_allowance() {
 }
 
 #[test]
-#[should_panic(expected: ('ERC20: approve to 0)', ))]
+#[should_panic(expected: ('ERC20: approve to 0)',))]
 fn test_fail_zero_address_increase_allowance() {
     let contract_address = deploy_contract();
-    let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
+    let hashTokenDispatcher = IHashTokenDispatcher { contract_address };
     let minter = MINTER();
     let zero_address = contract_address_const::<0>();
 
@@ -195,10 +191,9 @@ fn test_fail_zero_address_increase_allowance() {
 
 #[test]
 fn test_decrease_allowance() {
-    
     let contract_address = deploy_contract();
-    let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
-    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+    let hashTokenDispatcher = IHashTokenDispatcher { contract_address };
+    let erc20Dispatcher = ERC20ABIDispatcher { contract_address };
 
     let upgrader = UPGRADER();
     let minter = MINTER();
@@ -215,10 +210,10 @@ fn test_decrease_allowance() {
 
 
 #[test]
-#[should_panic(expected: ('u256_sub Overflow', ))]
+#[should_panic(expected: ('u256_sub Overflow',))]
 fn test_fail_negative_allowance_decrease_allowance() {
     let contract_address = deploy_contract();
-    let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
+    let hashTokenDispatcher = IHashTokenDispatcher { contract_address };
     let minter = MINTER();
     let upgrader = UPGRADER();
 
@@ -231,7 +226,7 @@ fn test_fail_negative_allowance_decrease_allowance() {
 #[test]
 fn test_name() {
     let contract_address = deploy_contract();
-    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+    let erc20Dispatcher = ERC20ABIDispatcher { contract_address };
 
     let name = erc20Dispatcher.name();
     assert_eq!(name, "Hash Token");
@@ -240,7 +235,7 @@ fn test_name() {
 #[test]
 fn test_symbol() {
     let contract_address = deploy_contract();
-    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+    let erc20Dispatcher = ERC20ABIDispatcher { contract_address };
 
     let symbol = erc20Dispatcher.symbol();
     assert_eq!(symbol, "HASH");
@@ -249,7 +244,7 @@ fn test_symbol() {
 #[test]
 fn test_decimals() {
     let contract_address = deploy_contract();
-    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+    let erc20Dispatcher = ERC20ABIDispatcher { contract_address };
 
     let decimals = erc20Dispatcher.decimals();
     assert_eq!(decimals, 18);
@@ -258,8 +253,8 @@ fn test_decimals() {
 #[test]
 fn test_transfer() {
     let contract_address = deploy_contract();
-    let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
-    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+    let hashTokenDispatcher = IHashTokenDispatcher { contract_address };
+    let erc20Dispatcher = ERC20ABIDispatcher { contract_address };
     let minter = MINTER();
     let upgrader = UPGRADER();
     let alice = contract_address_const::<013579>();
@@ -275,16 +270,15 @@ fn test_transfer() {
     let alice_bal = erc20Dispatcher.balance_of(alice);
 
     assert_eq!(alice_bal, 400000);
-
 }
 
 
 #[test]
-#[should_panic(expected: ('ERC20: insufficient balance', ))]
+#[should_panic(expected: ('ERC20: insufficient balance',))]
 fn test_fail_balance_less_than_transfer() {
     let contract_address = deploy_contract();
-    let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
-    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+    let hashTokenDispatcher = IHashTokenDispatcher { contract_address };
+    let erc20Dispatcher = ERC20ABIDispatcher { contract_address };
     let minter = MINTER();
     let upgrader = UPGRADER();
     let alice = contract_address_const::<013579>();
@@ -296,16 +290,15 @@ fn test_fail_balance_less_than_transfer() {
     start_prank(CheatTarget::One(contract_address), upgrader);
     erc20Dispatcher.transfer(alice, 2000000);
     stop_prank(CheatTarget::One(contract_address));
-
 }
 
 
 #[test]
-#[should_panic(expected: ('ERC20: transfer to 0', ))]
+#[should_panic(expected: ('ERC20: transfer to 0',))]
 fn test_fail_zero_address_transfer() {
     let contract_address = deploy_contract();
-    let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
-    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+    let hashTokenDispatcher = IHashTokenDispatcher { contract_address };
+    let erc20Dispatcher = ERC20ABIDispatcher { contract_address };
     let minter = MINTER();
     let upgrader = UPGRADER();
     let alice = contract_address_const::<0>();
@@ -317,7 +310,6 @@ fn test_fail_zero_address_transfer() {
     start_prank(CheatTarget::One(contract_address), upgrader);
     erc20Dispatcher.transfer(alice, 400000);
     stop_prank(CheatTarget::One(contract_address));
-
 }
 
 
@@ -340,27 +332,25 @@ fn test_fail_zero_address_transfer() {
 
 // }
 
-
 #[test]
-#[should_panic(expected: ('ERC20: insufficient balance', ))]
+#[should_panic(expected: ('ERC20: insufficient balance',))]
 fn test_fail_zero_balance_transfer() {
     let contract_address = deploy_contract();
-    let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
-    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+    let hashTokenDispatcher = IHashTokenDispatcher { contract_address };
+    let erc20Dispatcher = ERC20ABIDispatcher { contract_address };
     let upgrader = UPGRADER();
     let alice = contract_address_const::<013579>();
 
     start_prank(CheatTarget::One(contract_address), upgrader);
     erc20Dispatcher.transfer(alice, 2000000);
     stop_prank(CheatTarget::One(contract_address));
-
 }
 
 #[test]
 fn test_transfer_from() {
     let contract_address = deploy_contract();
-    let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
-    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+    let hashTokenDispatcher = IHashTokenDispatcher { contract_address };
+    let erc20Dispatcher = ERC20ABIDispatcher { contract_address };
     let minter = MINTER();
     let upgrader = UPGRADER();
     let alice = contract_address_const::<013579>();
@@ -384,11 +374,11 @@ fn test_transfer_from() {
 
 
 #[test]
-#[should_panic(expected: ('ERC20: approve to 0', ))]
+#[should_panic(expected: ('ERC20: approve to 0',))]
 fn test_fail_zero_address_transfer_from() {
     let contract_address = deploy_contract();
-    let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
-    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+    let hashTokenDispatcher = IHashTokenDispatcher { contract_address };
+    let erc20Dispatcher = ERC20ABIDispatcher { contract_address };
     let minter = MINTER();
     let upgrader = UPGRADER();
     let alice = contract_address_const::<0>();
@@ -404,15 +394,14 @@ fn test_fail_zero_address_transfer_from() {
     start_prank(CheatTarget::One(contract_address), alice);
     erc20Dispatcher.transfer_from(upgrader, alice, 300000);
     stop_prank(CheatTarget::One(contract_address));
-
 }
 
 #[test]
-#[should_panic(expected: ('ERC20: insufficient allowance', ))]
+#[should_panic(expected: ('ERC20: insufficient allowance',))]
 fn test_fail_transfer_more_than_approved_transfer_from() {
     let contract_address = deploy_contract();
-    let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
-    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+    let hashTokenDispatcher = IHashTokenDispatcher { contract_address };
+    let erc20Dispatcher = ERC20ABIDispatcher { contract_address };
     let minter = MINTER();
     let upgrader = UPGRADER();
     let alice = contract_address_const::<013579>();
@@ -431,11 +420,11 @@ fn test_fail_transfer_more_than_approved_transfer_from() {
 }
 
 #[test]
-#[should_panic(expected: ('ERC20: insufficient balance', ))]
+#[should_panic(expected: ('ERC20: insufficient balance',))]
 fn test_fail_balance_less_than_approved() {
     let contract_address = deploy_contract();
-    let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
-    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+    let hashTokenDispatcher = IHashTokenDispatcher { contract_address };
+    let erc20Dispatcher = ERC20ABIDispatcher { contract_address };
     let minter = MINTER();
     let upgrader = UPGRADER();
     let alice = contract_address_const::<013579>();
@@ -451,22 +440,19 @@ fn test_fail_balance_less_than_approved() {
     start_prank(CheatTarget::One(contract_address), alice);
     erc20Dispatcher.transfer_from(upgrader, alice, 300000);
     stop_prank(CheatTarget::One(contract_address));
-
 }
 
 
 #[test]
 fn test_total_supply() {
     let contract_address = deploy_contract();
-    let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
-    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+    let hashTokenDispatcher = IHashTokenDispatcher { contract_address };
+    let erc20Dispatcher = ERC20ABIDispatcher { contract_address };
     let minter = MINTER();
     let upgrader = UPGRADER();
     let alice = contract_address_const::<013579>();
     let bob = contract_address_const::<02468>();
     let charlie = contract_address_const::<090909>();
-
-
 
     start_prank(CheatTarget::One(contract_address), minter);
     hashTokenDispatcher.permissioned_mint(upgrader, 1000000);
@@ -492,8 +478,8 @@ fn test_total_supply() {
 #[test]
 fn test_permissionedMint() {
     let contract_address = deploy_contract();
-    let hashTokenDispatcher = IHashTokenCamelDispatcher {contract_address};
-    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
+    let hashTokenDispatcher = IHashTokenCamelDispatcher { contract_address };
+    let erc20Dispatcher = ERC20ABIDispatcher { contract_address };
     let minter = MINTER();
     let upgrader = UPGRADER();
 
@@ -508,9 +494,9 @@ fn test_permissionedMint() {
 #[test]
 fn test_upgrade() {
     let contract_address = deploy_contract();
-    let hashTokenDispatcher = IHashTokenDispatcher {contract_address};
-    let erc20Dispatcher = ERC20ABIDispatcher {contract_address};
-    let upgradeDispatcher = IUpgradeableDispatcher {contract_address};
+    let hashTokenDispatcher = IHashTokenDispatcher { contract_address };
+    let erc20Dispatcher = ERC20ABIDispatcher { contract_address };
+    let upgradeDispatcher = IUpgradeableDispatcher { contract_address };
     let minter = MINTER();
     let upgrader = UPGRADER();
 
