@@ -71,6 +71,42 @@ contract WalletTest is Test {
         assertEq(token.balanceOf(address(token)), amount);
     }
 
+    function testFailsIfNotExcecutingByOwner() public {
+        bytes memory data = abi.encodeWithSignature("mint(address,uint256)", address(token), amount);
+        // 1. submit the transaction with one of the users
+        vm.startPrank(alice);
+        wallet.submitTransaction(address(token), 0, data);
+
+        // 2. confirm the trasaction to cross the multisig threshold
+        wallet.confirmTransaction(0);
+        vm.stopPrank();
+
+        vm.startPrank(bob);
+        wallet.confirmTransaction(0);
+        vm.stopPrank();
+
+        // 3. Excecute the transaction as 2/3 of multisig confimed the transaction
+        vm.startPrank(user);
+        wallet.executeTransaction(0);
+
+        assertEq(token.balanceOf(address(token)), amount);
+    }
+
+    function testFailsIfNotConfirmedByOwner() public {
+        bytes memory data = abi.encodeWithSignature("mint(address,uint256)", address(token), amount);
+        // 1. submit the transaction with one of the users
+        vm.startPrank(alice);
+        wallet.submitTransaction(address(token), 0, data);
+
+        // 2. confirm the trasaction to cross the multisig threshold
+        wallet.confirmTransaction(0);
+        vm.stopPrank();
+
+        vm.startPrank(user);
+        wallet.confirmTransaction(0);
+        vm.stopPrank();
+    }
+
     function testFailsIfMintingToZeroAddress() public {
         bytes memory data = abi.encodeWithSignature("mint(address,uint256)", address(0), amount);
         // 1. submit the transaction with one of the users
@@ -134,6 +170,24 @@ contract WalletTest is Test {
         // 2. confirm the trasaction to cross the multisig threshold
         wallet.confirmTransaction(0);
 
+        wallet.revokeConfirmation(0);
+
+        (,,,, uint256 conformations) = wallet.getTransaction(0);
+
+        assertEq(conformations, 0);
+    }
+
+    function testFailsIfNotRevokedByOwner() public {
+        bytes memory data = abi.encodeWithSignature("mint(address,uint256)", address(token), amount);
+        // 1. submit the transaction with one of the users
+        vm.startPrank(alice);
+        wallet.submitTransaction(address(token), 0, data);
+
+        // 2. confirm the trasaction to cross the multisig threshold
+        wallet.confirmTransaction(0);
+        vm.stopPrank();
+
+        vm.startPrank(user);
         wallet.revokeConfirmation(0);
 
         (,,,, uint256 conformations) = wallet.getTransaction(0);
@@ -241,7 +295,7 @@ contract WalletTest is Test {
         wallet.executeTransaction(1);
     }
 
-    function testBurnThroughWallet() public {
+    function testMintAndBurnThroughWallet() public {
         bytes memory data = abi.encodeWithSignature("mint(address,uint256)", user, amount);
         // 1. submit the transaction with one of the users
         vm.startPrank(alice);
