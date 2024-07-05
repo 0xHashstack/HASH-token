@@ -27,7 +27,7 @@ contract HashToken is IHashToken, Ownable2Step, ERC20Permit, ERC20Votes {
 
     constructor(address admin) ERC20("Hash Token", "HASH") Ownable(admin) ERC20Permit("Hash Token") {}
 
-    function mint(address to, uint256 amount) public onlyOwner {
+    function mint(address to, uint256 amount) external onlyOwner {
         _mint(to, amount);
     }
 
@@ -39,7 +39,7 @@ contract HashToken is IHashToken, Ownable2Step, ERC20Permit, ERC20Votes {
         return super.nonces(owner);
     }
 
-    function burn(uint256 amount) external override {
+    function burn(uint256 amount) external {
         _burn(msg.sender, amount);
     }
 
