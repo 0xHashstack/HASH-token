@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+
 contract HashWallet {
     error HashWallet__AddressZero();
     error HashWallet__AddressNotUnique();
@@ -22,7 +24,7 @@ contract HashWallet {
 
     address[] public owners;
     mapping(address => bool) public isOwner;
-    uint256 public numConfirmationsRequired;
+    uint256 public immutable numConfirmationsRequired = 2;
 
     struct Transaction {
         address to;
@@ -35,7 +37,10 @@ contract HashWallet {
     // mapping from tx index => owner => bool
     mapping(uint256 => mapping(address => bool)) public isConfirmed;
 
-    Transaction[] public transactions;
+    // Transaction[] public transactions;
+
+    mapping(uint256 => Transaction) transactions;
+    uint256 numOfTransactions;
 
     modifier onlyOwner() {
         if (!isOwner[msg.sender]) revert HashWallet__CallerIsNotOwner();
@@ -43,7 +48,7 @@ contract HashWallet {
     }
 
     modifier txExists(uint256 _txIndex) {
-        if (_txIndex > transactions.length) revert HashWallet__TxDoesNotExists();
+        if (_txIndex > numOfTransactions) revert HashWallet__TxDoesNotExists();
         _;
     }
 
@@ -77,9 +82,14 @@ contract HashWallet {
     }
 
     function submitTransaction(address _to, uint256 _value, bytes memory _data) public onlyOwner {
-        uint256 txIndex = transactions.length;
+        if (address(_to) == address(0)) revert HashWallet__AddressZero();
+        uint256 txIndex = numOfTransactions;
 
-        transactions.push(Transaction({to: _to, value: _value, data: _data, executed: false, numConfirmations: 0}));
+        // transactions.push(Transaction({to: _to, value: _value, data: _data, executed: false, numConfirmations: 0}));
+        transactions[txIndex] =
+            Transaction({to: _to, value: _value, data: _data, executed: false, numConfirmations: 0});
+
+        numOfTransactions++;
 
         emit SubmitTransaction(msg.sender, txIndex, _to, _value, _data);
     }
@@ -127,7 +137,7 @@ contract HashWallet {
     }
 
     function getTransactionCount() public view returns (uint256) {
-        return transactions.length;
+        return numOfTransactions;
     }
 
     function getTransaction(uint256 _txIndex)
