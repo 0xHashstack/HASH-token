@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 
-contract HashWallet {
+contract HashWallet is AccessControl {
     error HashWallet__AddressZero();
     error HashWallet__AddressNotUnique();
     error HashWallet__NotEnoughOwners();
@@ -14,6 +14,7 @@ contract HashWallet {
     error HashWallet__TxNotConfirmed();
     error HashWallet__TxFailed();
     error HashWallet__InvallidPermissionNumber();
+    error HashWallet__InvalidOwnersLength();
 
     event SubmitTransaction(
         address indexed owner, uint256 indexed txIndex, address indexed to, uint256 value, bytes data
@@ -22,9 +23,12 @@ contract HashWallet {
     event RevokeConfirmation(address indexed owner, uint256 indexed txIndex);
     event ExecuteTransaction(address indexed owner, uint256 indexed txIndex);
 
+    bytes32 public constant SUPER_ADMIN = keccak256("SUPER_ADMIN");
+    bytes32 public constant ADMIN = keccak256("ADMIN");
+
     address[] public owners;
     mapping(address => bool) public isOwner;
-    uint256 public immutable numConfirmationsRequired = 2;
+    uint256 public immutable numConfirmationsRequired;
 
     struct Transaction {
         address to;
@@ -62,10 +66,12 @@ contract HashWallet {
         _;
     }
 
-    constructor(address[] memory _owners, uint256 _numConfirmationsRequired) {
-        if (_owners.length <= 0) revert HashWallet__NotEnoughOwners();
-        if (_numConfirmationsRequired <= 0 && _numConfirmationsRequired >= _owners.length) {
-            revert HashWallet__InvallidPermissionNumber();
+    constructor(address[] memory _owners) {
+        uint256 ownersLength = _owners.length;
+        if (ownersLength <= 0) revert HashWallet__NotEnoughOwners();
+
+        if (ownersLength > 5 || ownersLength < 3) {
+            revert HashWallet__InvalidOwnersLength();
         }
 
         for (uint256 i = 0; i < _owners.length; i++) {
@@ -75,10 +81,15 @@ contract HashWallet {
             if (isOwner[owner]) revert HashWallet__AddressNotUnique();
 
             isOwner[owner] = true;
+            grantRole(ADMIN,_owners[i]);
             owners.push(owner);
         }
 
-        numConfirmationsRequired = _numConfirmationsRequired;
+        numConfirmationsRequired = (ownersLength / 2) + 1;
+
+        grantRole(SUPER_ADMIN, msg.sender);
+        _setRoleAdmin(SUPER_ADMIN, SUPER_ADMIN);
+        _setRoleAdmin(ADMIN, SUPER_ADMIN);
     }
 
     function submitTransaction(address _to, uint256 _value, bytes memory _data) public onlyOwner {
@@ -86,8 +97,7 @@ contract HashWallet {
         uint256 txIndex = numOfTransactions;
 
         // transactions.push(Transaction({to: _to, value: _value, data: _data, executed: false, numConfirmations: 0}));
-        transactions[txIndex] =
-            Transaction({to: _to, value: _value, data: _data, executed: false, numConfirmations: 0});
+        transactions[txIndex] = Transaction({to: _to, value: _value, data: _data, executed: false, numConfirmations: 0});
 
         numOfTransactions++;
 
@@ -130,6 +140,35 @@ contract HashWallet {
         isConfirmed[_txIndex][msg.sender] = false;
 
         emit RevokeConfirmation(msg.sender, _txIndex);
+    }
+
+    function grantRole(bytes32 role, address account) public override {
+        if (owners.length >= 5) {
+            revert HashWallet__InvalidOwnersLength();
+        }
+        super.grantRole(role, account);
+        owners.push(account);
+        isOwner[account] = true;
+    }
+
+    function revokeRole(bytes32 role, address account) public override {
+        if (owners.length <= 3) {
+            revert HashWallet__InvalidOwnersLength();
+        }
+        super.revokeRole(role, account);
+
+        for (uint256 i = 0; i < owners.length; i++) {
+            if (owners[i] == account) {
+                owners[i] = owners[owners.length - 1];
+                owners.pop();
+                isOwner[account] = false;
+                break;
+            }
+        }
+    }
+
+    function setRoleAdmin(bytes32 role, bytes32 adminRole) public onlyRole(getRoleAdmin(role)) {
+        _setRoleAdmin(role, adminRole);
     }
 
     function getOwners() public view returns (address[] memory) {
