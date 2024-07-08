@@ -28,7 +28,7 @@ contract HashWallet is AccessControl {
 
     address[] public owners;
     mapping(address => bool) public isOwner;
-    uint256 public immutable numConfirmationsRequired;
+    uint256 public numConfirmationsRequired;
 
     struct Transaction {
         address to;
@@ -142,16 +142,18 @@ contract HashWallet is AccessControl {
         emit RevokeConfirmation(msg.sender, _txIndex);
     }
 
-    function grantRole(bytes32 role, address account) public override {
+    function addOwner(bytes32 role, address account) public {
         if (owners.length >= 5) {
             revert HashWallet__InvalidOwnersLength();
         }
         super.grantRole(role, account);
         owners.push(account);
         isOwner[account] = true;
+
+        numConfirmationsRequired = (owners.length / 2) + 1;
     }
 
-    function revokeRole(bytes32 role, address account) public override {
+    function removeOwner(bytes32 role, address account) public {
         if (owners.length <= 3) {
             revert HashWallet__InvalidOwnersLength();
         }
@@ -162,6 +164,26 @@ contract HashWallet is AccessControl {
                 owners[i] = owners[owners.length - 1];
                 owners.pop();
                 isOwner[account] = false;
+                break;
+            }
+        }
+
+        numConfirmationsRequired = (owners.length / 2) + 1;
+    }
+
+    function transferOwner(bytes32 role, address newOwner) public {
+        if (!hasRole(role, msg.sender)) {
+            revert AccessControlUnauthorizedAccount(msg.sender, role);
+        }
+        
+        _revokeRole(role, msg.sender);
+        _grantRole(role, newOwner);
+
+        for (uint256 i = 0; i < owners.length; i++) {
+            if (owners[i] == msg.sender) {
+                owners[i] = newOwner;
+                isOwner[msg.sender] = false;
+                isOwner[newOwner] = true;
                 break;
             }
         }

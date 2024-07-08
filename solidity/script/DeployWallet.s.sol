@@ -18,12 +18,12 @@ contract DeployWallet is Script {
         owners.push(bob);
         owners.push(charlie);
 
-        uint256 confirmations = 2;
+        // uint256 confirmations = 2;
         vm.startBroadcast(/*deployerPrivateKey*/);
 
         console2.log(".......... Deploying Contract .........");
 
-        HashWallet wallet = new HashWallet(owners, confirmations);
+        HashWallet wallet = new HashWallet(owners/*, confirmations*/);
 
         vm.stopBroadcast();
 
