@@ -67,6 +67,10 @@ contract HashWallet is AccessControl {
     }
 
     constructor(address[] memory _owners) {
+        _setRoleAdmin(SUPER_ADMIN, SUPER_ADMIN);
+        _grantRole(SUPER_ADMIN, msg.sender);
+        _setRoleAdmin(ADMIN, SUPER_ADMIN);
+
         uint256 ownersLength = _owners.length;
         if (ownersLength <= 0) revert HashWallet__NotEnoughOwners();
 
@@ -81,15 +85,11 @@ contract HashWallet is AccessControl {
             if (isOwner[owner]) revert HashWallet__AddressNotUnique();
 
             isOwner[owner] = true;
-            grantRole(ADMIN,_owners[i]);
+            _grantRole(ADMIN, _owners[i]);
             owners.push(owner);
         }
 
         numConfirmationsRequired = (ownersLength / 2) + 1;
-
-        grantRole(SUPER_ADMIN, msg.sender);
-        _setRoleAdmin(SUPER_ADMIN, SUPER_ADMIN);
-        _setRoleAdmin(ADMIN, SUPER_ADMIN);
     }
 
     function submitTransaction(address _to, uint256 _value, bytes memory _data) public onlyOwner {
