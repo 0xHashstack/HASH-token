@@ -135,7 +135,7 @@ contract HashWallet is AccessControl {
     }
 
     function revokeConfirmation(uint256 _txIndex) public onlyOwner txExists(_txIndex) notExecuted(_txIndex) {
-        Transaction memory transaction = transactions[_txIndex];
+        Transaction storage transaction = transactions[_txIndex];
 
         if (!isConfirmed[_txIndex][msg.sender]) revert HashWallet__TxNotConfirmed();
 
