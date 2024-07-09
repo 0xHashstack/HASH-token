@@ -28,7 +28,7 @@ contract HashWallet is AccessControl {
 
     address[] public owners;
     mapping(address => bool) public isOwner;
-    uint256 public numConfirmationsRequired;
+    // uint256 public numConfirmationsRequired;
 
     struct Transaction {
         address to;
@@ -89,7 +89,7 @@ contract HashWallet is AccessControl {
             owners.push(owner);
         }
 
-        numConfirmationsRequired = (ownersLength / 2) + 1;
+        // numConfirmationsRequired = (ownersLength / 2) + 1;
     }
 
     function submitTransaction(address _to, uint256 _value, bytes memory _data) public onlyOwner {
@@ -99,7 +99,7 @@ contract HashWallet is AccessControl {
         // transactions.push(Transaction({to: _to, value: _value, data: _data, executed: false, numConfirmations: 0}));
         transactions[txIndex] = Transaction({to: _to, value: _value, data: _data, executed: false, numConfirmations: 0});
 
-        numOfTransactions++;
+        ++numOfTransactions;
 
         emit SubmitTransaction(msg.sender, txIndex, _to, _value, _data);
     }
@@ -119,7 +119,8 @@ contract HashWallet is AccessControl {
     }
 
     function executeTransaction(uint256 _txIndex) public onlyOwner txExists(_txIndex) notExecuted(_txIndex) {
-        Transaction storage transaction = transactions[_txIndex];
+        uint256 numConfirmationsRequired = (owners.length / 2) + 1;
+        Transaction memory transaction = transactions[_txIndex];
 
         if (transaction.numConfirmations < numConfirmationsRequired) revert HashWallet__InvallidPermissionNumber();
 
@@ -128,11 +129,13 @@ contract HashWallet is AccessControl {
         (bool success,) = transaction.to.call{value: transaction.value}(transaction.data);
         if (!success) revert HashWallet__TxFailed();
 
+        transactions[_txIndex] = transaction;
+
         emit ExecuteTransaction(msg.sender, _txIndex);
     }
 
     function revokeConfirmation(uint256 _txIndex) public onlyOwner txExists(_txIndex) notExecuted(_txIndex) {
-        Transaction storage transaction = transactions[_txIndex];
+        Transaction memory transaction = transactions[_txIndex];
 
         if (!isConfirmed[_txIndex][msg.sender]) revert HashWallet__TxNotConfirmed();
 
@@ -143,6 +146,7 @@ contract HashWallet is AccessControl {
     }
 
     function addOwner(bytes32 role, address account) public {
+        uint256 numConfirmationsRequired = (owners.length / 2) + 1;
         if (owners.length >= 5) {
             revert HashWallet__InvalidOwnersLength();
         }
@@ -154,6 +158,7 @@ contract HashWallet is AccessControl {
     }
 
     function removeOwner(bytes32 role, address account) public {
+        uint256 numConfirmationsRequired = (owners.length / 2) + 1;
         if (owners.length <= 3) {
             revert HashWallet__InvalidOwnersLength();
         }
@@ -175,7 +180,7 @@ contract HashWallet is AccessControl {
         if (!hasRole(role, msg.sender)) {
             revert AccessControlUnauthorizedAccount(msg.sender, role);
         }
-        
+
         _revokeRole(role, msg.sender);
         _grantRole(role, newOwner);
 
