@@ -3,12 +3,29 @@ src = "src"
 out = "out"
 libs = ["lib"]
 
-[profile.solc]
-version = "0.8.26"
+gas_reports = ["*"]
+no_test = true
 
-remappings = [
-    "@openzeppelin=lib/openzeppelin-contracts",
-    "forge-std=lib/forge-std",
-]
+
+[rpc_endpoints]
+base_sepolia = "${BASE_SEPOLIA_RPC_URL}"
+
+[etherscan]
+base_sepolia = { key = "${BASE_ETHERSCAN_API_KEY}" }
+
+[fmt] # See https://book.getfoundry.sh/reference/config/formatter
+int_types = "short"
+line_length = 120
+bracket_spacing = true
+multiline_func_header = "all"
+number_underscore = "thousands"
+quote_style = "single"
+ignore = ['./script/**/*']
+
+[fuzz]
+runs = 10000
+seed = "1234"
+dictionary_weight = 100
+
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
