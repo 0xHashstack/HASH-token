@@ -67,4 +67,42 @@ contract TestHSTK is Test {
         // vm.expectRevert();
         hstkToken.mint(address(2), amount);
     }
+
+    function testFuzzTransferToken(uint amount) public {
+        address to = address(2);
+        address too = address(3);
+        vm.assume(amount<TOTAL_SUPPLY && amount>0);
+        vm.prank(admin);
+        hstkToken.mint(to,amount);
+        vm.prank(to);
+        hstkToken.transfer(too,amount);
+    }
+    function testFuzzTransferWhenPaused(uint amount) public {
+        address to = address(2);
+        address too = address(3);
+        vm.assume(amount<TOTAL_SUPPLY && amount>0);
+        vm.startPrank(admin);
+        hstkToken.mint(to,amount);
+        hstkToken.pause();
+        vm.stopPrank();
+        vm.prank(to);
+        vm.expectRevert();
+        hstkToken.transfer(too,amount);
+    }
+     function testFuzzTransferWhenPartialPaused(uint amount) public {
+        address to = address(2);
+        address too = address(3);
+        vm.assume(amount<TOTAL_SUPPLY && amount>0);
+        vm.startPrank(admin);
+        hstkToken.mint(to,amount);
+        hstkToken.partialPause();
+        vm.stopPrank();
+        vm.prank(to);
+        vm.expectRevert();
+        hstkToken.transfer(too,amount);
+    }
+
+
+
+    
 }

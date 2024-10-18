@@ -75,7 +75,7 @@ abstract contract Pausable is Context {
      * - The contract must not be paused.
      */
     modifier whenNotPartialPaused() {
-        _requireNotPaused();
+        _requireNotPartialPaused();
         _;
     }
 
@@ -99,7 +99,7 @@ abstract contract Pausable is Context {
      */
 
     modifier whenPartialPaused() {
-        _requirePaused();
+        _requireNotPartialPaused();
         _;
     }
 
@@ -148,7 +148,7 @@ abstract contract Pausable is Context {
      */
 
     function _requirePartialPaused() internal view virtual {
-        if (!paused()) {
+        if (!partialPaused()) {
             revert ExpectedPause();
         }
     }
