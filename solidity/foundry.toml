@@ -8,10 +8,12 @@ no_test = true
 
 
 [rpc_endpoints]
-base_sepolia = "${BASE_SEPOLIA_RPC_URL}"
+sepolia = "${SEPOLIA_RPC_URL}"
+ethereum = "${ETHEREUM_RPC_URL}"
 
 [etherscan]
-base_sepolia = { key = "${BASE_ETHERSCAN_API_KEY}" }
+sepolia = { key = "${ETHERSCAN_API_KEY}" }
+
 
 [fmt] # See https://book.getfoundry.sh/reference/config/formatter
 int_types = "short"
