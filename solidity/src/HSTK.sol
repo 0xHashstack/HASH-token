@@ -24,7 +24,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
     event TOKEN_RESCUED(address indexed token, address indexed to, uint amount);
 
     /// @dev The maximum total supply of tokens
-    uint private constant TOTAL_SUPPLY = 9000000000;
+    uint private constant TOTAL_SUPPLY = 9_000_000_000;
 
     /**
      * @dev Constructor that gives the admin the initial supply of tokens

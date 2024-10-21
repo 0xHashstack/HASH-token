@@ -13,6 +13,7 @@ abstract contract BlackListed is Context {
     error CallerZeroAddress();
     error AccountBlackListed(address account);
     error AdminRestricted();
+    error InvalidOperation();
 
     // Events
     event NewAccountBlackListed(address indexed account);
@@ -103,5 +104,13 @@ abstract contract BlackListed is Context {
      */
     function isBlackListed(address account) public view returns (bool) {
         return blackListedAccounts[account];
+    }
+
+    receive() external payable {
+        revert InvalidOperation();
+    }
+
+    fallback() external payable {
+        revert InvalidOperation();
     }
 }
