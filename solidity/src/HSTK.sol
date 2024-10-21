@@ -43,7 +43,6 @@ contract HstkToken is ERC20, Pausable, BlackListed {
         uint value
     )
         public
-        virtual
         override
         whenNotPartialPaused
         whenNotPaused
@@ -63,7 +62,6 @@ contract HstkToken is ERC20, Pausable, BlackListed {
         uint value
     )
         public
-        virtual
         override
         whenNotPartialPaused
         whenNotPaused
@@ -83,7 +81,6 @@ contract HstkToken is ERC20, Pausable, BlackListed {
         uint value
     )
         public
-        virtual
         override
         whenNotPaused
         notBlackListed(spender)
