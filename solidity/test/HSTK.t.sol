@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import { Test, console } from 'forge-std/Test.sol';
-import { HstkToken } from '../src/HSTK.sol';
+import { Test, console, StdInvariant } from "forge-std/Test.sol";
+import { HstkToken } from "../src/HSTK.sol";
 
-contract TestHSTK is Test {
+contract TestHSTK is StdInvariant, Test {
     // Constants
     uint private constant TOTAL_SUPPLY = 9_000_000_000;
 
@@ -21,6 +21,7 @@ contract TestHSTK is Test {
 
     function setUp() public {
         hstkToken = new HstkToken(admin);
+        targetContract(address(hstkToken));
     }
 
     function testInitialization() public view {

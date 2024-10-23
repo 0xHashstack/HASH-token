@@ -19,6 +19,9 @@ contract HstkToken is ERC20, Pausable, BlackListed {
     /// @dev Error thrown when attempting to mint tokens beyond the max supply
     error MAX_SUPPLY_EXCEEDED();
 
+    /// @dev Error thrown when address is zero
+    error IsZeroAddress();
+
     /// @dev Event emitted when tokens are rescued from the contract
     event TOKEN_RESCUED(address indexed token, address indexed to, uint amount);
 
@@ -29,8 +32,16 @@ contract HstkToken is ERC20, Pausable, BlackListed {
      * @dev Constructor that gives the admin the initial supply of tokens
      * @param admin Address of the admin account
      */
-    constructor(address admin) ERC20('Hstk Token', 'HSTK') Pausable() BlackListed(admin) {
-        require(admin != address(0), 'Address cannot be zero address');
+    constructor(
+        address admin
+    ) ERC20("Hstk Token", "HSTK") Pausable() BlackListed(admin) {
+        // replaced with assembly for cheaper zero check
+        assembly {
+            if iszero(shl(96, admin)) {
+                mstore(0x00, 0x1326d6d5) // `IsZeroAddress()`
+                revert(0x1c, 0x04)
+            }
+        }
         _mint(admin, 1);
     }
 
@@ -46,6 +57,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
         override
         whenNotPartialPaused
         whenNotPaused
+        notBlackListed(msg.sender)
         notBlackListed(to)
         returns (bool)
     {
@@ -65,6 +77,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
         override
         whenNotPartialPaused
         whenNotPaused
+        notBlackListed(msg.sender)
         notBlackListed(from)
         notBlackListed(to)
         returns (bool)
@@ -83,6 +96,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
         public
         override
         whenNotPaused
+        notBlackListed(msg.sender)
         notBlackListed(spender)
         returns (bool)
     {
@@ -124,7 +138,10 @@ contract HstkToken is ERC20, Pausable, BlackListed {
      * - Contract must not be paused
      * - `account` cannot be the zero address
      */
-    function burn(address account, uint value) external whenNotPaused zeroAddress(account) onlyAdmin {
+    function burn(
+        address account,
+        uint value
+    ) external whenNotPaused zeroAddress(account) onlyAdmin {
         _burn(account, value);
     }
 
@@ -140,13 +157,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
     function recoverToken(
         address asset,
         address to
-    )
-        external
-        whenNotPaused
-        onlyAdmin
-        zeroAddress(asset)
-        zeroAddress(to)
-    {
+    ) external whenNotPaused onlyAdmin zeroAddress(asset) zeroAddress(to) {
         IERC20 interfaceAsset = IERC20(asset);
         uint balance = interfaceAsset.balanceOf(address(this));
 
