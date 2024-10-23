@@ -35,7 +35,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
     constructor(
         address admin
     ) ERC20("Hstk Token", "HSTK") Pausable() BlackListed(admin) {
-        // replaced with assembly for cheaper zero check
+        // TODO: Add this check in a function in utils to be used 
         assembly {
             if iszero(shl(96, admin)) {
                 mstore(0x00, 0x1326d6d5) // `IsZeroAddress()`
