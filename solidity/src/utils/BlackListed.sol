@@ -2,14 +2,14 @@
 pragma solidity ^0.8.20;
 
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
-import { AssemblyFunc } from "./AssemblyFunc.sol";
+import { UtilFunctions } from "./UtilFunctions.sol";
 
 /**
  * @title BlackListed
  * @dev Implements blacklisting functionality for addresses
  * This contract allows an admin to blacklist and unblacklist addresses
  */
-abstract contract BlackListed is Context, AssemblyFunc {
+abstract contract BlackListed is Context, UtilFunctions {
     // Errors
     error AccountBlackListed(address account);
     error AdminRestricted();
