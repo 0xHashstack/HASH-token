@@ -19,9 +19,6 @@ contract HstkToken is ERC20, Pausable, BlackListed {
     /// @dev Error thrown when attempting to mint tokens beyond the max supply
     error MAX_SUPPLY_EXCEEDED();
 
-    /// @dev Error thrown when address is zero
-    error IsZeroAddress();
-
     /// @dev Event emitted when tokens are rescued from the contract
     event TOKEN_RESCUED(address indexed token, address indexed to, uint amount);
 
@@ -34,14 +31,12 @@ contract HstkToken is ERC20, Pausable, BlackListed {
      */
     constructor(
         address admin
-    ) ERC20("Hstk Token", "HSTK") Pausable() BlackListed(admin) {
-        // TODO: Add this check in a function in utils to be used 
-        assembly {
-            if iszero(shl(96, admin)) {
-                mstore(0x00, 0x1326d6d5) // `IsZeroAddress()`
-                revert(0x1c, 0x04)
-            }
-        }
+    )
+        ERC20("Hstk Token", "HSTK")
+        Pausable()
+        BlackListed(admin)
+        zeroAddress(admin)
+    {
         _mint(admin, 1);
     }
 
@@ -57,7 +52,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
         override
         whenNotPartialPaused
         whenNotPaused
-        notBlackListed(msg.sender)
+        notBlackListed(_msgSender())
         notBlackListed(to)
         returns (bool)
     {
@@ -77,7 +72,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
         override
         whenNotPartialPaused
         whenNotPaused
-        notBlackListed(msg.sender)
+        notBlackListed(_msgSender())
         notBlackListed(from)
         notBlackListed(to)
         returns (bool)
@@ -96,7 +91,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
         public
         override
         whenNotPaused
-        notBlackListed(msg.sender)
+        notBlackListed(_msgSender())
         notBlackListed(spender)
         returns (bool)
     {
