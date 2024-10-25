@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import { Test, console, StdInvariant } from "forge-std/Test.sol";
-import { HstkToken } from "../src/HSTK.sol";
+import {Test, console} from "forge-std/Test.sol";
+import {HstkToken} from "../src/HSTK.sol";
 
-contract TestHSTK is StdInvariant, Test {
+contract TestHSTK is Test {
     // Constants
-    uint private constant TOTAL_SUPPLY = 9_000_000_000;
+    uint256 private constant TOTAL_SUPPLY = 9_000_000_000;
 
     error InvalidOperation();
 
@@ -27,21 +27,21 @@ contract TestHSTK is StdInvariant, Test {
     function testInitialization() public view {
         // Test token name
         bytes memory tokenName1 = abi.encode(hstkToken.name());
-        bytes memory tokenName2 = abi.encode('Hstk Token');
-        assertEq(tokenName1, tokenName2, 'Token name mismatch');
+        bytes memory tokenName2 = abi.encode("HSTK Token");
+        assertEq(tokenName1, tokenName2, "Token name mismatch");
 
         // Test token symbol
         bytes memory tokenSymbol = abi.encode(hstkToken.symbol());
-        bytes memory tokenSymbol2 = abi.encode('HSTK');
-        assertEq(tokenSymbol, tokenSymbol2, 'Token symbol mismatch');
+        bytes memory tokenSymbol2 = abi.encode("HSTK");
+        assertEq(tokenSymbol, tokenSymbol2, "Token symbol mismatch");
 
         // Test other initial values
-        assertEq(hstkToken.decimals(), 18, 'Token decimal mismatch');
-        assertEq(hstkToken.balanceOf(admin), 1, 'Initial admin balance mismatch');
-        assertEq(hstkToken.totalSupply(), 1, 'Initial total supply mismatch');
+        assertEq(hstkToken.decimals(), 18, "Token decimal mismatch");
+        assertEq(hstkToken.balanceOf(admin), 0, "Initial admin balance mismatch");
+        assertEq(hstkToken.totalSupply(), 0, "Initial total supply mismatch");
     }
 
-    function testFuzzMintWithAdmin(uint amount) public {
+    function testFuzzMintWithAdmin(uint256 amount) public {
         vm.assume(amount < TOTAL_SUPPLY && amount > 0);
 
         vm.startPrank(admin);
@@ -50,10 +50,10 @@ contract TestHSTK is StdInvariant, Test {
         hstkToken.mint(user1, amount);
         vm.stopPrank();
 
-        assertEq(hstkToken.balanceOf(user1), amount, 'Minted amount mismatch');
+        assertEq(hstkToken.balanceOf(user1), amount, "Minted amount mismatch");
     }
 
-    function testFuzzMintWithAdminWhenPaused(uint amount) public {
+    function testFuzzMintWithAdminWhenPaused(uint256 amount) public {
         vm.assume(amount < TOTAL_SUPPLY && amount > 0);
 
         vm.prank(admin);
@@ -63,7 +63,7 @@ contract TestHSTK is StdInvariant, Test {
         hstkToken.mint(user1, amount);
     }
 
-    function testFuzzMintWithNonAdmin(uint amount) public {
+    function testFuzzMintWithNonAdmin(uint256 amount) public {
         vm.assume(amount < TOTAL_SUPPLY && amount > 0);
 
         vm.prank(user1);
@@ -72,13 +72,13 @@ contract TestHSTK is StdInvariant, Test {
     }
 
     function testFuzzMintMaxSupply() public {
-        uint amount = TOTAL_SUPPLY - 1;
+        uint256 amount = TOTAL_SUPPLY - 1;
 
         vm.prank(admin);
         hstkToken.mint(user1, amount);
     }
 
-    function testFuzzTransferToken(uint amount) public {
+    function testFuzzTransferToken(uint256 amount) public {
         vm.assume(amount < TOTAL_SUPPLY && amount > 0);
 
         vm.prank(admin);
@@ -88,7 +88,7 @@ contract TestHSTK is StdInvariant, Test {
         hstkToken.transfer(user2, amount);
     }
 
-    function testFuzzTransferWhenPaused(uint amount) public {
+    function testFuzzTransferWhenPaused(uint256 amount) public {
         vm.assume(amount < TOTAL_SUPPLY && amount > 0);
 
         vm.startPrank(admin);
@@ -101,7 +101,7 @@ contract TestHSTK is StdInvariant, Test {
         hstkToken.transfer(user2, amount);
     }
 
-    function testFuzzTransferWhenPartialPaused(uint amount) public {
+    function testFuzzTransferWhenPartialPaused(uint256 amount) public {
         vm.assume(amount < TOTAL_SUPPLY && amount > 0);
 
         vm.startPrank(admin);
@@ -114,7 +114,7 @@ contract TestHSTK is StdInvariant, Test {
         hstkToken.transfer(user2, amount);
     }
 
-    function testFuzzTransferToBlackListed(uint amount) public {
+    function testFuzzTransferToBlackListed(uint256 amount) public {
         vm.assume(amount > 0 && amount < TOTAL_SUPPLY);
 
         vm.startPrank(admin);
@@ -128,7 +128,7 @@ contract TestHSTK is StdInvariant, Test {
         vm.stopPrank();
     }
 
-    function testFuzzApproveToBlackListed(uint amount) public {
+    function testFuzzApproveToBlackListed(uint256 amount) public {
         vm.assume(amount > 0 && amount < TOTAL_SUPPLY);
 
         vm.prank(admin);
@@ -145,12 +145,12 @@ contract TestHSTK is StdInvariant, Test {
         hstkToken.transferFrom(user1, blacklistedAccount, amount);
     }
 
-    function testFuzzSendEthToContract(uint amount) public {
+    function testFuzzSendEthToContract(uint256 amount) public {
         vm.deal(user1, amount);
         assertEq(address(user1).balance, amount);
         vm.prank(user1);
         vm.expectRevert();
-        (bool success,) = address(hstkToken).call{ value: amount }('');
+        (bool success,) = address(hstkToken).call{value: amount}("");
         assertEq(address(user1).balance, amount);
         assertEq(address(hstkToken).balance, 0);
     }

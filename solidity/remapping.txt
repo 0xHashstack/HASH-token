@@ -1,2 +1,6 @@
 @openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
+<<<<<<< HEAD
 @forge-std/=lib/forge-std/src/
+=======
+@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/ in remappings.txt
+>>>>>>> feature-add-multisig
