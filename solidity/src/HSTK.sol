@@ -29,8 +29,14 @@ contract HstkToken is ERC20, Pausable, BlackListed {
      * @dev Constructor that gives the admin the initial supply of tokens
      * @param admin Address of the admin account
      */
-    constructor(address admin) ERC20('Hstk Token', 'HSTK') Pausable() BlackListed(admin) {
-        require(admin != address(0), 'Address cannot be zero address');
+    constructor(
+        address admin
+    )
+        ERC20("Hstk Token", "HSTK")
+        Pausable()
+        BlackListed(admin)
+        zeroAddress(admin)
+    {
         _mint(admin, 1);
     }
 
@@ -46,6 +52,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
         override
         whenNotPartialPaused
         whenNotPaused
+        notBlackListed(_msgSender())
         notBlackListed(to)
         returns (bool)
     {
@@ -65,6 +72,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
         override
         whenNotPartialPaused
         whenNotPaused
+        notBlackListed(_msgSender())
         notBlackListed(from)
         notBlackListed(to)
         returns (bool)
@@ -83,6 +91,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
         public
         override
         whenNotPaused
+        notBlackListed(_msgSender())
         notBlackListed(spender)
         returns (bool)
     {
@@ -124,7 +133,10 @@ contract HstkToken is ERC20, Pausable, BlackListed {
      * - Contract must not be paused
      * - `account` cannot be the zero address
      */
-    function burn(address account, uint value) external whenNotPaused zeroAddress(account) onlyAdmin {
+    function burn(
+        address account,
+        uint value
+    ) external whenNotPaused zeroAddress(account) onlyAdmin {
         _burn(account, value);
     }
 
@@ -140,13 +152,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
     function recoverToken(
         address asset,
         address to
-    )
-        external
-        whenNotPaused
-        onlyAdmin
-        zeroAddress(asset)
-        zeroAddress(to)
-    {
+    ) external whenNotPaused onlyAdmin zeroAddress(asset) zeroAddress(to) {
         IERC20 interfaceAsset = IERC20(asset);
         uint balance = interfaceAsset.balanceOf(address(this));
 

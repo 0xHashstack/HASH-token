@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import { Context } from '@openzeppelin/contracts/utils/Context.sol';
+import { Context } from "@openzeppelin/contracts/utils/Context.sol";
+import { UtilFunctions } from "./UtilFunctions.sol";
 
 /**
  * @title BlackListed
  * @dev Implements blacklisting functionality for addresses
  * This contract allows an admin to blacklist and unblacklist addresses
  */
-abstract contract BlackListed is Context {
+abstract contract BlackListed is Context, UtilFunctions {
     // Errors
-    error CallerZeroAddress();
     error AccountBlackListed(address account);
     error AdminRestricted();
     error InvalidOperation();
@@ -29,17 +29,6 @@ abstract contract BlackListed is Context {
      */
     constructor(address _admin) {
         admin = _admin;
-    }
-
-    /**
-     * @dev Modifier to check if an address is the zero address
-     * @param _check The address to check
-     */
-    modifier zeroAddress(address _check) {
-        if (_check == address(0)) {
-            revert CallerZeroAddress();
-        }
-        _;
     }
 
     /**
