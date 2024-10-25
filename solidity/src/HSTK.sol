@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import { Pausable } from './utils/Pausable.sol';
-import { ERC20 } from '@openzeppelin/contracts/token/ERC20/ERC20.sol';
-import { SafeERC20 } from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
-import { IERC20 } from '@openzeppelin/contracts/interfaces/IERC20.sol';
-import { BlackListed } from './utils/BlackListed.sol';
+import {Pausable} from "./utils/Pausable.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {BlackListed} from "./utils/BlackListed.sol";
 
 /**
  * @title HstkToken
@@ -20,32 +20,28 @@ contract HstkToken is ERC20, Pausable, BlackListed {
     error MAX_SUPPLY_EXCEEDED();
 
     /// @dev Event emitted when tokens are rescued from the contract
-    event TOKEN_RESCUED(address indexed token, address indexed to, uint amount);
+    event TOKEN_RESCUED(address indexed token, address indexed to, uint256 amount);
 
     /// @dev The maximum total supply of tokens
-    uint private constant TOTAL_SUPPLY = 9_000_000_000;
+    uint256 private constant MAX_SUPPLY = 9_000_000_000;
 
     /**
      * @dev Constructor that gives the admin the initial supply of tokens
-     * @param admin Address of the admin account
+     * @param _multisig Address of the multiSig account
      */
-    constructor(address admin) ERC20('Hstk Token', 'HSTK') Pausable() BlackListed(admin) {
-        require(admin != address(0), 'Address cannot be zero address');
-        _mint(admin, 1);
+    constructor(address _multisig) ERC20("HSTK Token", "HSTK") Pausable() BlackListed(_multisig) {
+        require(_multisig != address(0), "Address cannot be zero address");
     }
 
     /**
      * @dev See {ERC20-transfer}.
-     * Added whenNotPartialPaused and whenNotPaused modifiers
+     * Added partialPausedOff and pausedOff modifiers
      */
-    function transfer(
-        address to,
-        uint value
-    )
+    function transfer(address to, uint256 value)
         public
         override
-        whenNotPartialPaused
-        whenNotPaused
+        partialPausedOff
+        pausedOff
         notBlackListed(to)
         returns (bool)
     {
@@ -54,17 +50,13 @@ contract HstkToken is ERC20, Pausable, BlackListed {
 
     /**
      * @dev See {ERC20-transferFrom}.
-     * Added whenNotPartialPaused and whenNotPaused modifiers
+     * Added partialPausedOff and pausedOff modifiers
      */
-    function transferFrom(
-        address from,
-        address to,
-        uint value
-    )
+    function transferFrom(address from, address to, uint256 value)
         public
         override
-        whenNotPartialPaused
-        whenNotPaused
+        partialPausedOff
+        pausedOff
         notBlackListed(from)
         notBlackListed(to)
         returns (bool)
@@ -74,18 +66,9 @@ contract HstkToken is ERC20, Pausable, BlackListed {
 
     /**
      * @dev See {ERC20-approve}.
-     * Added whenNotPaused modifier
+     * Added pausedOff modifier
      */
-    function approve(
-        address spender,
-        uint value
-    )
-        public
-        override
-        whenNotPaused
-        notBlackListed(spender)
-        returns (bool)
-    {
+    function approve(address spender, uint256 value) public override pausedOff notBlackListed(spender) returns (bool) {
         return super.approve(spender, value);
     }
 
@@ -97,19 +80,15 @@ contract HstkToken is ERC20, Pausable, BlackListed {
      * - Can only be called by the admin
      * - Contract must not be paused
      * - `account` cannot be the zero address
-     * - Total supply after minting must not exceed TOTAL_SUPPLY
+     * - Total supply after minting must not exceed MAX_SUPPLY
      */
-    function mint(
-        address account,
-        uint value
-    )
+    function mint(address account, uint256 value)
         external
-        whenNotPaused
-        zeroAddress(account)
-        onlyAdmin
+        pausedOff
+        onlyMultiSig
         notBlackListed(account)
     {
-        if (totalSupply() + value > TOTAL_SUPPLY) {
+        if (totalSupply() + value > MAX_SUPPLY) {
             revert MAX_SUPPLY_EXCEEDED();
         }
         _mint(account, value);
@@ -124,7 +103,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
      * - Contract must not be paused
      * - `account` cannot be the zero address
      */
-    function burn(address account, uint value) external whenNotPaused zeroAddress(account) onlyAdmin {
+    function burn(address account, uint256 value) external pausedOff onlyMultiSig {
         _burn(account, value);
     }
 
@@ -137,21 +116,14 @@ contract HstkToken is ERC20, Pausable, BlackListed {
      * - `asset` and `to` cannot be the zero address
      * @notice This function can be used to recover any ERC20 tokens sent to this contract by mistake
      */
-    function recoverToken(
-        address asset,
-        address to
-    )
+    function recoverToken(address asset, address to)
         external
-        whenNotPaused
-        onlyAdmin
-        zeroAddress(asset)
-        zeroAddress(to)
+        pausedOff
+        onlyMultiSig
     {
         IERC20 interfaceAsset = IERC20(asset);
-        uint balance = interfaceAsset.balanceOf(address(this));
-
+        uint256 balance = interfaceAsset.balanceOf(address(this));
         interfaceAsset.safeTransfer(to, balance);
-
         emit TOKEN_RESCUED(asset, to, balance);
     }
 
@@ -161,7 +133,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
      * - Can only be called by the admin
      * - The contract must not be paused
      */
-    function pause() external onlyAdmin {
+    function pause() external onlyMultiSig {
         _pause();
     }
 
@@ -171,7 +143,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
      * - Can only be called by the admin
      * - The contract must be paused
      */
-    function unpause() external onlyAdmin {
+    function unpause() external onlyMultiSig {
         _unpause();
     }
 
@@ -181,7 +153,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
      * - Can only be called by the admin
      * - The contract must not be partially paused
      */
-    function partialPause() external onlyAdmin {
+    function partialPause() external onlyMultiSig {
         _partialPause();
     }
 
@@ -191,7 +163,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
      * - Can only be called by the admin
      * - The contract must be partially paused
      */
-    function partialUnPause() external onlyAdmin {
+    function partialUnPause() external onlyMultiSig {
         _partialUnpause();
     }
 }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import { Context } from '@openzeppelin/contracts/utils/Context.sol';
+import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 
 /**
  * @title BlackListed
@@ -21,25 +21,14 @@ abstract contract BlackListed is Context {
 
     // State variables
     mapping(address => bool) private blackListedAccounts;
-    address public admin;
+    address public immutable multiSig;
 
     /**
      * @dev Constructor that sets the admin address
-     * @param _admin The address of the admin
+     * @param _multiSig The address of the admin
      */
-    constructor(address _admin) {
-        admin = _admin;
-    }
-
-    /**
-     * @dev Modifier to check if an address is the zero address
-     * @param _check The address to check
-     */
-    modifier zeroAddress(address _check) {
-        if (_check == address(0)) {
-            revert CallerZeroAddress();
-        }
-        _;
+    constructor(address _multiSig) {
+        multiSig = _multiSig;
     }
 
     /**
@@ -56,8 +45,8 @@ abstract contract BlackListed is Context {
     /**
      * @dev Modifier to restrict access to admin only
      */
-    modifier onlyAdmin() {
-        if (_msgSender() != admin) {
+    modifier onlyMultiSig() {
+        if (_msgSender() != multiSig) {
             revert AdminRestricted();
         }
         _;
@@ -70,7 +59,7 @@ abstract contract BlackListed is Context {
      * - Can only be called by the admin
      * - `account` cannot be the zero address
      */
-    function blackListAccount(address account) external zeroAddress(account) onlyAdmin {
+    function blackListAccount(address account) external onlyMultiSig {
         blackListedAccounts[account] = true;
         emit NewAccountBlackListed(account);
     }
@@ -81,20 +70,9 @@ abstract contract BlackListed is Context {
      * Requirements:
      * - Can only be called by the admin
      */
-    function removeFromBlackListAccount(address account) external onlyAdmin {
+    function removeFromBlackListAccount(address account) external onlyMultiSig {
         blackListedAccounts[account] = false;
         emit RemovedAccountBlackListed(account);
-    }
-
-    /**
-     * @dev Transfers the admin role to a new address
-     * @param account The address of the new admin
-     * Requirements:
-     * - Can only be called by the current admin
-     * - `account` cannot be the zero address
-     */
-    function transferAdminRole(address account) external onlyAdmin zeroAddress(account) {
-        admin = account;
     }
 
     /**

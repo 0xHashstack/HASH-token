@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.20;
 
-import { Context } from '@openzeppelin/contracts/utils/Context.sol';
+import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 
 /**
  * @dev Contract module which allows children to implement an emergency stop
  * mechanism that can be triggered by an authorized account.
  *
  * This module is used through inheritance. It will make available the
- * modifiers `whenNotPaused` and `whenPaused`, which can be applied to
+ * modifiers `pausedOff` and `pausedOn`, which can be applied to
  * the functions of your contract. Note that they will not be pausable by
  * simply including this module, only once the modifiers are put in place.
  */
@@ -38,14 +37,24 @@ abstract contract Pausable is Context {
     event PartialUnpaused(address account);
 
     /**
-     * @dev The operation failed because the contract is paused.
+     * @dev The operation failed because the contract is isPaused.
      */
     error EnforcedPause();
 
     /**
-     * @dev The operation failed because the contract is not paused.
+     * @dev The operation failed because the contract is isPaused.
+     */
+    error EnforcedPartialPause();
+
+    /**
+     * @dev The operation failed because the contract is not isPaused.
      */
     error ExpectedPause();
+
+    /**
+     * @dev The operation failed because the contract is not isPaused.
+     */
+    error ExpectedPartialPause();
 
     /**
      * @dev Initializes the contract in unpaused state.
@@ -56,100 +65,100 @@ abstract contract Pausable is Context {
     }
 
     /**
-     * @dev Modifier to make a function callable only when the contract is not paused.
+     * @dev Modifier to make a function callable only when the contract is not isPaused.
      *
      * Requirements:
      *
-     * - The contract must not be paused.
+     * - The contract must not be isPaused.
      */
-    modifier whenNotPaused() {
+    modifier pausedOff() {
         _requireNotPaused();
         _;
     }
 
     /**
-     * @dev Modifier to make a function callable only when the contract is not paused.
+     * @dev Modifier to make a function callable only when the contract is not isPaused.
      *
      * Requirements:
      *
-     * - The contract must not be paused.
+     * - The contract must not be isPaused.
      */
-    modifier whenNotPartialPaused() {
+    modifier partialPausedOff() {
         _requireNotPartialPaused();
         _;
     }
 
     /**
-     * @dev Modifier to make a function callable only when the contract is paused.
+     * @dev Modifier to make a function callable only when the contract is isPaused.
      *
      * Requirements:
      *
-     * - The contract must be paused.
+     * - The contract must be isPaused.
      */
-    modifier whenPaused() {
+    modifier pausedOn() {
         _requirePaused();
         _;
     }
     /**
-     * @dev Modifier to make a function callable only when the contract is paused.
+     * @dev Modifier to make a function callable only when the contract is isPaused.
      *
      * Requirements:
      *
-     * - The contract must be paused.
+     * - The contract must be isPaused.
      */
 
-    modifier whenPartialPaused() {
+    modifier partialPausedOn() {
         _requireNotPartialPaused();
         _;
     }
 
     /**
-     * @dev Returns true if the contract is paused, and false otherwise.
+     * @dev Returns true if the contract is isPaused, and false otherwise.
      */
-    function paused() public view virtual returns (bool) {
+    function isPaused() public view virtual returns (bool) {
         return _paused;
     }
 
     /**
-     * @dev Returns true if the contract is paused, and false otherwise.
+     * @dev Returns true if the contract is isPaused, and false otherwise.
      */
     function partialPaused() public view virtual returns (bool) {
         return _partialPaused;
     }
 
     /**
-     * @dev Throws if the contract is paused.
+     * @dev Throws if the contract is isPaused.
      */
     function _requireNotPaused() internal view virtual {
-        if (paused()) {
+        if (isPaused()) {
             revert EnforcedPause();
         }
     }
     /**
-     * @dev Throws if the contract is paused.
+     * @dev Throws if the contract is isPaused.
      */
 
     function _requireNotPartialPaused() internal view virtual {
         if (partialPaused()) {
-            revert EnforcedPause();
+            revert EnforcedPartialPause();
         }
     }
 
     /**
-     * @dev Throws if the contract is not paused.
+     * @dev Throws if the contract is not isPaused.
      */
     function _requirePaused() internal view virtual {
-        if (!paused()) {
+        if (!isPaused()) {
             revert ExpectedPause();
         }
     }
     /**
-     * @dev Throws if the contract is not paused.
+     * @dev Throws if the contract is not isPaused.
      */
 
     function _requirePartialPaused() internal view virtual {
         if (!partialPaused()) {
-            revert ExpectedPause();
+            revert ExpectedPartialPause();
         }
     }
 
@@ -158,9 +167,9 @@ abstract contract Pausable is Context {
      *
      * Requirements:
      *
-     * - The contract must not be paused.
+     * - The contract must not be isPaused.
      */
-    function _pause() internal virtual whenNotPaused {
+    function _pause() internal virtual pausedOff {
         _paused = true;
         emit Paused(_msgSender());
     }
@@ -170,9 +179,9 @@ abstract contract Pausable is Context {
      *
      * Requirements:
      *
-     * - The contract must not be paused and partial paused.
+     * - The contract must not be isPaused and partial isPaused.
      */
-    function _partialPause() internal virtual whenNotPaused whenNotPartialPaused {
+    function _partialPause() internal virtual pausedOff partialPausedOff {
         _partialPaused = true;
         emit PartialPaused(_msgSender());
     }
@@ -182,9 +191,9 @@ abstract contract Pausable is Context {
      *
      * Requirements:
      *
-     * - The contract must be paused.
+     * - The contract must be isPaused.
      */
-    function _unpause() internal virtual whenPaused {
+    function _unpause() internal virtual pausedOn {
         _paused = false;
         emit Unpaused(_msgSender());
     }
@@ -193,10 +202,10 @@ abstract contract Pausable is Context {
      *
      * Requirements:
      *
-     * - The contract must be paused.
+     * - The contract must be isPaused.
      */
 
-    function _partialUnpause() internal virtual whenNotPaused whenPartialPaused {
+    function _partialUnpause() internal virtual pausedOff partialPausedOn {
         _partialPaused = false;
         emit PartialUnpaused(_msgSender());
     }
