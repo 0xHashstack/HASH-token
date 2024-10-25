@@ -13,8 +13,8 @@ contract DeployHSTK is Script {
     ERC1967Proxy multiSig;
 
     function deployMultiSig() public returns (address) {
-        multiSigContract = new MultiSigContract();
-        bytes memory multiSigCalldata = abi.encodeWithSelector(MultiSigContract.initialize.selector, admin);
+        multiSigContract = new MultiSigWallet();
+        bytes memory multiSigCalldata = abi.encodeWithSelector(MultiSigWallet.initialize.selector, admin);
 
         multiSig = new ERC1967Proxy(address(multiSigContract), multiSigCalldata);
 
