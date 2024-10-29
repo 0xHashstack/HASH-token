@@ -347,11 +347,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
 
     function _call(bytes4 functionSelector, bytes memory callData) internal {
         // solhint-disable-next-line avoid-low-level-calls
-        address tokenContract;
-        assembly {
-            tokenContract := sload(TOKEN_CONTRACT_SLOT)
-            
-        }
+        address tokenContract = tokenContract();
         (bool success,) = tokenContract.call(abi.encodePacked(functionSelector, callData));
         if (!success) {
             // If the call failed, we revert with the propagated error message.
