@@ -1,4 +1,4 @@
-# MultisigWallet Smart Contract Documentation
+# MultisigWallet
 
 ## Overview
 
