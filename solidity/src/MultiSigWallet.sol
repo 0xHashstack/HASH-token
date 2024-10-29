@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import {AccessRegistry} from "./utils/AccessRegistry.sol";
+import {AccessRegistry} from "./AccessRegistry/AccessRegistry.sol";
 import {UUPSUpgradeable} from "./utils/UUPSUpgradeable.sol";
 import {Initializable} from "./utils/Initializable.sol";
 
