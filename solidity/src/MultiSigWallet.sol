@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.4;
 
 import {AccessRegistry} from "./utils/AccessRegistry.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {UUPSUpgradeable} from "./utils/UUPSUpgradeable.sol";
+import {Initializable} from "./utils/Initializable.sol";
 
 /**
  * @title MultisigWallet
@@ -18,13 +18,32 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     uint256 private constant FALLBACK_ADMIN_WINDOW = 72 hours;
     uint256 private constant APPROVAL_THRESHOLD = 60; // 60% of signers must approve
 
-    bytes4 private constant MINT_SELECTOR = bytes4(keccak256("mint(address,uint256)"));
-    bytes4 private constant BURN_SELECTOR = bytes4(keccak256("burn(address,uint256)"));
-    bytes4 private constant PAUSE_SELECTOR = bytes4(keccak256("pause()"));
-    bytes4 private constant UNPAUSE_SELECTOR = bytes4(keccak256("unpause()"));
-    bytes4 private constant BLACKLIST_ACCOUNT_SELECTOR = bytes4(keccak256("blacklistAccount(address)"));
-    bytes4 private constant REMOVE_BLACKLIST_ACCOUNT_SELECTOR = bytes4(keccak256("removeBlacklistedAccount(address)"));
-    bytes4 private constant RECOVER_TOKENS_SELECTOR = bytes4(keccak256("recoverTokens(address,uint256)"));
+    // Pre-calculated function selectors
+
+    ///@dev bytes4(keccak256("mint(address,uint256)"))
+    bytes4 private constant MINT_SELECTOR = 0x40c10f19; 
+
+    ///@dev bytes4(keccak256("burn(address,uint256)"))
+    bytes4 private constant BURN_SELECTOR = 0x9dc29fac; 
+    
+    ///@dev bytes4(keccak256("pause()"))
+    bytes4 private constant PAUSE_SELECTOR = 0x8456cb59; 
+
+    ///@dev bytes4(keccak256("unpause()"))
+    bytes4 private constant UNPAUSE_SELECTOR = 0x3f4ba83a; 
+
+    ///@dev bytes4(keccak256("blacklistAccount(address)"))
+    bytes4 private constant BLACKLIST_ACCOUNT_SELECTOR = 0xd37b34d7; 
+
+    ///@dev bytes4(keccak256("removeBlacklistedAccount(address)"))
+    bytes4 private constant REMOVE_BLACKLIST_ACCOUNT_SELECTOR = 0xb24822c5;
+
+    ///@dev bytes4(keccak256("recoverToken(address,address)"))
+    bytes4 private constant RECOVER_TOKENS_SELECTOR = 0xfeaea586;
+
+    ///@dev keccak256("HASH.token.hashstack.slot")
+    bytes32 private constant TOKEN_CONTRACT_SLOT = 0x2e621e7466541a75ed3060ecb302663cf45f24d90bdac97ddad9918834bc5d75;
+
 
     // ========== ENUMS ==========
     enum TransactionState {
@@ -49,7 +68,6 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     }
 
     // ========== STATE ==========
-    address public tokenContract;
     mapping(uint256 => Transaction) private transactions;
     mapping(uint256 => mapping(address => bool)) public hasApproved;
     mapping(uint256 => bool) private transactionIdExists;
@@ -64,7 +82,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     event TransactionExecuted(uint256 indexed txId);
     event TransactionExpired(uint256 indexed txId);
     event TransactionStateChanged(uint256 indexed txId, TransactionState newState);
-    event InsufficientApprovals(uint256 indexed txId,uint256 approvals);
+    event InsufficientApprovals(uint256 indexed txId, uint256 approvals);
 
     // ========== ERRORS ==========
     error UnauthorizedCall();
@@ -81,12 +99,14 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         _disableInitializers();
     }
 
-    function initialize(address _superAdmin, address _fallbackAdmin, address _tokenContract) external initializer 
-        notZeroAddress(_superAdmin) notZeroAddress(_fallbackAdmin) notZeroAddress(_tokenContract){
-
-        init(_superAdmin, _fallbackAdmin);
-        tokenContract = _tokenContract;
-
+    function initialize(address _superAdmin, address _fallbackAdmin, address _tokenContract)
+        external
+        initializer
+        notZeroAddress(_superAdmin)
+        notZeroAddress(_fallbackAdmin)
+        notZeroAddress(_tokenContract)
+    {
+        _initializeAccessRegistry(_superAdmin, _fallbackAdmin);
         // Set up function permissions
         // Fallback admin can only mint and burn
         fallbackAdminFunctions[MINT_SELECTOR] = true;
@@ -98,6 +118,10 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         signerFunctions[BLACKLIST_ACCOUNT_SELECTOR] = true;
         signerFunctions[REMOVE_BLACKLIST_ACCOUNT_SELECTOR] = true;
         signerFunctions[RECOVER_TOKENS_SELECTOR] = true;
+
+        assembly {
+            sstore(TOKEN_CONTRACT_SLOT, _tokenContract)
+        }
     }
 
     // ========== CORE MULTISIG LOGIC ==========
@@ -127,13 +151,14 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
 
         // Update state based on conditions
         TransactionState newState = transaction.state;
+        uint256 totalSigner = totalSigners();
 
         if (isExpired && ((transaction.approvals * 100) / totalSigner >= APPROVAL_THRESHOLD)) {
             newState = TransactionState.Queued;
-        }else if(isExpired){
-            emit InsufficientApprovals(txId,transaction.approvals);
+        } else if (isExpired) {
+            emit InsufficientApprovals(txId, transaction.approvals);
             newState = TransactionState.Expired;
-        }else if (transaction.approvals == 0) {
+        } else if (transaction.approvals == 0) {
             newState = TransactionState.Pending;
         } else if ((transaction.approvals * 100) / totalSigner >= APPROVAL_THRESHOLD) {
             newState = TransactionState.Queued;
@@ -150,7 +175,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     }
 
     function _createStandardTransaction(bytes4 _selector, bytes memory _params) private returns (uint256) {
-        if (_msgSender() == superAdmin) {
+        if (_msgSender() == superAdmin()) {
             _call(_selector, _params);
             return block.timestamp;
         }
@@ -158,19 +183,34 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     }
 
     // Helper functions now use the standard pattern
-    function createMintTransaction(address to, uint256 amount) external notZeroAddress(to) virtual returns (uint256) {
+    function createMintTransaction(address to, uint256 amount) external virtual notZeroAddress(to) returns (uint256) {
         return _createStandardTransaction(MINT_SELECTOR, abi.encode(to, amount));
     }
 
-    function createBurnTransaction(address from, uint256 amount) external notZeroAddress(from) virtual returns (uint256) {
+    function createBurnTransaction(address from, uint256 amount)
+        external
+        virtual
+        notZeroAddress(from)
+        returns (uint256)
+    {
         return _createStandardTransaction(BURN_SELECTOR, abi.encode(from, amount));
     }
 
-    function createBlacklistAccountTransaction(address account) external notZeroAddress(account) virtual returns (uint256) {
+    function createBlacklistAccountTransaction(address account)
+        external
+        virtual
+        notZeroAddress(account)
+        returns (uint256)
+    {
         return _createStandardTransaction(BLACKLIST_ACCOUNT_SELECTOR, abi.encode(account));
     }
 
-    function createBlacklistRemoveTransaction(address account) external notZeroAddress(account) virtual returns (uint256) {
+    function createBlacklistRemoveTransaction(address account)
+        external
+        virtual
+        notZeroAddress(account)
+        returns (uint256)
+    {
         return _createStandardTransaction(REMOVE_BLACKLIST_ACCOUNT_SELECTOR, abi.encode(account));
     }
 
@@ -182,12 +222,23 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         return _createStandardTransaction(UNPAUSE_SELECTOR, "");
     }
 
-    function createRecoverTokensTransaction(address token, address to) external notZeroAddress(token) notZeroAddress(to) virtual returns (uint256) {
+    function createRecoverTokensTransaction(address token, address to)
+        external
+        virtual
+        notZeroAddress(token)
+        notZeroAddress(to)
+        returns (uint256)
+    {
         return _createStandardTransaction(RECOVER_TOKENS_SELECTOR, abi.encode(token, to));
     }
 
-    function isValidTransaction(uint256 txId) public view returns (bool) {
-        return transactionIdExists[txId];
+    function isValidTransaction(uint256 txId) public view returns(bool flag){
+        assembly{
+            mstore(0x00,txId)
+            mstore(0x20,transactionIdExists.slot)
+            let transactionKey := keccak256(0x00,0x40)
+            flag := sload(transactionKey)
+        }
     }
 
     /**
@@ -197,7 +248,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
      */
     function createTransaction(bytes4 _selector, bytes memory _params) internal returns (uint256 txId) {
         bool isSigner = isSigner(_msgSender());
-        bool isFallbackAdmin = _msgSender() == fallbackAdmin;
+        bool isFallbackAdmin = _msgSender() == fallbackAdmin();
         bool isValidFunction = isSigner ? signerFunctions[_selector] : fallbackAdminFunctions[_selector];
 
         if (!isValidFunction || (!isSigner && !isFallbackAdmin)) {
@@ -296,6 +347,11 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
 
     function _call(bytes4 functionSelector, bytes memory callData) internal {
         // solhint-disable-next-line avoid-low-level-calls
+        address tokenContract;
+        assembly {
+            tokenContract := sload(TOKEN_CONTRACT_SLOT)
+            
+        }
         (bool success,) = tokenContract.call(abi.encodePacked(functionSelector, callData));
         if (!success) {
             // If the call failed, we revert with the propagated error message.
@@ -311,8 +367,9 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     // ========== VIEW FUNCTIONS ==========
 
     function getTransaction(uint256 txId)
-        external txExist(txId)
+        external
         view
+        txExist(txId)
         returns (
             address proposer,
             bytes4 selector,
@@ -344,5 +401,11 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
             revert TransactionIdNotExist();
         }
         _;
+    }
+
+    function tokenContract() public view returns(address token){
+        assembly{
+            token := sload(TOKEN_CONTRACT_SLOT)
+        }
     }
 }

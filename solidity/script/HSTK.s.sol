@@ -8,8 +8,8 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/Proxy/ERC1967/ERC1967Proxy.s
 
 contract DeployHSTK is Script {
     HstkToken public hashToken;
-    address superAdmin = address(0x14e7bBbDAc66753AcABcbf3DFDb780C6bD357d8E); // Replace this with Address of the owner
-    address fallbackAdmin = address(0x9CE26bf410428d57B3E28b8c3A59457A7C476B65);
+    address superAdmin = address(0x6C231C5e75e2b92B8e16508539b5431298dFF1E4); // Replace this with Address of the owner
+    address fallbackAdmin = address(0xE4f3B256c27cE7c76C5D16Ae81838aA14d8846C8);
     MultiSigWallet multiSigContract;
     ERC1967Proxy multiSig;
 
@@ -17,10 +17,10 @@ contract DeployHSTK is Script {
         multiSigContract = new MultiSigWallet();
         // bytes memory multiSigCalldata = abi.encodeWithSelector(MultiSigWallet.initialize.selector, admin);
 
-        multiSig = new ERC1967Proxy(address(multiSigContract),"");
+        multiSig = new ERC1967Proxy(address(multiSigContract), "");
         hashToken = new HstkToken(address(multiSig));
 
-        MultiSigWallet(address(multiSig)).initialize(superAdmin,fallbackAdmin,address(hashToken));
+        MultiSigWallet(address(multiSig)).initialize(superAdmin, fallbackAdmin, address(hashToken));
 
         vm.label(address(multiSig), "MultiSig");
         vm.label(address(hashToken), "HASH Token Address:");

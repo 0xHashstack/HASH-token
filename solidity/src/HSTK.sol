@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.4;
 
 import {Pausable} from "./utils/Pausable.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -23,14 +23,15 @@ contract HstkToken is ERC20, Pausable, BlackListed {
     event TOKEN_RESCUED(address indexed token, address indexed to, uint256 amount);
 
     /// @dev The maximum total supply of tokens
-    uint256 private constant MAX_SUPPLY = 9_000_000_000;
+    uint256 private constant MAX_SUPPLY = 9_000_000_000e18;
 
     /**
      * @dev Constructor that gives the admin the initial supply of tokens
      * @param _multisig Address of the multiSig account
      */
-    constructor(address _multisig) ERC20("HSTK Token", "HSTK") Pausable() BlackListed(_multisig) {
+    constructor(address _multisig) ERC20("MOCK", "HSTK") Pausable() BlackListed(_multisig) {
         require(_multisig != address(0), "Address cannot be zero address");
+        _mint(_multisig, 1 * 10 ** decimals());
     }
 
     /**
@@ -82,12 +83,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
      * - `account` cannot be the zero address
      * - Total supply after minting must not exceed MAX_SUPPLY
      */
-    function mint(address account, uint256 value)
-        external
-        pausedOff
-        onlyMultiSig
-        notBlackListed(account)
-    {
+    function mint(address account, uint256 value) external pausedOff onlyMultiSig notBlackListed(account) {
         if (totalSupply() + value > MAX_SUPPLY) {
             revert MAX_SUPPLY_EXCEEDED();
         }
@@ -116,11 +112,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
      * - `asset` and `to` cannot be the zero address
      * @notice This function can be used to recover any ERC20 tokens sent to this contract by mistake
      */
-    function recoverToken(address asset, address to)
-        external
-        pausedOff
-        onlyMultiSig
-    {
+    function recoverToken(address asset, address to) external pausedOff onlyMultiSig {
         IERC20 interfaceAsset = IERC20(asset);
         uint256 balance = interfaceAsset.balanceOf(address(this));
         interfaceAsset.safeTransfer(to, balance);
