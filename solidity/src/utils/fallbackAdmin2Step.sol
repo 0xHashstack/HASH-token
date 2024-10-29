@@ -70,9 +70,7 @@ abstract contract FallbackAdmin2Step {
     /// It stores the expiry timestamp of the two-step fallbackAdminship handover.
     uint256 private constant _HANDOVER_SLOT_SEED = 0x389a75e1;
 
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                     INTERNAL FUNCTIONS                     */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Override to return true to make `_initializeFallbackAdmin` prevent double-initialization.
     function _guardInitializeFallbackAdmin() internal pure virtual returns (bool guard) {}
