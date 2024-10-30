@@ -3,7 +3,6 @@ pragma solidity ^0.8.4;
 
 /// @notice Initializable mixin for the upgradeable contracts.
 abstract contract Initializable {
-
     /*                       CUSTOM ERRORS                        */
 
     /// @dev The contract is already initialized.
@@ -22,7 +21,6 @@ abstract contract Initializable {
         0xc7f505b2f371ae2175ee4913f4499e1f2633a7b5936321eed1cdaeb6115181d2;
 
     /*                          STORAGE                           */
-  
 
     /// @dev The default initializable slot is given by:
     /// `bytes32(~uint256(uint32(bytes4(keccak256("_INITIALIZABLE_SLOT")))))`.
@@ -30,8 +28,7 @@ abstract contract Initializable {
     /// Bits Layout:
     /// - [0]     `initializing`
     /// - [1..64] `initializedVersion`
-    bytes32 private constant _INITIALIZABLE_SLOT =
-        0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffbf601132;
+    bytes32 private constant _INITIALIZABLE_SLOT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffbf601132;
 
     /*                         OPERATIONS                         */
 

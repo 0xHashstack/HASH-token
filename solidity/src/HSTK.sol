@@ -43,6 +43,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
         override
         partialPausedOff
         pausedOff
+        notBlackListed(_msgSender())
         notBlackListed(to)
         returns (bool)
     {
@@ -58,6 +59,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
         override
         partialPausedOff
         pausedOff
+        notBlackListed(_msgSender())
         notBlackListed(from)
         notBlackListed(to)
         returns (bool)
@@ -69,7 +71,14 @@ contract HstkToken is ERC20, Pausable, BlackListed {
      * @dev See {ERC20-approve}.
      * Added pausedOff modifier
      */
-    function approve(address spender, uint256 value) public override pausedOff notBlackListed(spender) returns (bool) {
+    function approve(address spender, uint256 value)
+        public
+        override
+        pausedOff
+        notBlackListed(_msgSender())
+        notBlackListed(spender)
+        returns (bool)
+    {
         return super.approve(spender, value);
     }
 
