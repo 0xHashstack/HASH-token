@@ -4,7 +4,7 @@ out/
 
 # Ignores development broadcast logs
 !/broadcast
-/broadcast/*/31337/
+/broadcast/HSTK.s.sol/11155111/
 /broadcast/**/dry-run/
 
 # Docs
@@ -12,3 +12,5 @@ docs/
 
 # Dotenv file
 .env
+
+/broadcast

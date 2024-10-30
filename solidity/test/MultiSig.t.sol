@@ -19,17 +19,6 @@ contract MultiSigContractTest is Test {
         Executed
     }
 
-    // struct Transaction {
-    //     address from;
-    //     bytes4 functionSelector;
-    //     bytes parameters; // Store encoded parameters as bytes
-    //     uint256 noOfConformation;
-    //     TransactionStatus status;
-    //     uint256 activationTimeForSigners;
-    //     uint256 activationtimeForFallbackAdmin;
-    //     uint8 txType; // 1 for signers, 2 for fallback superAdmin
-    // }
-
     MultiSigWallet public multiSigImplementation;
     ERC1967Proxy public multiSig;
     MultiSigWallet public wrappedMultiSig;
@@ -49,6 +38,15 @@ contract MultiSigContractTest is Test {
     event TransactionExecuted(address executor, uint256 indexed txId);
     event TransactionCanceled_InSufficientConformation(address executor, uint256 conformation);
     event InsufficientApprovals(uint256 txId, uint256 approvals);
+    event SuperAdminshipTransferred(address indexed oldSuperAdmin, address indexed newSuperAdmin);
+    event SuperAdminshipHandoverRequested(address indexed pendingSuperAdmin);
+    event SuperAdminshipHandoverCanceled(address indexed pendingSuperAdmin);
+    event FallbackAdminshipTransferred(address indexed oldFallbackAdmin, address indexed newFallbackAdmin);
+    event FallbackAdminshipHandoverRequested(address indexed pendingFallbackAdmin);
+    event FallbackAdminshipHandoverCanceled(address indexed pendingFallbackAdmin);
+
+    error SuperAdmin2Step_NoHandoverRequest();
+
     // event TransactionStateChanged(uint txID )
 
     function setUp() public {
@@ -439,6 +437,65 @@ contract MultiSigContractTest is Test {
         assertEq(uint8(state_),3,"Transaction should be expired");
 
         
+    }
+
+    function test_SuperAdminTransfership(address account) public {
+        address pendingOwner = makeAddr("PendingOwner");
+        vm.assume(account != address(0));
+        assertEq(wrappedMultiSig.superAdmin(), superAdmin);
+        vm.expectEmit(true, false, false, false);
+        emit SuperAdminshipHandoverRequested(pendingOwner);
+        vm.prank(pendingOwner);
+        wrappedMultiSig.requestSuperAdminshipHandover();
+
+        // vm.expectEmit(true,false,false,false);
+        // emit SuperAdminshipHandoverCanceled(pendingOwner);
+
+        // vm.prank(pendingOwner);
+        // wrappedMultiSig.cancelSuperAdminshipHandover();
+
+        // vm.warp(block.timestamp + 48 hours + 1);
+
+        // vm.expectRevert(bytes4(keccak256("SuperAdmin2Step_NoHandoverRequest()")));
+
+        vm.expectEmit(true, true, false, false);
+        emit SuperAdminshipTransferred(superAdmin, pendingOwner);
+
+        vm.prank(superAdmin);
+        wrappedMultiSig.completeSuperAdminshipHandover(pendingOwner);
+
+        assertEq(wrappedMultiSig.superAdmin(), pendingOwner);
+    }
+
+    function test_fallbackAdminTransfership(address account) public {
+        address pendingOwner = makeAddr("PendingOwner");
+        vm.assume(account != address(0));
+        assertEq(wrappedMultiSig.fallbackAdmin(), fallbackAdmin);
+
+        vm.expectEmit(true, false, false, false);
+        emit FallbackAdminshipHandoverRequested(pendingOwner);
+
+        vm.prank(pendingOwner);
+        wrappedMultiSig.requestFallbackAdminshipHandover();
+
+        // vm.expectEmit(true,false,false,false);
+        // emit SuperAdminshipHandoverCanceled(pendingOwner);
+
+        // vm.prank(pendingOwner);
+        // wrappedMultiSig.cancelSuperAdminshipHandover();
+        // assertEq(wrappedMultiSig.fallbackAdmin(),fallbackAdmin);
+
+        // vm.warp(block.timestamp + 48 hours + 1);
+
+        // vm.expectRevert(bytes4(keccak256("FallbackAdmin2Step_NoHandoverRequest()")));
+
+        vm.expectEmit(true, true, false, false);
+        emit FallbackAdminshipTransferred(fallbackAdmin, pendingOwner);
+
+        vm.prank(fallbackAdmin);
+        wrappedMultiSig.completeFallbackAdminshipHandover(pendingOwner);
+
+        assertEq(wrappedMultiSig.fallbackAdmin(), pendingOwner);
     }
 }
 
