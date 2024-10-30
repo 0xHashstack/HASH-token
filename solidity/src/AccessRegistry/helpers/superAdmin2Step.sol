@@ -49,15 +49,13 @@ abstract contract SuperAdmin2Step {
 
     /*                          STORAGE                           */
 
-
     /// @dev The superAdmin slot is given by:
     /// `bytes32(~uint256(uint32(bytes4(keccak256("_SUPERADMIN_SLOT_NOT")))))`.
     /// It is intentionally chosen to be a high value
     /// to avoid collision with lower slots.
     /// The choice of manual storage layout is to enable compatibility
     /// with both regular and upgradeable contracts.
-    bytes32 internal constant _SUPERADMIN_SLOT =
-        0xffffffffffffffffffffffffffffffffffffffffffffffffffffffff74873927;
+    bytes32 internal constant _SUPERADMIN_SLOT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffff74873927;
 
     /// The superAdminship handover slot of `newSuperAdmin` is given by:
     /// ```
@@ -87,7 +85,7 @@ abstract contract SuperAdmin2Step {
                     mstore(0x00, 0xc95d9267) // `AlreadyInitialized()`.
                     revert(0x1c, 0x04)
                 }
-                
+
                 /// Clean the upper 96 bits.
                 newSuperAdmin := shr(96, shl(96, newSuperAdmin)) // Store the new value.
                 sstore(superAdminSlot, or(newSuperAdmin, shl(255, iszero(newSuperAdmin)))) // Emit the {SuperAdminshipTransferred} event.
@@ -220,12 +218,7 @@ abstract contract SuperAdmin2Step {
     }
 
     /// @dev Returns the expiry timestamp for the two-step superAdminship handover to `pendingSuperAdmin`.
-    function superAdminshipHandoverExpiresAt(address pendingSuperAdmin)
-        public
-        view
-        virtual
-        returns (uint256 result)
-    {
+    function superAdminshipHandoverExpiresAt(address pendingSuperAdmin) public view virtual returns (uint256 result) {
         /// @solidity memory-safe-assembly
         assembly {
             // Compute the handover slot.
@@ -236,7 +229,6 @@ abstract contract SuperAdmin2Step {
         }
     }
     /*                         MODIFIERS                          */
-
 
     /// @dev Marks a function as only callable by the superAdmin.
     modifier onlySuperAdmin() virtual {

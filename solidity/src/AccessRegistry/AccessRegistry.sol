@@ -2,12 +2,10 @@
 pragma solidity ^0.8.20;
 
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
-import {SuperAdmin2Step} from './helpers/superAdmin2Step.sol';
-import {FallbackAdmin2Step} from './helpers/fallbackAdmin2Step.sol';
+import {SuperAdmin2Step} from "./helpers/superAdmin2Step.sol";
+import {FallbackAdmin2Step} from "./helpers/fallbackAdmin2Step.sol";
 
-abstract contract AccessRegistry is Context , SuperAdmin2Step, FallbackAdmin2Step {
-
-
+abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step {
     event SignerAdded(address indexed newSigner);
     event SignerRemoved(address indexed removedSigner);
     event SignerRenounced(address indexed from, address indexed to);
@@ -16,7 +14,7 @@ abstract contract AccessRegistry is Context , SuperAdmin2Step, FallbackAdmin2Ste
 
     /// @dev `keccak256(bytes("totalSigner.hashstack.slot"))`.
     bytes32 private constant _TOTAL_SIGNER_SLOT = 0xe1a63a0c68b86a7b1309b59f9e0b0e0004b936ab8a2d2478258aa16889f6e227;
-    
+
     mapping(address => bool) private signers;
 
     function totalSigners() public view returns (uint256 _totalSigners) {
@@ -35,16 +33,15 @@ abstract contract AccessRegistry is Context , SuperAdmin2Step, FallbackAdmin2Ste
         _;
     }
 
-    function _guardInitializeSuperAdmin() internal pure virtual override returns(bool){
+    function _guardInitializeSuperAdmin() internal pure virtual override returns (bool) {
         return true;
     }
 
-    function _guardInitializeFallbackAdmin() internal pure virtual override returns(bool){
+    function _guardInitializeFallbackAdmin() internal pure virtual override returns (bool) {
         return true;
     }
 
     function _initializeAccessRegistry(address _superAdmin, address _fallbackAdmin) internal virtual {
-
         _initializeSuperAdmin(_superAdmin);
         _initializeFallbackAdmin(_fallbackAdmin);
         assembly {
@@ -74,7 +71,6 @@ abstract contract AccessRegistry is Context , SuperAdmin2Step, FallbackAdmin2Ste
         require(totalSigners() > 1, "ACL::wallet cannot be ownerless");
         signers[_signer] = false;
         assembly {
-
             // Emit SignerAdded event
             log2(
                 0x00, // start of data
@@ -103,7 +99,7 @@ abstract contract AccessRegistry is Context , SuperAdmin2Step, FallbackAdmin2Ste
             let signersKey := keccak256(0x00, 0x40)
             result := sload(signersKey)
         }
-    } 
+    }
 
     modifier onlySigner() {
         if (!isSigner(_msgSender())) {

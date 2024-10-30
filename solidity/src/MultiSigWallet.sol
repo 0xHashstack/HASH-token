@@ -21,19 +21,19 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     // Pre-calculated function selectors
 
     ///@dev bytes4(keccak256("mint(address,uint256)"))
-    bytes4 private constant MINT_SELECTOR = 0x40c10f19; 
+    bytes4 private constant MINT_SELECTOR = 0x40c10f19;
 
     ///@dev bytes4(keccak256("burn(address,uint256)"))
-    bytes4 private constant BURN_SELECTOR = 0x9dc29fac; 
-    
+    bytes4 private constant BURN_SELECTOR = 0x9dc29fac;
+
     ///@dev bytes4(keccak256("pause()"))
-    bytes4 private constant PAUSE_SELECTOR = 0x8456cb59; 
+    bytes4 private constant PAUSE_SELECTOR = 0x8456cb59;
 
     ///@dev bytes4(keccak256("unpause()"))
-    bytes4 private constant UNPAUSE_SELECTOR = 0x3f4ba83a; 
+    bytes4 private constant UNPAUSE_SELECTOR = 0x3f4ba83a;
 
     ///@dev bytes4(keccak256("blacklistAccount(address)"))
-    bytes4 private constant BLACKLIST_ACCOUNT_SELECTOR = 0xd37b34d7; 
+    bytes4 private constant BLACKLIST_ACCOUNT_SELECTOR = 0xd37b34d7;
 
     ///@dev bytes4(keccak256("removeBlacklistedAccount(address)"))
     bytes4 private constant REMOVE_BLACKLIST_ACCOUNT_SELECTOR = 0xb24822c5;
@@ -43,7 +43,6 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
 
     ///@dev keccak256("HASH.token.hashstack.slot")
     bytes32 private constant TOKEN_CONTRACT_SLOT = 0x2e621e7466541a75ed3060ecb302663cf45f24d90bdac97ddad9918834bc5d75;
-
 
     // ========== ENUMS ==========
     enum TransactionState {
@@ -232,11 +231,11 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         return _createStandardTransaction(RECOVER_TOKENS_SELECTOR, abi.encode(token, to));
     }
 
-    function isValidTransaction(uint256 txId) public view returns(bool flag){
-        assembly{
-            mstore(0x00,txId)
-            mstore(0x20,transactionIdExists.slot)
-            let transactionKey := keccak256(0x00,0x40)
+    function isValidTransaction(uint256 txId) public view returns (bool flag) {
+        assembly {
+            mstore(0x00, txId)
+            mstore(0x20, transactionIdExists.slot)
+            let transactionKey := keccak256(0x00, 0x40)
             flag := sload(transactionKey)
         }
     }
@@ -399,8 +398,8 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         _;
     }
 
-    function tokenContract() public view returns(address token){
-        assembly{
+    function tokenContract() public view returns (address token) {
+        assembly {
             token := sload(TOKEN_CONTRACT_SLOT)
         }
     }

@@ -6,7 +6,6 @@ pragma solidity ^0.8.4;
 /// - This implementation is NOT compatible with legacy OpenZeppelin proxies
 /// which do not store the implementation at `_ERC1967_IMPLEMENTATION_SLOT`.
 abstract contract UUPSUpgradeable {
-
     /*                       CUSTOM ERRORS                        */
 
     /// @dev The upgrade failed.
@@ -58,12 +57,7 @@ abstract contract UUPSUpgradeable {
     /// Emits a {Upgraded} event.
     ///
     /// Note: Passing in empty `data` skips the delegatecall to `newImplementation`.
-    function upgradeToAndCall(address newImplementation, bytes calldata data)
-        public
-        payable
-        virtual
-        onlyProxy
-    {
+    function upgradeToAndCall(address newImplementation, bytes calldata data) public payable virtual onlyProxy {
         _authorizeUpgrade(newImplementation);
         /// @solidity memory-safe-assembly
         assembly {
@@ -84,8 +78,7 @@ abstract contract UUPSUpgradeable {
                 // Forwards the `data` to `newImplementation` via delegatecall.
                 let m := mload(0x40)
                 calldatacopy(m, data.offset, data.length)
-                if iszero(delegatecall(gas(), newImplementation, m, data.length, codesize(), 0x00))
-                {
+                if iszero(delegatecall(gas(), newImplementation, m, data.length, codesize(), 0x00)) {
                     // Bubble up the revert if the call reverts.
                     returndatacopy(m, 0x00, returndatasize())
                     revert(m, returndatasize())

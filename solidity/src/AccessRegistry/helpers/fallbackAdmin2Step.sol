@@ -14,13 +14,13 @@ abstract contract FallbackAdmin2Step {
     /*                       CUSTOM ERRORS                        */
     /// @dev The caller is not authorized to call the function.
 
-    error  FallbackAdmin2Step_Unauthorized();
+    error FallbackAdmin2Step_Unauthorized();
 
     /// @dev The `newFallbackAdmin` cannot be the zero address.
     error NewFallbackAdminIsZeroAddress();
 
     /// @dev The `pendingFallbackAdmin` does not have a valid handover request.
-    error  FallbackAdmin2Step_NoHandoverRequest();
+    error FallbackAdmin2Step_NoHandoverRequest();
 
     /// @dev Cannot double-initialize.
     error FallbackAdmin2Step_AlreadyInitialized();
@@ -59,8 +59,7 @@ abstract contract FallbackAdmin2Step {
     /// to avoid collision with lower slots.
     /// The choice of manual storage layout is to enable compatibility
     /// with both regular and upgradeable contracts.
-    bytes32 internal constant _FALLBACKADMIN_SLOT =
-        0x0c5cbdbffd46dcbe9fc21989b921bb5428cb1a1f406b6975b85f43539eb5bba3;
+    bytes32 internal constant _FALLBACKADMIN_SLOT = 0x0c5cbdbffd46dcbe9fc21989b921bb5428cb1a1f406b6975b85f43539eb5bba3;
 
     /// The fallbackAdminship handover slot of `newFallbackAdmin` is given by:
     /// ```
@@ -91,7 +90,7 @@ abstract contract FallbackAdmin2Step {
                     mstore(0x00, 0xb8abd9e1) // `FallbackAdmin2Step_AlreadyInitialized()`.
                     revert(0x1c, 0x04)
                 }
-                
+
                 /// Clean the upper 96 bits.
                 newFallbackAdmin := shr(96, shl(96, newFallbackAdmin)) // Store the new value.
                 sstore(fallbackAdminSlot, or(newFallbackAdmin, shl(255, iszero(newFallbackAdmin)))) // Emit the {FallbackAdminshipTransferred} event.
