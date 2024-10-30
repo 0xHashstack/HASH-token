@@ -6,7 +6,7 @@ import {HstkToken} from "../src/HSTK.sol";
 
 contract TestHSTK is Test {
     // Constants
-    uint256 private constant TOTAL_SUPPLY = 9_000_000_000;
+    uint256 private constant TOTAL_SUPPLY = 9_000_000_000e18;
 
     error InvalidOperation();
 
@@ -42,7 +42,7 @@ contract TestHSTK is Test {
     }
 
     function testFuzzMintWithAdmin(uint256 amount) public {
-        vm.assume(amount < TOTAL_SUPPLY && amount > 0);
+        vm.assume(amount < TOTAL_SUPPLY -  10**18 && amount > 0);
 
         vm.startPrank(admin);
         hstkToken.pause();
@@ -72,14 +72,14 @@ contract TestHSTK is Test {
     }
 
     function testFuzzMintMaxSupply() public {
-        uint256 amount = TOTAL_SUPPLY - 1;
+        uint256 amount = TOTAL_SUPPLY - 1*10**18;
 
         vm.prank(admin);
         hstkToken.mint(user1, amount);
     }
 
     function testFuzzTransferToken(uint256 amount) public {
-        vm.assume(amount < TOTAL_SUPPLY && amount > 0);
+        vm.assume(amount < TOTAL_SUPPLY - 1*10**18 && amount > 0);
 
         vm.prank(admin);
         hstkToken.mint(user1, amount);
@@ -89,7 +89,7 @@ contract TestHSTK is Test {
     }
 
     function testFuzzTransferWhenPaused(uint256 amount) public {
-        vm.assume(amount < TOTAL_SUPPLY && amount > 0);
+        vm.assume(amount < TOTAL_SUPPLY-1*10**18 && amount > 0);
 
         vm.startPrank(admin);
         hstkToken.mint(user1, amount);
@@ -102,7 +102,7 @@ contract TestHSTK is Test {
     }
 
     function testFuzzTransferWhenPartialPaused(uint256 amount) public {
-        vm.assume(amount < TOTAL_SUPPLY && amount > 0);
+        vm.assume(amount < TOTAL_SUPPLY - 1* 10**18 && amount > 0);
 
         vm.startPrank(admin);
         hstkToken.mint(user1, amount);
@@ -115,7 +115,7 @@ contract TestHSTK is Test {
     }
 
     function testFuzzTransferToBlackListed(uint256 amount) public {
-        vm.assume(amount > 0 && amount < TOTAL_SUPPLY);
+        vm.assume(amount > 0 && amount < TOTAL_SUPPLY -10**18);
 
         vm.startPrank(admin);
         hstkToken.mint(user1, amount);
@@ -129,7 +129,7 @@ contract TestHSTK is Test {
     }
 
     function testFuzzApproveToBlackListed(uint256 amount) public {
-        vm.assume(amount > 0 && amount < TOTAL_SUPPLY);
+        vm.assume(amount > 0 && amount < TOTAL_SUPPLY - 10**18);
 
         vm.prank(admin);
         hstkToken.mint(user1, amount);
