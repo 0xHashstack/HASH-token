@@ -92,6 +92,8 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     error WindowExpired();
     error TransactionAlreadyExist();
     error TransactionIdNotExist();
+    error FunctionAlreadyExists();
+    error FunctionDoesNotExist();
 
     // ========== INITIALIZATION ==========
     constructor() {
@@ -143,24 +145,26 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
 
         // Check expiration based on transaction type
         if (transaction.isFallbackAdmin) {
-            isExpired = currentTime > transaction.proposedAt + FALLBACK_ADMIN_WINDOW;
-        } else if (transaction.firstSignAt != 0) {
-            isExpired = currentTime > transaction.firstSignAt + SIGNER_WINDOW;
+            uint256 fallbackAdminDeadline = transaction.proposedAt + FALLBACK_ADMIN_WINDOW;
+            uint256 deadline = transaction.firstSignAt != 0
+                ? min(fallbackAdminDeadline, transaction.firstSignAt + SIGNER_WINDOW)
+                : fallbackAdminDeadline;
+            isExpired = currentTime > deadline;
+        } else {
+            isExpired = currentTime > transaction.proposedAt + SIGNER_WINDOW;
         }
 
         // Update state based on conditions
         TransactionState newState = transaction.state;
         uint256 totalSigner = totalSigners();
 
-        if (isExpired && ((transaction.approvals * 100) / totalSigner >= APPROVAL_THRESHOLD)) {
-            newState = TransactionState.Queued;
-        } else if (isExpired) {
-            emit InsufficientApprovals(txId, transaction.approvals);
-            newState = TransactionState.Expired;
-        } else if (transaction.approvals == 0) {
-            newState = TransactionState.Pending;
-        } else if ((transaction.approvals * 100) / totalSigner >= APPROVAL_THRESHOLD) {
-            newState = TransactionState.Queued;
+        if (isExpired) {
+            if ((transaction.approvals * 100) / totalSigner >= APPROVAL_THRESHOLD) {
+                newState = TransactionState.Queued;
+            } else {
+                emit InsufficientApprovals(txId, transaction.approvals);
+                newState = TransactionState.Expired;
+            }
         } else if (transaction.firstSignAt != 0) {
             newState = TransactionState.Active;
         }
@@ -173,6 +177,12 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         return newState;
     }
 
+    /**
+     * @notice Creates a standard transaction or calls it if sender is superAdmin
+     * @param _selector The function selector for the transaction
+     * @param _params The parameters to pass with the transaction
+     * @return The timestamp of the transaction
+     */
     function _createStandardTransaction(bytes4 _selector, bytes memory _params) private returns (uint256) {
         if (_msgSender() == superAdmin()) {
             _call(_selector, _params);
@@ -181,11 +191,22 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         return createTransaction(_selector, _params);
     }
 
-    // Helper functions now use the standard pattern
+    /**
+     * @notice Creates a mint transaction
+     * @param to The address to mint tokens to
+     * @param amount The amount of tokens to mint
+     * @return The transaction ID
+     */
     function createMintTransaction(address to, uint256 amount) external virtual notZeroAddress(to) returns (uint256) {
         return _createStandardTransaction(MINT_SELECTOR, abi.encode(to, amount));
     }
 
+    /**
+     * @notice Creates a burn transaction
+     * @param from The address from which to burn tokens
+     * @param amount The amount of tokens to burn
+     * @return The transaction ID
+     */
     function createBurnTransaction(address from, uint256 amount)
         external
         virtual
@@ -195,6 +216,11 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         return _createStandardTransaction(BURN_SELECTOR, abi.encode(from, amount));
     }
 
+    /**
+     * @notice Creates a transaction to blacklist an account
+     * @param account The account to blacklist
+     * @return The transaction ID
+     */
     function createBlacklistAccountTransaction(address account)
         external
         virtual
@@ -204,6 +230,11 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         return _createStandardTransaction(BLACKLIST_ACCOUNT_SELECTOR, abi.encode(account));
     }
 
+    /**
+     * @notice Creates a transaction to remove an account from the blacklist
+     * @param account The account to remove from the blacklist
+     * @return The transaction ID
+     */
     function createBlacklistRemoveTransaction(address account)
         external
         virtual
@@ -213,14 +244,28 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         return _createStandardTransaction(REMOVE_BLACKLIST_ACCOUNT_SELECTOR, abi.encode(account));
     }
 
+    /**
+     * @notice Creates a pause transaction
+     * @return The transaction ID
+     */
     function createPauseTransaction() external virtual returns (uint256) {
         return _createStandardTransaction(PAUSE_SELECTOR, "");
     }
 
+    /**
+     * @notice Creates an unpause transaction
+     * @return The transaction ID
+     */
     function createUnpauseTransaction() external virtual returns (uint256) {
         return _createStandardTransaction(UNPAUSE_SELECTOR, "");
     }
 
+    /**
+     * @notice Creates a transaction to recover tokens
+     * @param token The token address
+     * @param to The address to send the recovered tokens
+     * @return The transaction ID
+     */
     function createRecoverTokensTransaction(address token, address to)
         external
         virtual
@@ -231,6 +276,11 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         return _createStandardTransaction(RECOVER_TOKENS_SELECTOR, abi.encode(token, to));
     }
 
+    /**
+     * @notice Checks if a transaction ID is valid
+     * @param txId The transaction ID to check
+     * @return flag True if the transaction ID is valid, false otherwise
+     */
     function isValidTransaction(uint256 txId) public view returns (bool flag) {
         assembly {
             mstore(0x00, txId)
@@ -306,6 +356,10 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         _updateTransactionState(txId);
     }
 
+    /**
+     * @notice Revokes a previously approved transaction
+     * @param txId The transaction ID to revoke
+     */
     function revokeTransaction(uint256 txId) external virtual txExist(txId) {
         if (!isSigner(_msgSender())) revert UnauthorizedCall();
         if (!hasApproved[txId][_msgSender()]) revert TransactionNotSigned();
@@ -344,6 +398,11 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         emit TransactionExecuted(txId);
     }
 
+    /**
+     * @notice Calls a function on the token contract
+     * @param functionSelector The function selector for the call
+     * @param callData The call data for the function
+     */
     function _call(bytes4 functionSelector, bytes memory callData) internal {
         // solhint-disable-next-line avoid-low-level-calls
         address token = tokenContract();
@@ -376,20 +435,24 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
             bool isFallbackAdmin
         )
     {
-        Transaction storage tx = transactions[txId];
+        Transaction storage trnx = transactions[txId];
         return (
-            tx.proposer,
-            tx.selector,
-            tx.params,
-            tx.proposedAt,
-            tx.firstSignAt,
-            tx.approvals,
-            tx.state,
-            tx.isFallbackAdmin
+            trnx.proposer,
+            trnx.selector,
+            trnx.params,
+            trnx.proposedAt,
+            trnx.firstSignAt,
+            trnx.approvals,
+            trnx.state,
+            trnx.isFallbackAdmin
         );
     }
 
-    function _authorizeUpgrade(address) internal override onlySuperAdmin {}
+    /**
+     * @notice Authorizes contract upgrade
+     * @param newImplementation The address of the new implementation
+     */
+    function _authorizeUpgrade(address newImplementation) internal override onlySuperAdmin {}
 
     modifier txExist(uint256 txId) {
         if (!isValidTransaction(txId)) {
@@ -401,6 +464,14 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     function tokenContract() public view returns (address token) {
         assembly {
             token := sload(TOKEN_CONTRACT_SLOT)
+        }
+    }
+
+    /// @dev Returns the minimum of `x` and `y`.
+    function min(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        /// @solidity memory-safe-assembly
+        assembly {
+            z := xor(x, mul(xor(x, y), lt(y, x)))
         }
     }
 }

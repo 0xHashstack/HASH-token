@@ -289,7 +289,9 @@ contract MultiSigContractTest is Test {
         assertEq(approvals, 3);
 
         vm.warp(block.timestamp + 24 hours + 3);
-
+        vm.expectRevert();
+        vm.prank(superAdmin);
+        wrappedMultiSig.approveTransaction(txId);
         // Execute transaction
         vm.prank(fallbackAdmin);
         wrappedMultiSig.executeTransaction(txId);
@@ -335,6 +337,101 @@ contract MultiSigContractTest is Test {
         // vm.expectRevert(MultiSigWallet.InvalidState.selector);
         // vm.prank(signer2);
         // wrappedMultiSig.approveTransaction(txId);
+    }
+
+    function test_multipleFunctionsHighGas() public {
+        uint256[100] memory _transactions;
+        address[100] memory signers;
+        for (uint256 i = 0; i < 100; i++) {
+            signers[i] = address(uint160(i + 1));
+            addSigner(signers[i]);
+            vm.startPrank(fallbackAdmin);
+            _transactions[i] = wrappedMultiSig.createMintTransaction(signers[i], block.timestamp);
+            vm.stopPrank();
+        }
+        for (uint256 i = 0; i < 100; i++) {
+            uint256 trnx = _transactions[i];
+            for (uint256 j = 0; j < 100; j++) {
+                vm.prank(signers[j]);
+                wrappedMultiSig.approveTransaction(trnx);
+            }
+            (,,,,, uint256 approvals,,) = wrappedMultiSig.getTransaction(trnx);
+            assertEq(approvals, 100);
+        }
+
+        vm.warp(block.timestamp + 24 hours + 5);
+
+        for (uint256 i = 0; i < 100; i++) {
+            uint256 trnx = _transactions[i];
+            //Execute transaction;
+            wrappedMultiSig.executeTransaction(trnx);
+            (,,,,,, MultiSigWallet.TransactionState state,) = wrappedMultiSig.getTransaction(trnx);
+            assertEq(uint8(state), 4);
+        }
+    }
+
+    function createBlacklistTrnx(address account) public returns (uint256) {
+        vm.assume(account != address(0));
+        uint256 trnx = wrappedMultiSig.createBlacklistAccountTransaction(account);
+        return trnx;
+    }
+
+    function createPauseTransaction() public returns (uint256) {
+        uint256 trnx = wrappedMultiSig.createPauseTransaction();
+        return trnx;
+    }
+
+    function addSigner(address _signer) public {
+        vm.startPrank(superAdmin);
+        wrappedMultiSig.addSigner(_signer);
+        vm.stopPrank();
+    }
+
+    function removeSigner(address _signer) public {
+        vm.startPrank(superAdmin);
+        wrappedMultiSig.removeSigner(_signer);
+        vm.stopPrank();
+    }
+
+    function test_checkTransactionStateLogic(address to, uint256 amount) public {
+        test_AddSigner();
+        vm.assume(to != address(0) && amount > 0 && amount < 9_000_000_000 * 10 ** 18 - 10 ** 18);
+        vm.prank(fallbackAdmin);
+        uint256 trnx = wrappedMultiSig.createMintTransaction(to, amount);
+
+        (,,,,,, MultiSigWallet.TransactionState state,) = wrappedMultiSig.getTransaction(trnx);
+        assertEq(uint8(state), 0, "Transaction need to be in Pending State");
+
+        // vm.warp(block.timestamp + 72 hours - 1);
+
+        // vm.prank(signer1);
+        // wrappedMultiSig.approveTransaction(trnx);
+        // (,,,,,,state,) = wrappedMultiSig.getTransaction(trnx);
+        // assertEq(uint8(state),1,"Transaction need to be in Active State");
+
+        // vm.prank(signer1);
+        // wrappedMultiSig.revokeTransaction(trnx);
+        // (,,,,,,state,) = wrappedMultiSig.getTransaction(trnx);
+        // assertEq(uint8(state),1,"Transaction need to be in Active State");
+
+        // vm.warp(block.timestamp + 2);
+
+        // vm.expectRevert();
+        // vm.prank(signer1);
+        // wrappedMultiSig.approveTransaction(trnx);
+        // assertEq(uint8(state),1,"Transaction need to be in Active State");
+
+        vm.prank(signer1);
+        wrappedMultiSig.approveTransaction(trnx);
+        (,,,,,, state,) = wrappedMultiSig.getTransaction(trnx);
+        assertEq(uint8(state), 1, "Transaction need to be in Active State");
+
+        vm.warp(block.timestamp + 24 hours + 1);
+        vm.expectRevert();
+        vm.prank(signer1);
+        wrappedMultiSig.revokeTransaction(trnx);
+        MultiSigWallet.TransactionState state_ = wrappedMultiSig._updateTransactionState(trnx);
+        assertEq(uint8(state_), 3, "Transaction should be expired");
     }
 
     function test_SuperAdminTransfership(address account) public {
