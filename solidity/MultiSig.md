@@ -91,7 +91,6 @@ stateDiagram-v2
     Active --> Expired: Time Window Passed
     Queued --> Executed: Execute Called
     Pending --> Expired: Time Window Passed
-    Queued --> Expired: Time Window Passed
     Executed --> [*]
     Expired --> [*]
 
