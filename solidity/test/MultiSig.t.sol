@@ -70,9 +70,10 @@ contract MultiSigContractTest is Test {
     }
 
     function test_Initialization() public view {
-        assertEq(wrappedMultiSig.superAdmin(), superAdmin);
+        assertEq(wrappedMultiSig.superAdmin(), superAdmin,"Super admin not matched");
         assertEq(fallbackAdmin, wrappedMultiSig.fallbackAdmin(), "Value not matched");
-        assertEq(wrappedMultiSig.totalSigners(), 1);
+        assertEq(wrappedMultiSig.totalSigners(), 1,"total Signers not matched");
+        assertEq(wrappedMultiSig.tokenContract(),address(token));
     }
 
     function test_AddSigner() public {
@@ -143,7 +144,8 @@ contract MultiSigContractTest is Test {
     function test_CreateAndExecuteTransaction() public {
         test_AddSigner();
 
-        bytes4 pauseSelector = bytes4(keccak256("pause()"));
+        bytes4 selector_ = bytes4(keccak256("pause()"));
+        // bytes4 unpauseSelector = bytes4(keccak256("unpause()"));
         bytes memory param = "";
 
         // Signer1 creates transaction
@@ -162,7 +164,7 @@ contract MultiSigContractTest is Test {
             bool isFallbackAdmin
         ) = wrappedMultiSig.getTransaction(txId);
         assertEq(proposer, signer1);
-        assertEq(selector, pauseSelector);
+        assertEq(selector, selector_);
         assertEq(params, param);
         assertEq(proposedAt, block.timestamp);
         assertEq(approvals, 0);
@@ -263,7 +265,7 @@ contract MultiSigContractTest is Test {
         uint256 txId = wrappedMultiSig.createMintTransaction(to, 1000);
     }
 
-    function test_FallbackAdminTransaction() public {
+    function test_FallbackAdminMintTransaction() public {
         // Setup mint function call
         address to = makeAddr("to");
 
@@ -300,8 +302,8 @@ contract MultiSigContractTest is Test {
         assertEq(token.balanceOf(to), 1000);
     }
 
-    function test_RevertFallbackAdminTransactionBurn() public {
-        test_FallbackAdminTransaction();
+    function test_RevertFallbackAdminBurnTransaction() public {
+        test_FallbackAdminMintTransaction();
 
         address to = makeAddr("to");
 
@@ -337,6 +339,43 @@ contract MultiSigContractTest is Test {
         // vm.expectRevert(MultiSigWallet.InvalidState.selector);
         // vm.prank(signer2);
         // wrappedMultiSig.approveTransaction(txId);
+    }
+
+    function test_fallbackAdminBurnTransaction() public {
+        test_FallbackAdminMintTransaction();
+
+        address to = makeAddr("to");
+
+         // Fallback superAdmin creates transaction
+        vm.startPrank(fallbackAdmin);
+        uint256 txId = wrappedMultiSig.createBurnTransaction(to, 100);
+
+        // Approve and wait for activation period
+        // wrappedMultiSig.approveTransaction(txId);
+        vm.stopPrank();
+
+        vm.prank(signer1);
+        wrappedMultiSig.approveTransaction(txId);
+
+        vm.prank(signer2);
+        wrappedMultiSig.approveTransaction(txId);
+
+        vm.prank(signer3);
+        wrappedMultiSig.approveTransaction(txId);
+
+        (,,,,, uint256 approvals, MultiSigWallet.TransactionState state,) = wrappedMultiSig.getTransaction(txId);
+        assertEq(approvals, 3);
+
+        vm.warp(block.timestamp + 24 hours + 3);
+        vm.expectRevert();
+        vm.prank(superAdmin);
+        wrappedMultiSig.approveTransaction(txId);
+        // Execute transaction
+        vm.prank(fallbackAdmin);
+        wrappedMultiSig.executeTransaction(txId);
+
+        // Verify mint
+        assertEq(token.balanceOf(to), 900);
     }
 
     function test_multipleFunctionsHighGas() public {
@@ -492,6 +531,9 @@ contract MultiSigContractTest is Test {
 
         assertEq(wrappedMultiSig.fallbackAdmin(), pendingOwner);
     }
+
+
+    
 }
 
 //for signers[] array

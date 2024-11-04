@@ -62,17 +62,17 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         uint256 proposedAt; // When the transaction was proposed
         uint256 firstSignAt; // When the first signer approved
         uint256 approvals; // Number of approvals received
-        TransactionState state;
+        TransactionState state; //state of the transaction(pending,)
         bool isFallbackAdmin; // Whether this was proposed by fallback admin
     }
 
     // ========== STATE ==========
     mapping(uint256 => Transaction) private transactions;
-    mapping(uint256 => mapping(address => bool)) public hasApproved;
-    mapping(uint256 => bool) private transactionIdExists;
+    mapping(uint256 => mapping(address => bool))  hasApproved;
+    mapping(uint256 => bool) transactionIdExists;
     // Function permissions
-    mapping(bytes4 => bool) public fallbackAdminFunctions;
-    mapping(bytes4 => bool) public signerFunctions;
+    mapping(bytes4 => bool) fallbackAdminFunctions;
+    mapping(bytes4 => bool) signerFunctions;
 
     // ========== EVENTS ==========
     event TransactionProposed(uint256 indexed txId, address proposer, uint256 proposedAt);
@@ -468,7 +468,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     }
 
     /// @dev Returns the minimum of `x` and `y`.
-    function min(uint256 x, uint256 y) internal pure returns (uint256 z) {
+    function min(uint256 x, uint256 y) private pure returns (uint256 z) {
         /// @solidity memory-safe-assembly
         assembly {
             z := xor(x, mul(xor(x, y), lt(y, x)))
