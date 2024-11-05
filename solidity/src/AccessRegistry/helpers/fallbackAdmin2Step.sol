@@ -156,6 +156,7 @@ abstract contract FallbackAdmin2Step {
     }
     /*                  PUBLIC UPDATE FUNCTIONS                   */
 
+    // Check: is this function correct/required?
     /// @dev Allows the fallbackAdmin to renounce their fallbackAdminship.
     function renounceFallbackAdminship() public virtual onlyFallbackAdmin {
         _setFallbackAdmin(address(0));

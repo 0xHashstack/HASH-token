@@ -152,6 +152,7 @@ abstract contract SuperAdmin2Step {
 
     /*                  PUBLIC UPDATE FUNCTIONS                   */
 
+    // Check: is this function correct/required?
     /// @dev Allows the superAdmin to renounce their superAdminship.
     function renounceSuperAdminship() public virtual onlySuperAdmin {
         _setSuperAdmin(address(0));

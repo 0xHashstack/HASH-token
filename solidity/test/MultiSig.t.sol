@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test, console, StdInvariant} from "forge-std/Test.sol";
 import {HstkToken} from "../src/HSTK.sol";
 import {MultiSigWallet} from "../src/MultiSigWallet.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/Proxy/ERC1967/ERC1967Proxy.sol";
@@ -10,7 +10,7 @@ contract MockToken is HstkToken {
     constructor(address _multiSig) HstkToken(_multiSig) {}
 }
 
-contract MultiSigContractTest is Test {
+contract MultiSigContractTest is StdInvariant, Test {
     enum TransactionState {
         Pending,
         Active,
@@ -65,8 +65,8 @@ contract MultiSigContractTest is Test {
         token = new MockToken(address(wrappedMultiSig));
 
         wrappedMultiSig.initialize(superAdmin, fallbackAdmin, address(token));
-
         vm.stopPrank();
+        targetContract(address(wrappedMultiSig));
     }
 
     function test_Initialization() public view {
@@ -370,6 +370,11 @@ contract MultiSigContractTest is Test {
         }
     }
 
+    function createMintTransaction(address to, uint256 amount) public returns (uint256) {
+        uint256 trnx = wrappedMultiSig.createMintTransaction(to, amount);
+        return trnx;
+    }
+
     function createBlacklistTrnx(address account) public returns (uint256) {
         vm.assume(account != address(0));
         uint256 trnx = wrappedMultiSig.createBlacklistAccountTransaction(account);
@@ -491,6 +496,134 @@ contract MultiSigContractTest is Test {
         wrappedMultiSig.completeFallbackAdminshipHandover(pendingOwner);
 
         assertEq(wrappedMultiSig.fallbackAdmin(), pendingOwner);
+    }
+
+    function test_addZeroSigner() public {
+        vm.startPrank(superAdmin);
+        vm.expectRevert();
+        wrappedMultiSig.addSigner(address(0));
+        vm.stopPrank();
+    }
+
+    function test_TransactionCancellationDueToLackOfApprovals() public {
+        test_AddSigner();
+
+        bytes4 pauseSelector = bytes4(keccak256("pause()"));
+        vm.startPrank(signer1);
+        uint256 txId = wrappedMultiSig.createPauseTransaction();
+
+        // Approve partially
+        wrappedMultiSig.approveTransaction(txId);
+        vm.stopPrank();
+
+        // Advance time beyond expiration
+        vm.warp(block.timestamp + 48 hours + 1);
+
+        // Attempt to execute and expect failure due to insufficient approvals
+        vm.startPrank(fallbackAdmin);
+        vm.expectRevert();
+        wrappedMultiSig.executeTransaction(txId);
+    }
+
+    function test_InitializeOnlyOnce() public {
+        vm.startPrank(superAdmin);
+
+        // Attempt to initialize again should revert
+        vm.expectRevert();
+        wrappedMultiSig.initialize(superAdmin, fallbackAdmin, address(token));
+
+        vm.stopPrank();
+    }
+
+    function test_NonAdminCannotInitialize() public {
+        vm.prank(nonSigner);
+        vm.expectRevert();
+        wrappedMultiSig.initialize(superAdmin, fallbackAdmin, address(token));
+    }
+
+    function test_AddExistingSigner() public {
+        vm.startPrank(superAdmin);
+        wrappedMultiSig.addSigner(signer1);
+
+        // Adding the same signer again should revert
+        vm.expectRevert("ACL::Already A Signer");
+        wrappedMultiSig.addSigner(signer1);
+
+        vm.stopPrank();
+    }
+
+    function test_RemoveNonExistentSigner() public {
+        vm.startPrank(superAdmin);
+
+        // Attempting to remove a non-signer should revert
+        vm.expectRevert("ACL::non-existant owner");
+        wrappedMultiSig.removeSigner(nonSigner);
+
+        vm.stopPrank();
+    }
+
+    function test_AddSigner_NotSuperAdmin() public {
+        vm.startPrank(signer1); // signer1 is not the superAdmin
+        vm.expectRevert();
+        wrappedMultiSig.addSigner(signer2);
+        vm.stopPrank();
+    }
+
+    function test_RemoveSigner_NotSuperAdmin() public {
+        test_AddSigner();
+        vm.startPrank(signer1); // signer1 is not the superAdmin
+        vm.expectRevert();
+        wrappedMultiSig.removeSigner(signer2);
+        vm.stopPrank();
+    }
+
+    function test_RenounceSignership_Effectiveness() public {
+        test_AddSigner();
+        vm.startPrank(signer2);
+        wrappedMultiSig.renounceSignership(address(1)); // Renounce without replacement
+
+        // Attempt approval after renouncing (should fail)
+        vm.expectRevert();
+        wrappedMultiSig.approveTransaction(1);
+        vm.stopPrank();
+    }
+
+    function test_AddDuplicateSigner() public {
+        vm.startPrank(superAdmin);
+        wrappedMultiSig.addSigner(signer1);
+        vm.expectRevert("ACL::Already A Signer");
+        wrappedMultiSig.addSigner(signer1);
+        vm.stopPrank();
+    }
+
+    function test_ApprovalByNonSigner() public {
+        test_AddSigner();
+        vm.startPrank(address(0xDEADBEEF)); // A non-signer
+        vm.expectRevert();
+        wrappedMultiSig.approveTransaction(1);
+        vm.stopPrank();
+    }
+
+    function test_ExecuteTransaction_InsufficientApprovals() public {
+        test_AddSigner();
+        vm.startPrank(signer1);
+        uint256 txId = wrappedMultiSig.createPauseTransaction();
+        vm.expectRevert();
+        wrappedMultiSig.executeTransaction(txId);
+        vm.stopPrank();
+    }
+
+    function test_TransactionExpiration() public {
+        test_AddSigner();
+        vm.startPrank(signer1);
+        uint256 txId = wrappedMultiSig.createPauseTransaction();
+
+        wrappedMultiSig.approveTransaction(txId);
+        vm.warp(block.timestamp + 7 days + 1); // Fast-forward past expiration
+        wrappedMultiSig._updateTransactionState(txId);
+        (,,,,,, MultiSigWallet.TransactionState state,) = wrappedMultiSig.getTransaction(txId);
+        assertEq(uint8(state), uint8(MultiSigWallet.TransactionState.Expired));
+        vm.stopPrank();
     }
 }
 

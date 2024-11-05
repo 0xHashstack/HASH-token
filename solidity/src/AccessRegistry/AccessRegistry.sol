@@ -41,7 +41,12 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
         return true;
     }
 
-    function _initializeAccessRegistry(address _superAdmin, address _fallbackAdmin) internal virtual {
+    function _initializeAccessRegistry(address _superAdmin, address _fallbackAdmin)
+        internal
+        virtual
+        notZeroAddress(_superAdmin)
+        notZeroAddress(_fallbackAdmin)
+    {
         _initializeSuperAdmin(_superAdmin);
         _initializeFallbackAdmin(_fallbackAdmin);
         assembly {
@@ -66,7 +71,7 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
         }
     }
 
-    function removeSigner(address _signer) public virtual onlySuperAdmin notZeroAddress(_signer) {
+    function removeSigner(address _signer) public virtual onlySuperAdmin {
         require(signers[_signer], "ACL::non-existant owner");
         require(totalSigners() > 1, "ACL::wallet cannot be ownerless");
         signers[_signer] = false;
