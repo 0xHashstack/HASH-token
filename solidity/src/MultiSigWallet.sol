@@ -16,9 +16,8 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     // ========== CONSTANTS ==========
     uint256 private constant SIGNER_WINDOW = 24 hours;
     uint256 private constant FALLBACK_ADMIN_WINDOW = 72 hours;
-    uint256 private constant APPROVAL_THRESHOLD = 60; // 60% of signers must approve
+    uint256 private constant APPROVAL_THRESHOLD = 60;        // 60% of signers must approve
 
-    // Pre-calculated function selectors
 
     ///@dev bytes4(keccak256("mint(address,uint256)"))
     bytes4 private constant MINT_SELECTOR = 0x40c10f19;
@@ -29,11 +28,11 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     ///@dev bytes4(keccak256("updateOperationalState(uint8)"))
     bytes4 private constant PAUSE_STATE_SELECTOR = 0x50f20190;
 
-    ///@dev bytes4(keccak256("blacklistAccount(address)"))
-    bytes4 private constant BLACKLIST_ACCOUNT_SELECTOR = 0xd37b34d7;
+    ///@dev bytes4(keccak256("blackListAccount(address)"))
+    bytes4 private constant BLACKLIST_ACCOUNT_SELECTOR = 0xe0644962; 
 
-    ///@dev bytes4(keccak256("removeBlacklistedAccount(address)"))
-    bytes4 private constant REMOVE_BLACKLIST_ACCOUNT_SELECTOR = 0xb24822c5;
+    ///@dev bytes4(keccak256("removeBlackListedAccount(address)"))
+    bytes4 private constant REMOVE_BLACKLIST_ACCOUNT_SELECTOR = 0xc460f1be;
 
     ///@dev bytes4(keccak256("recoverToken(address,address)"))
     bytes4 private constant RECOVER_TOKENS_SELECTOR = 0xfeaea586;

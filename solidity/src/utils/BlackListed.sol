@@ -69,7 +69,7 @@ abstract contract BlackListed is Context {
      * Requirements:
      * - Can only be called by the admin
      */
-    function removeFromBlackListAccount(address account) external onlyMultiSig {
+    function removeBlackListedAccount(address account) external onlyMultiSig {
         blackListedAccounts[account] = false;
         emit RemovedAccountBlackListed(account);
     }
