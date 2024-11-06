@@ -327,7 +327,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         if (hasApproved[txId][_msgSender()]) revert AlreadyApproved();
 
         Transaction storage transaction = transactions[txId];
-        TransactionState currentState = _updateTransactionState(txId);
+        TransactionState currentState = updateTransactionState(txId);
 
         if (currentState != TransactionState.Pending && currentState != TransactionState.Active) {
             revert InvalidState();
@@ -343,19 +343,19 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         hasApproved[txId][_msgSender()] = true;
 
         emit TransactionApproved(txId, _msgSender());
-        _updateTransactionState(txId);
+        updateTransactionState(txId);
     }
 
     /**
      * @notice Revokes a previously approved transaction
      * @param txId The transaction ID to revoke
      */
-    function revokeTransaction(uint256 txId) external virtual txExist(txId) {
+    function revokeConfirmation(uint256 txId) external virtual txExist(txId) {
         if (!isSigner(_msgSender())) revert UnauthorizedCall();
         if (!hasApproved[txId][_msgSender()]) revert TransactionNotSigned();
 
         Transaction storage transaction = transactions[txId];
-        TransactionState currentState = _updateTransactionState(txId);
+        TransactionState currentState = updateTransactionState(txId);
 
         if (currentState != TransactionState.Active) {
             revert InvalidState();
@@ -367,7 +367,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
 
         emit TransactionRevoked(txId, _msgSender());
 
-        _updateTransactionState(txId);
+        updateTransactionState(txId);
     }
 
     /**
@@ -376,7 +376,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
      */
     function executeTransaction(uint256 txId) external virtual txExist(txId) {
         Transaction storage transaction = transactions[txId];
-        TransactionState currentState = _updateTransactionState(txId);
+        TransactionState currentState = updateTransactionState(txId);
 
         if (currentState != TransactionState.Queued) {
             revert InvalidState();

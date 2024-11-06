@@ -254,7 +254,7 @@ contract MultiSigContractTest is Test {
         assertEq(approvals, 1);
 
         // Revoke confirmation
-        wrappedMultiSig.revokeTransaction(txId);
+        wrappedMultiSig.revokeConfirmation(txId);
 
         (,,,,, approvals,,) = wrappedMultiSig.getTransaction(txId);
         assertEq(approvals, 0);
@@ -338,9 +338,9 @@ contract MultiSigContractTest is Test {
 
         vm.prank(signer1);
         vm.expectRevert(MultiSigWallet.InvalidState.selector);
-        wrappedMultiSig.revokeTransaction(txId);
+        wrappedMultiSig.revokeConfirmation(txId);
 
-        MultiSigWallet.TransactionState currentState = wrappedMultiSig._updateTransactionState(txId);
+        MultiSigWallet.TransactionState currentState = wrappedMultiSig.updateTransactionState(txId);
         (,,,,, uint256 approvals, MultiSigWallet.TransactionState currentState2,) = wrappedMultiSig.getTransaction(txId);
 
         assertEq(approvals, 1);
@@ -478,8 +478,8 @@ contract MultiSigContractTest is Test {
         vm.warp(block.timestamp + 24 hours + 1);
         vm.expectRevert();
         vm.prank(signer1);
-        wrappedMultiSig.revokeTransaction(trnx);
-        MultiSigWallet.TransactionState state_ = wrappedMultiSig._updateTransactionState(trnx);
+        wrappedMultiSig.revokeConfirmation(trnx);
+        MultiSigWallet.TransactionState state_ = wrappedMultiSig.updateTransactionState(trnx);
         assertEq(uint8(state_), 3, "Transaction should be expired");
     }
 
