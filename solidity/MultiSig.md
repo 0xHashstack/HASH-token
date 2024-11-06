@@ -140,8 +140,7 @@ sequenceDiagram
 - `burn(address,uint256)`
 
 ### Signer Functions
-- `pause()`
-- `unpause()`
+- `updateOperationalState(uint8)`
 - `blacklistAccount(address)`
 - `removeBlacklistedAccount(address)`
 - `recoverToken(address,address)`
