@@ -184,27 +184,6 @@ function executeTransaction(uint256 txId) external
 function revokeTransaction(uint256 txId) external
 ```
 
-## Events
-
-- `TransactionProposed(uint256 indexed txId, address proposer, uint256 proposedAt)`
-- `TransactionApproved(uint256 indexed txId, address signer)`
-- `TransactionRevoked(uint256 indexed txId, address revoker)`
-- `TransactionExecuted(uint256 indexed txId)`
-- `TransactionExpired(uint256 indexed txId)`
-- `TransactionStateChanged(uint256 indexed txId, TransactionState newState)`
-- `InsufficientApprovals(uint256 indexed txId, uint256 approvals)`
-
-## Error Handling
-
-- `UnauthorizedCall()`
-- `InvalidToken()`
-- `InvalidState()`
-- `AlreadyApproved()`
-- `TransactionNotSigned()`
-- `WindowExpired()`
-- `TransactionAlreadyExist()`
-- `TransactionIdNotExist()`
-
 ## Security Considerations
 
 1. Time-bounded transactions prevent stale approvals
