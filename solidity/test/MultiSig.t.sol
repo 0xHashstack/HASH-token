@@ -70,10 +70,12 @@ contract MultiSigContractTest is Test {
     }
 
     function test_Initialization() public view {
-        assertEq(wrappedMultiSig.superAdmin(), superAdmin,"Super admin not matched");
-        assertEq(fallbackAdmin, wrappedMultiSig.fallbackAdmin(), "Value not matched");
-        assertEq(wrappedMultiSig.totalSigners(), 1,"total Signers not matched");
-        assertEq(wrappedMultiSig.tokenContract(),address(token));
+        unchecked {
+            assertEq(wrappedMultiSig.superAdmin(), superAdmin, "Super admin not matched");
+            assertEq(fallbackAdmin, wrappedMultiSig.fallbackAdmin(), "Value not matched");
+            assertEq(wrappedMultiSig.totalSigners(), 1, "total Signers not matched");
+            assertEq(wrappedMultiSig.tokenContract(), address(token));
+        }
     }
 
     function test_AddSigner() public {
@@ -85,9 +87,11 @@ contract MultiSigContractTest is Test {
         wrappedMultiSig.addSigner(signer3);
         wrappedMultiSig.addSigner(signer2);
         wrappedMultiSig.addSigner(signer1);
-        assertTrue(wrappedMultiSig.isSigner(signer3));
-        assertTrue(!wrappedMultiSig.isSigner(nonSigner));
-        assertEq(wrappedMultiSig.totalSigners(), 4);
+        unchecked {
+            assertTrue(wrappedMultiSig.isSigner(signer3));
+            assertTrue(!wrappedMultiSig.isSigner(nonSigner));
+            assertEq(wrappedMultiSig.totalSigners(), 4);
+        }
 
         vm.stopPrank();
     }
@@ -119,13 +123,16 @@ contract MultiSigContractTest is Test {
         emit SignerRemoved(signer2);
 
         wrappedMultiSig.removeSigner(signer2);
-        assertFalse(wrappedMultiSig.isSigner(signer2));
-        assertEq(wrappedMultiSig.totalSigners(), 3);
+        unchecked {
+            assertFalse(wrappedMultiSig.isSigner(signer2));
+            assertEq(wrappedMultiSig.totalSigners(), 3);
+        }
 
         vm.stopPrank();
     }
 
     function test_RenounceSignership() public {
+        //129705  129696
         test_AddSigner();
         vm.startPrank(signer2);
 
@@ -133,9 +140,11 @@ contract MultiSigContractTest is Test {
         emit SignerRenounced(signer2, address(3));
 
         wrappedMultiSig.renounceSignership(address(3));
-        assertTrue(wrappedMultiSig.isSigner(address(3)));
-        assertTrue(!wrappedMultiSig.isSigner(signer2));
-        assertEq(wrappedMultiSig.totalSigners(), 4);
+        unchecked {
+            assertTrue(wrappedMultiSig.isSigner(address(3)));
+            assertTrue(!wrappedMultiSig.isSigner(signer2));
+            assertEq(wrappedMultiSig.totalSigners(), 4);
+        }
         vm.stopPrank();
     }
 
@@ -144,13 +153,12 @@ contract MultiSigContractTest is Test {
     function test_CreateAndExecuteTransaction() public {
         test_AddSigner();
 
-        bytes4 selector_ = bytes4(keccak256("pause()"));
-        // bytes4 unpauseSelector = bytes4(keccak256("unpause()"));
-        bytes memory param = "";
+        bytes4 selector_ = bytes4(keccak256("updateOperationalState(uint8)"));
+        bytes memory param = bytes(abi.encode(2));
 
         // Signer1 creates transaction
         vm.startPrank(signer1);
-        uint256 txId = wrappedMultiSig.createPauseTransaction();
+        uint256 txId = wrappedMultiSig.createPauseStateTransaction(2);
 
         // Verify transaction created
         (
@@ -163,12 +171,14 @@ contract MultiSigContractTest is Test {
             MultiSigWallet.TransactionState state,
             bool isFallbackAdmin
         ) = wrappedMultiSig.getTransaction(txId);
-        assertEq(proposer, signer1);
-        assertEq(selector, selector_);
-        assertEq(params, param);
-        assertEq(proposedAt, block.timestamp);
-        assertEq(approvals, 0);
-        assertEq(uint8(state), 0);
+        unchecked {
+            assertEq(proposer, signer1);
+            assertEq(selector, selector_);
+            assertEq(params, param);
+            assertEq(proposedAt, block.timestamp);
+            assertEq(approvals, 0);
+            assertEq(uint8(state), 0);
+        }
 
         // Both signers approve
         wrappedMultiSig.approveTransaction(txId);
@@ -200,7 +210,7 @@ contract MultiSigContractTest is Test {
         assertEq(uint8(state), 4);
 
         // Verify execution
-        assertTrue(token.isPaused());
+        assertEq(uint8(token.getCurrentState()), 2);
 
         vm.stopPrank();
     }
@@ -208,7 +218,7 @@ contract MultiSigContractTest is Test {
     function test_RevertWhen_NonSignerCreatesTransaction() public {
         vm.startPrank(nonSigner);
         vm.expectRevert(MultiSigWallet.UnauthorizedCall.selector);
-        wrappedMultiSig.createPauseTransaction();
+        wrappedMultiSig.createPauseStateTransaction(2);
         vm.stopPrank();
     }
 
@@ -216,7 +226,7 @@ contract MultiSigContractTest is Test {
         test_AddSigner();
         // Signer1 creates and approves transaction
         vm.startPrank(signer1);
-        uint256 txId = wrappedMultiSig.createPauseTransaction();
+        uint256 txId = wrappedMultiSig.createPauseStateTransaction(2);
         wrappedMultiSig.approveTransaction(txId);
 
         (,,,,, uint256 approvals,,) = wrappedMultiSig.getTransaction(txId);
@@ -237,7 +247,7 @@ contract MultiSigContractTest is Test {
 
         // Signer1 creates and approves transaction
         vm.startPrank(signer1);
-        uint256 txId = wrappedMultiSig.createPauseTransaction();
+        uint256 txId = wrappedMultiSig.createPauseStateTransaction(2);
         wrappedMultiSig.approveTransaction(txId);
         (,,,,, uint256 approvals, MultiSigWallet.TransactionState state,) = wrappedMultiSig.getTransaction(txId);
 
@@ -346,7 +356,7 @@ contract MultiSigContractTest is Test {
 
         address to = makeAddr("to");
 
-         // Fallback superAdmin creates transaction
+        // Fallback superAdmin creates transaction
         vm.startPrank(fallbackAdmin);
         uint256 txId = wrappedMultiSig.createBurnTransaction(to, 100);
 
@@ -416,7 +426,7 @@ contract MultiSigContractTest is Test {
     }
 
     function createPauseTransaction() public returns (uint256) {
-        uint256 trnx = wrappedMultiSig.createPauseTransaction();
+        uint256 trnx = wrappedMultiSig.createPauseStateTransaction(2);
         return trnx;
     }
 
@@ -499,6 +509,8 @@ contract MultiSigContractTest is Test {
         wrappedMultiSig.completeSuperAdminshipHandover(pendingOwner);
 
         assertEq(wrappedMultiSig.superAdmin(), pendingOwner);
+        assertTrue(wrappedMultiSig.isSigner(pendingOwner));
+        assertFalse(wrappedMultiSig.isSigner(superAdmin));
     }
 
     function test_fallbackAdminTransfership(address account) public {
@@ -532,8 +544,7 @@ contract MultiSigContractTest is Test {
         assertEq(wrappedMultiSig.fallbackAdmin(), pendingOwner);
     }
 
-
-    
+   
 }
 
 //for signers[] array

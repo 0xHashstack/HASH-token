@@ -11,6 +11,11 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
     event SignerRenounced(address indexed from, address indexed to);
 
     error CallerZeroAddress();
+    error SuperAdminIsRestricted();
+    error AlreadySigner();
+    error SuperAdminCannotRemoved();
+    error WalletCannotBeSignerLess();
+    error NonExistingSigner();
 
     /// @dev `keccak256(bytes("totalSigner.hashstack.slot"))`.
     bytes32 private constant _TOTAL_SIGNER_SLOT = 0xe1a63a0c68b86a7b1309b59f9e0b0e0004b936ab8a2d2478258aa16889f6e227;
@@ -51,7 +56,8 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
     }
 
     function addSigner(address _newSigner) external virtual onlySuperAdmin notZeroAddress(_newSigner) {
-        require(!isSigner(_newSigner), "ACL::Already A Signer");
+        // require(!isSigner(_newSigner), "ACL::Already A Signer");
+        if (isSigner(_newSigner)) revert AlreadySigner();
         signers[_newSigner] = true;
         assembly {
             // Emit SignerAdded event
@@ -66,9 +72,11 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
         }
     }
 
-    function removeSigner(address _signer) public virtual onlySuperAdmin notZeroAddress(_signer) {
-        require(signers[_signer], "ACL::non-existant owner");
-        require(totalSigners() > 1, "ACL::wallet cannot be ownerless");
+    function removeSigner(address _signer) external virtual onlySuperAdmin notZeroAddress(_signer) {
+        if (!isSigner(_signer)) revert NonExistingSigner();
+        if (_signer == superAdmin()) revert SuperAdminCannotRemoved();
+        if (totalSigners() == 1) revert WalletCannotBeSignerLess();
+        // require(totalSigners() > 1, "ACL::wallet cannot be ownerless");
         signers[_signer] = false;
         assembly {
             // Emit SignerAdded event
@@ -84,12 +92,24 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
     }
 
     function renounceSignership(address _newSigner) public virtual onlySigner notZeroAddress(_newSigner) {
-        require(_msgSender() != superAdmin(), "ACL:: Admin is restricted");
-        require(!isSigner(_newSigner), "ACL::New Address is Existing owner");
+        // require(_msgSender() != superAdmin(), "ACL:: Admin is restricted");
+        if (_msgSender() == superAdmin()) revert SuperAdminIsRestricted();
+        if (isSigner(_newSigner)) revert AlreadySigner();
+
+        // require(!isSigner(_newSigner), "ACL::New Address is Existing owner");
 
         signers[_msgSender()] = false;
         signers[_newSigner] = true;
-        emit SignerRenounced(_msgSender(), _newSigner);
+        assembly {
+            // Emit SignerRenounced event
+            log3(
+                0x00, // start of data
+                0x00, // length of data (0 as no data needed)
+                0x02f7bac28cd34b63fc761d9ef07b1ccea5c5b43efd912d06a91b999b202cd68e, // keccak256("SignerReounced(address,address)")
+                caller(),
+                _newSigner // indexed parameter
+            )
+        }
     }
 
     function isSigner(address _check) public view returns (bool result) {
@@ -106,5 +126,11 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
             revert();
         }
         _;
+    }
+
+    function _setSuperAdmin(address _newSuperOwner) internal virtual override {
+        signers[_msgSender()] = false;
+        signers[_newSuperOwner] = true;
+        super._setSuperAdmin(_newSuperOwner);
     }
 }

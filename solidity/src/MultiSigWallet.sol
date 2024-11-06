@@ -26,11 +26,8 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     ///@dev bytes4(keccak256("burn(address,uint256)"))
     bytes4 private constant BURN_SELECTOR = 0x9dc29fac;
 
-    ///@dev bytes4(keccak256("pause()"))
-    bytes4 private constant PAUSE_SELECTOR = 0x8456cb59;
-
-    ///@dev bytes4(keccak256("unpause()"))
-    bytes4 private constant UNPAUSE_SELECTOR = 0x3f4ba83a;
+    ///@dev bytes4(keccak256("updateOperationalState(uint8)"))
+    bytes4 private constant PAUSE_STATE_SELECTOR = 0x50f20190;
 
     ///@dev bytes4(keccak256("blacklistAccount(address)"))
     bytes4 private constant BLACKLIST_ACCOUNT_SELECTOR = 0xd37b34d7;
@@ -68,7 +65,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
 
     // ========== STATE ==========
     mapping(uint256 => Transaction) private transactions;
-    mapping(uint256 => mapping(address => bool))  hasApproved;
+    mapping(uint256 => mapping(address => bool)) hasApproved;
     mapping(uint256 => bool) transactionIdExists;
     // Function permissions
     mapping(bytes4 => bool) fallbackAdminFunctions;
@@ -82,6 +79,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     event TransactionExpired(uint256 indexed txId);
     event TransactionStateChanged(uint256 indexed txId, TransactionState newState);
     event InsufficientApprovals(uint256 indexed txId, uint256 approvals);
+    event TransactionProposedBySuperAdmin(uint256 proposedAt);
 
     // ========== ERRORS ==========
     error UnauthorizedCall();
@@ -114,8 +112,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         fallbackAdminFunctions[BURN_SELECTOR] = true;
 
         // Signers can pause/unpause and manage blacklist
-        signerFunctions[PAUSE_SELECTOR] = true;
-        signerFunctions[UNPAUSE_SELECTOR] = true;
+        signerFunctions[PAUSE_STATE_SELECTOR] = true;
         signerFunctions[BLACKLIST_ACCOUNT_SELECTOR] = true;
         signerFunctions[REMOVE_BLACKLIST_ACCOUNT_SELECTOR] = true;
         signerFunctions[RECOVER_TOKENS_SELECTOR] = true;
@@ -132,7 +129,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
      * @param txId The transaction ID to update
      * @return The current state of the transaction
      */
-    function _updateTransactionState(uint256 txId) public txExist(txId) returns (TransactionState) {
+    function updateTransactionState(uint256 txId) public txExist(txId) returns (TransactionState) {
         Transaction storage transaction = transactions[txId];
 
         // Don't update final states
@@ -185,8 +182,9 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
      */
     function _createStandardTransaction(bytes4 _selector, bytes memory _params) private returns (uint256) {
         if (_msgSender() == superAdmin()) {
+            emit TransactionProposedBySuperAdmin(block.timestamp);
             _call(_selector, _params);
-            return block.timestamp;
+            return 10;
         }
         return createTransaction(_selector, _params);
     }
@@ -245,19 +243,11 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     }
 
     /**
-     * @notice Creates a pause transaction
+     * @notice Creates a transaction to change the Pause State of Token
      * @return The transaction ID
      */
-    function createPauseTransaction() external virtual returns (uint256) {
-        return _createStandardTransaction(PAUSE_SELECTOR, "");
-    }
-
-    /**
-     * @notice Creates an unpause transaction
-     * @return The transaction ID
-     */
-    function createUnpauseTransaction() external virtual returns (uint256) {
-        return _createStandardTransaction(UNPAUSE_SELECTOR, "");
+    function createPauseStateTransaction(uint8 _state) external virtual returns (uint256) {
+        return _createStandardTransaction(PAUSE_STATE_SELECTOR, abi.encode(_state));
     }
 
     /**

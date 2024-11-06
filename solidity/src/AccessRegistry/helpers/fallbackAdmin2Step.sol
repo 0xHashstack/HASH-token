@@ -152,14 +152,9 @@ abstract contract FallbackAdmin2Step {
     /// Override to return a different value if needed.
     /// Made internal to conserve bytecode. Wrap it in a public function if needed.
     function _fallbackAdminshipHandoverValidFor() internal view virtual returns (uint64) {
-        return 48 * 3600;
+        return 24 * 3600;
     }
     /*                  PUBLIC UPDATE FUNCTIONS                   */
-
-    /// @dev Allows the fallbackAdmin to renounce their fallbackAdminship.
-    function renounceFallbackAdminship() public virtual onlyFallbackAdmin {
-        _setFallbackAdmin(address(0));
-    }
 
     /// @dev Request a two-step fallbackAdminship handover to the caller.
     /// The request will automatically expire in 48 hours (172800 seconds) by default.
