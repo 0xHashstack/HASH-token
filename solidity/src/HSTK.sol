@@ -16,11 +16,35 @@ import {BlackListed} from "./utils/BlackListed.sol";
 contract HstkToken is ERC20, Pausable, BlackListed {
     using SafeERC20 for IERC20;
 
-    /// @dev Error thrown when attempting to mint tokens beyond the max supply
+    /**
+     * @notice Emitted whenever MAX Supply is reached.
+     */
     error MAX_SUPPLY_EXCEEDED();
 
-    /// @dev Event emitted when tokens are rescued from the contract
-    event TOKEN_RESCUED(address indexed token, address indexed to, uint256 amount);
+    /**
+     * @notice Emitted whenever tokens are minted for an account.
+     *
+     * @param account Address of the account tokens are being minted for.
+     * @param amount  Amount of tokens minted.
+     */
+    event Mint(address indexed account, uint256 amount);
+
+    /**
+     * @notice Event emitted when tokens are rescued from the contract
+     *
+     * @param token Address of the token to be rescued
+     * @param to Address of receipient
+     * @param amount amount transferred to 'to' address
+     */
+    event Token_Rescued(address indexed token, address indexed to, uint256 amount);
+
+    /**
+     * @notice Emitted whenever tokens are burned from an account.
+     *
+     * @param account Address of the account tokens are being burned from.
+     * @param amount  Amount of tokens burned.
+     */
+    event Burn(address indexed account, uint256 amount);
 
     /// @dev The maximum total supply of tokens
     uint256 private constant MAX_SUPPLY = 9_000_000_000e18;
@@ -100,6 +124,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
             revert MAX_SUPPLY_EXCEEDED();
         }
         _mint(account, value);
+        emit Mint(account, value);
     }
 
     /**
@@ -113,6 +138,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
      */
     function burn(address account, uint256 value) external allowedInActiveOrPartialPause onlyMultiSig {
         _burn(account, value);
+        emit Burn(account, value);
     }
 
     /**
@@ -128,7 +154,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
         IERC20 interfaceAsset = IERC20(asset);
         uint256 balance = interfaceAsset.balanceOf(address(this));
         interfaceAsset.safeTransfer(to, balance);
-        emit TOKEN_RESCUED(asset, to, balance);
+        emit Token_Rescued(asset, to, balance);
     }
 
     /**

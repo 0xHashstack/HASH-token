@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
-import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 /**
  * @title IOptimismMintableERC20
@@ -12,7 +12,7 @@ import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol
 interface IOptimismMintableERC20 is IERC165 {
     function remoteToken() external returns (address);
 
-    function bridge() external returns (address);
+    // function bridge() external returns (address);
 
     function mint(address _to, uint256 _amount) external;
 

@@ -283,7 +283,7 @@ contract MultiSigContractTest is Test {
         test_AddSigner();
         // Fallback superAdmin creates transaction
         vm.startPrank(fallbackAdmin);
-        uint256 txId = wrappedMultiSig.createMintTransaction(to, 1000 * 10**18);
+        uint256 txId = wrappedMultiSig.createMintTransaction(to, 1000 * 10 ** 18);
 
         // Approve and wait for activation period
         // wrappedMultiSig.approveTransaction(txId);
@@ -310,7 +310,7 @@ contract MultiSigContractTest is Test {
         wrappedMultiSig.executeTransaction(txId);
 
         // Verify mint
-        assertEq(token.balanceOf(to), 1000 * 10**18);
+        assertEq(token.balanceOf(to), 1000 * 10 ** 18);
     }
 
     function test_RevertFallbackAdminBurnTransaction() public {
@@ -546,13 +546,12 @@ contract MultiSigContractTest is Test {
     }
 
     function test_createBlackListTransaction() public {
-       
         // vm.assume(account!=address(0));
         address account = makeAddr("account");
         address to = makeAddr("to");
         test_FallbackAdminMintTransaction();
         vm.prank(signer1);
-        uint txId = wrappedMultiSig.createBlacklistAccountTransaction(account);
+        uint256 txId = wrappedMultiSig.createBlacklistAccountTransaction(account);
 
         vm.prank(signer1);
         wrappedMultiSig.approveTransaction(txId);
@@ -570,24 +569,21 @@ contract MultiSigContractTest is Test {
         vm.warp(block.timestamp + 24 hours + 1);
         wrappedMultiSig.executeTransaction(txId);
 
-
-        assertEq(token.isBlackListed(account),true,"Inconsistent State");
+        assertEq(token.isBlackListed(account), true, "Inconsistent State");
 
         vm.expectRevert();
         vm.prank(to);
-        token.transfer(account,10*10**18);
-
+        token.transfer(account, 10 * 10 ** 18);
     }
 
-    function test_removeBlackListTransaction() public{
-
+    function test_removeBlackListTransaction() public {
         test_createBlackListTransaction();
 
         address account = makeAddr("account");
         address to = makeAddr("to");
 
         vm.prank(signer1);
-        uint txId = wrappedMultiSig.createBlacklistRemoveTransaction(account);
+        uint256 txId = wrappedMultiSig.createBlacklistRemoveTransaction(account);
 
         vm.prank(signer1);
         wrappedMultiSig.approveTransaction(txId);
@@ -605,16 +601,12 @@ contract MultiSigContractTest is Test {
         vm.warp(block.timestamp + 24 hours + 1);
         wrappedMultiSig.executeTransaction(txId);
 
-
-        assertEq(token.isBlackListed(account),false,"Inconsistent State");
+        assertEq(token.isBlackListed(account), false, "Inconsistent State");
 
         vm.prank(to);
-        token.transfer(account,10*10**18);
-        assertEq(token.balanceOf(account),10*10**18,"Token Doesn't mint successfully");
-
+        token.transfer(account, 10 * 10 ** 18);
+        assertEq(token.balanceOf(account), 10 * 10 ** 18, "Token Doesn't mint successfully");
     }
-
-   
 }
 
 //for signers[] array
