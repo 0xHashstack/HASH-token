@@ -147,16 +147,10 @@ abstract contract SuperAdmin2Step {
     /// Override to return a different value if needed.
     /// Made internal to conserve bytecode. Wrap it in a public function if needed.
     function _superAdminshipHandoverValidFor() internal view virtual returns (uint64) {
-        return 48 * 3600;
+        return 72 * 3600;
     }
 
     /*                  PUBLIC UPDATE FUNCTIONS                   */
-
-    // Check: is this function correct/required?
-    /// @dev Allows the superAdmin to renounce their superAdminship.
-    function renounceSuperAdminship() public virtual onlySuperAdmin {
-        _setSuperAdmin(address(0));
-    }
 
     /// @dev Request a two-step superAdminship handover to the caller.
     /// The request will automatically expire in 48 hours (172800 seconds) by default.

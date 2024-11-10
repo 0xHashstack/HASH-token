@@ -9,12 +9,15 @@ contract TestHSTK is Test {
     uint256 private constant TOTAL_SUPPLY = 9_000_000_000e18;
 
     error InvalidOperation();
+    error InvalidStateChange();
+    error RestrictedToMultiSig();
+    error EnforcedPause();
+    error AccountBlackListed(address account);
 
     // Test accounts
     address admin = address(1);
     address user1 = address(2);
     address user2 = address(3);
-    address blacklistedAccount = address(999);
 
     // Contract instance
     HstkToken hstkToken;
@@ -45,8 +48,8 @@ contract TestHSTK is Test {
         vm.assume(amount < TOTAL_SUPPLY - 10 ** 18 && amount > 0);
 
         vm.startPrank(admin);
-        hstkToken.pause();
-        hstkToken.unpause();
+        hstkToken.updateOperationalState(2);
+        hstkToken.updateOperationalState(0);
         hstkToken.mint(user1, amount);
         vm.stopPrank();
 
@@ -54,20 +57,23 @@ contract TestHSTK is Test {
     }
 
     function testFuzzMintWithAdminWhenPaused(uint256 amount) public {
-        vm.assume(amount < TOTAL_SUPPLY && amount > 0);
+        vm.assume(amount < TOTAL_SUPPLY - 10 ** 18 && amount > 0);
 
-        vm.prank(admin);
-        hstkToken.pause();
+        vm.startPrank(admin);
+        hstkToken.updateOperationalState(2);
+        // hstkToken.updateOperationalState(1);
 
-        vm.expectRevert();
+        vm.expectRevert(InvalidStateChange.selector);
         hstkToken.mint(user1, amount);
+
+        vm.stopPrank();
     }
 
     function testFuzzMintWithNonAdmin(uint256 amount) public {
-        vm.assume(amount < TOTAL_SUPPLY && amount > 0);
+        vm.assume(amount < TOTAL_SUPPLY - 10 ** 18 && amount > 0);
 
         vm.prank(user1);
-        vm.expectRevert();
+        vm.expectRevert(RestrictedToMultiSig.selector);
         hstkToken.mint(user1, amount);
     }
 
@@ -79,7 +85,7 @@ contract TestHSTK is Test {
     }
 
     function testFuzzTransferToken(uint256 amount) public {
-        vm.assume(amount < TOTAL_SUPPLY - 1 * 10 ** 18 && amount > 0);
+        vm.assume(amount < TOTAL_SUPPLY - 10 ** 18 && amount > 0);
 
         vm.prank(admin);
         hstkToken.mint(user1, amount);
@@ -89,15 +95,15 @@ contract TestHSTK is Test {
     }
 
     function testFuzzTransferWhenPaused(uint256 amount) public {
-        vm.assume(amount < TOTAL_SUPPLY - 1 * 10 ** 18 && amount > 0);
+        vm.assume(amount < TOTAL_SUPPLY - 10 ** 18 && amount > 0);
 
         vm.startPrank(admin);
         hstkToken.mint(user1, amount);
-        hstkToken.pause();
+        hstkToken.updateOperationalState(2);
         vm.stopPrank();
 
         vm.prank(user1);
-        vm.expectRevert();
+        vm.expectRevert(EnforcedPause.selector);
         hstkToken.transfer(user2, amount);
     }
 
@@ -106,7 +112,8 @@ contract TestHSTK is Test {
 
         vm.startPrank(admin);
         hstkToken.mint(user1, amount);
-        hstkToken.partialPause();
+        hstkToken.updateOperationalState(1);
+        assertEq(uint8(hstkToken.getCurrentState()), 1);
         vm.stopPrank();
 
         vm.prank(user1);
@@ -114,8 +121,8 @@ contract TestHSTK is Test {
         hstkToken.transfer(user2, amount);
     }
 
-    function testFuzzTransferToBlackListed(uint256 amount) public {
-        vm.assume(amount > 0 && amount < TOTAL_SUPPLY - 10 ** 18);
+    function testFuzzTransferToBlackListed(uint256 amount, address blacklistedAccount) public {
+        vm.assume(amount > 0 && amount < TOTAL_SUPPLY - 10 ** 18 && blacklistedAccount != address(0));
 
         vm.startPrank(admin);
         hstkToken.mint(user1, amount);
@@ -128,8 +135,8 @@ contract TestHSTK is Test {
         vm.stopPrank();
     }
 
-    function testFuzzApproveToBlackListed(uint256 amount) public {
-        vm.assume(amount > 0 && amount < TOTAL_SUPPLY - 10 ** 18);
+    function testFuzzApproveToBlackListed(uint256 amount, address blacklistedAccount) public {
+        vm.assume(amount > 0 && amount < TOTAL_SUPPLY - 10 ** 18 && blacklistedAccount != address(0));
 
         vm.prank(admin);
         hstkToken.mint(user1, amount);

@@ -16,11 +16,35 @@ import {BlackListed} from "./utils/BlackListed.sol";
 contract HstkToken is ERC20, Pausable, BlackListed {
     using SafeERC20 for IERC20;
 
-    /// @dev Error thrown when attempting to mint tokens beyond the max supply
+    /**
+     * @notice Emitted whenever MAX Supply is reached.
+     */
     error MAX_SUPPLY_EXCEEDED();
 
-    /// @dev Event emitted when tokens are rescued from the contract
-    event TOKEN_RESCUED(address indexed token, address indexed to, uint256 amount);
+    /**
+     * @notice Emitted whenever tokens are minted for an account.
+     *
+     * @param account Address of the account tokens are being minted for.
+     * @param amount  Amount of tokens minted.
+     */
+    event Mint(address indexed account, uint256 amount);
+
+    /**
+     * @notice Event emitted when tokens are rescued from the contract
+     *
+     * @param token Address of the token to be rescued
+     * @param to Address of receipient
+     * @param amount amount transferred to 'to' address
+     */
+    event Token_Rescued(address indexed token, address indexed to, uint256 amount);
+
+    /**
+     * @notice Emitted whenever tokens are burned from an account.
+     *
+     * @param account Address of the account tokens are being burned from.
+     * @param amount  Amount of tokens burned.
+     */
+    event Burn(address indexed account, uint256 amount);
 
     /// @dev The maximum total supply of tokens
     uint256 private constant MAX_SUPPLY = 9_000_000_000e18;
@@ -41,8 +65,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
     function transfer(address to, uint256 value)
         public
         override
-        partialPausedOff
-        pausedOff
+        whenActive
         notBlackListed(_msgSender())
         notBlackListed(to)
         returns (bool)
@@ -57,8 +80,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
     function transferFrom(address from, address to, uint256 value)
         public
         override
-        partialPausedOff
-        pausedOff
+        whenActive
         notBlackListed(_msgSender())
         notBlackListed(from)
         notBlackListed(to)
@@ -74,7 +96,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
     function approve(address spender, uint256 value)
         public
         override
-        pausedOff
+        allowedInActiveOrPartialPause
         notBlackListed(_msgSender())
         notBlackListed(spender)
         returns (bool)
@@ -92,11 +114,17 @@ contract HstkToken is ERC20, Pausable, BlackListed {
      * - `account` cannot be the zero address
      * - Total supply after minting must not exceed MAX_SUPPLY
      */
-    function mint(address account, uint256 value) external pausedOff onlyMultiSig notBlackListed(account) {
+    function mint(address account, uint256 value)
+        external
+        allowedInActiveOrPartialPause
+        onlyMultiSig
+        notBlackListed(account)
+    {
         if (totalSupply() + value > MAX_SUPPLY) {
             revert MAX_SUPPLY_EXCEEDED();
         }
         _mint(account, value);
+        emit Mint(account, value);
     }
 
     /**
@@ -108,8 +136,9 @@ contract HstkToken is ERC20, Pausable, BlackListed {
      * - Contract must not be paused
      * - `account` cannot be the zero address
      */
-    function burn(address account, uint256 value) external pausedOff onlyMultiSig {
+    function burn(address account, uint256 value) external allowedInActiveOrPartialPause onlyMultiSig {
         _burn(account, value);
+        emit Burn(account, value);
     }
 
     /**
@@ -121,50 +150,20 @@ contract HstkToken is ERC20, Pausable, BlackListed {
      * - `asset` and `to` cannot be the zero address
      * @notice This function can be used to recover any ERC20 tokens sent to this contract by mistake
      */
-    function recoverToken(address asset, address to) external pausedOff onlyMultiSig {
+    function recoverToken(address asset, address to) external allowedInActiveOrPartialPause onlyMultiSig {
         IERC20 interfaceAsset = IERC20(asset);
         uint256 balance = interfaceAsset.balanceOf(address(this));
         interfaceAsset.safeTransfer(to, balance);
-        emit TOKEN_RESCUED(asset, to, balance);
+        emit Token_Rescued(asset, to, balance);
     }
 
     /**
-     * @dev Pauses all token transfers.
+     * @dev Updates the contract's operational state
+     * @param newState The new state to set (0: Active, 1: Partial Pause, 2: Full Pause)
      * Requirements:
-     * - Can only be called by the admin
-     * - The contract must not be paused
+     * - Can only be called by the MultiSig
      */
-    function pause() external onlyMultiSig {
-        _pause();
-    }
-
-    /**
-     * @dev Unpauses all token transfers.
-     * Requirements:
-     * - Can only be called by the admin
-     * - The contract must be paused
-     */
-    function unpause() external onlyMultiSig {
-        _unpause();
-    }
-
-    /**
-     * @dev Partially pauses the contract, limiting some functionalities.
-     * Requirements:
-     * - Can only be called by the admin
-     * - The contract must not be partially paused
-     */
-    function partialPause() external onlyMultiSig {
-        _partialPause();
-    }
-
-    /**
-     * @dev Removes the partial pause state, restoring full functionality.
-     * Requirements:
-     * - Can only be called by the admin
-     * - The contract must be partially paused
-     */
-    function partialUnPause() external onlyMultiSig {
-        _partialUnpause();
+    function updateOperationalState(uint8 newState) external onlyMultiSig {
+        _updateOperationalState(newState);
     }
 }

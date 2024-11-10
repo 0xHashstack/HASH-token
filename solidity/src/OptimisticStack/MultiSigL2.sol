@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import {AccessRegistry} from "./AccessRegistry/AccessRegistry.sol";
-import {UUPSUpgradeable} from "./utils/UUPSUpgradeable.sol";
-import {Initializable} from "./utils/Initializable.sol";
+import {AccessRegistry} from "../AccessRegistry/AccessRegistry.sol";
+import {UUPSUpgradeable} from "../utils/UUPSUpgradeable.sol";
+import {Initializable} from "../utils/Initializable.sol";
 
 /**
  * @title MultisigWallet
@@ -300,14 +300,16 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
 
         transactionIdExists[txId] = true;
 
-        transactions[txId].proposer = _msgSender();
-        transactions[txId].selector = _selector;
-        transactions[txId].params = _params;
-        transactions[txId].proposedAt = block.timestamp;
-        transactions[txId].firstSignAt = 0;
-        transactions[txId].approvals = 0;
-        transactions[txId].state = TransactionState.Pending;
-        transactions[txId].isFallbackAdmin = isFallbackAdmin;
+        transactions[txId] = Transaction({
+            proposer: _msgSender(),
+            selector: _selector,
+            params: _params,
+            proposedAt: block.timestamp,
+            firstSignAt: 0,
+            approvals: 0,
+            state: TransactionState.Pending,
+            isFallbackAdmin: isFallbackAdmin
+        });
 
         emit TransactionProposed(txId, _msgSender(), block.timestamp);
 

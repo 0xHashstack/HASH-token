@@ -11,7 +11,7 @@ import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 abstract contract BlackListed is Context {
     // Errors
     error AccountBlackListed(address account);
-    error AdminRestricted();
+    error RestrictedToMultiSig();
     error InvalidOperation();
 
     // Events
@@ -46,7 +46,7 @@ abstract contract BlackListed is Context {
      */
     modifier onlyMultiSig() {
         if (_msgSender() != multiSig) {
-            revert AdminRestricted();
+            revert RestrictedToMultiSig();
         }
         _;
     }
@@ -69,7 +69,7 @@ abstract contract BlackListed is Context {
      * Requirements:
      * - Can only be called by the admin
      */
-    function removeFromBlackListAccount(address account) external onlyMultiSig {
+    function removeBlackListedAccount(address account) external onlyMultiSig {
         blackListedAccounts[account] = false;
         emit RemovedAccountBlackListed(account);
     }

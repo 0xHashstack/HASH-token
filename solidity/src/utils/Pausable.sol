@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
+
+pragma solidity ^0.8.20;
 
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 
@@ -9,204 +10,85 @@ import {Context} from "@openzeppelin/contracts/utils/Context.sol";
  *
  * This module is used through inheritance. It will make available the
  * modifiers `pausedOff` and `pausedOn`, which can be applied to
- * the functions of your contract. Note that they will not be pausable by
- * simply including this module, only once the modifiers are put in place.
+ * the functions of your contract.
  */
 abstract contract Pausable is Context {
-    bool private _paused;
-    bool private _partialPaused;
+    enum PauseState {
+        ACTIVE, // Normal operation state (unpaused)
+        PARTIAL_PAUSE, // Partially paused state
+        FULL_PAUSE // Fully paused state
+
+    }
+
+    PauseState private _currentState;
 
     /**
-     * @dev Emitted when the pause is triggered by `account`.
+     * @dev Emitted when the pause state is changed by `account`.
      */
-    event Paused(address account);
+    event PauseStateChanged(address account, PauseState newState);
 
     /**
-     * @dev Emitted when the Partial pause is triggered by `account`.
-     */
-    event PartialPaused(address account);
-
-    /**
-     * @dev Emitted when the pause is lifted by `account`.
-     */
-    event Unpaused(address account);
-
-    /**
-     * @dev Emitted when the Partial pause is lifted by `account`.
-     */
-    event PartialUnpaused(address account);
-
-    /**
-     * @dev The operation failed because the contract is isPaused.
+     * @dev The operation failed because the contract is fully paused.
      */
     error EnforcedPause();
 
     /**
-     * @dev The operation failed because the contract is isPaused.
+     * @dev The operation failed because the contract is partially paused.
      */
     error EnforcedPartialPause();
 
     /**
-     * @dev The operation failed because the contract is not isPaused.
+     * @dev The operation failed because the current state is partially paused.
      */
-    error ExpectedPause();
+    error InvalidStateChange();
 
     /**
-     * @dev The operation failed because the contract is not isPaused.
-     */
-    error ExpectedPartialPause();
-
-    /**
-     * @dev Initializes the contract in unpaused state.
+     * @dev Initializes the contract in ACTIVE state.
      */
     constructor() {
-        _paused = false;
-        _partialPaused = false;
+        _currentState = PauseState.ACTIVE;
     }
 
     /**
-     * @dev Modifier to make a function callable only when the contract is not isPaused.
-     *
-     * Requirements:
-     *
-     * - The contract must not be isPaused.
+     * @dev Modifier to make a function callable only when the contract is active.
      */
-    modifier pausedOff() {
-        _requireNotPaused();
+    modifier whenActive() {
+        _requireActive();
         _;
     }
 
-    /**
-     * @dev Modifier to make a function callable only when the contract is not isPaused.
-     *
-     * Requirements:
-     *
-     * - The contract must not be isPaused.
-     */
-    modifier partialPausedOff() {
-        _requireNotPartialPaused();
-        _;
-    }
-
-    /**
-     * @dev Modifier to make a function callable only when the contract is isPaused.
-     *
-     * Requirements:
-     *
-     * - The contract must be isPaused.
-     */
-    modifier pausedOn() {
-        _requirePaused();
-        _;
-    }
-    /**
-     * @dev Modifier to make a function callable only when the contract is isPaused.
-     *
-     * Requirements:
-     *
-     * - The contract must be isPaused.
-     */
-
-    modifier partialPausedOn() {
-        _requireNotPartialPaused();
-        _;
-    }
-
-    /**
-     * @dev Returns true if the contract is isPaused, and false otherwise.
-     */
-    function isPaused() public view virtual returns (bool) {
-        return _paused;
-    }
-
-    /**
-     * @dev Returns true if the contract is isPaused, and false otherwise.
-     */
-    function partialPaused() public view virtual returns (bool) {
-        return _partialPaused;
-    }
-
-    /**
-     * @dev Throws if the contract is isPaused.
-     */
-    function _requireNotPaused() internal view virtual {
-        if (isPaused()) {
-            revert EnforcedPause();
-        }
-    }
-    /**
-     * @dev Throws if the contract is isPaused.
-     */
-
-    function _requireNotPartialPaused() internal view virtual {
-        if (partialPaused()) {
-            revert EnforcedPartialPause();
+    modifier allowedInActiveOrPartialPause() {
+        if (_currentState == PauseState.ACTIVE || _currentState == PauseState.PARTIAL_PAUSE) {
+            _;
+        } else {
+            revert InvalidStateChange();
         }
     }
 
     /**
-     * @dev Throws if the contract is not isPaused.
+     * @dev Returns the current pause state of the contract.
      */
-    function _requirePaused() internal view virtual {
-        if (!isPaused()) {
-            revert ExpectedPause();
+    function getCurrentState() external view virtual returns (PauseState) {
+        return _currentState;
+    }
+
+    /**
+     * @dev Throws if the contract is not active.
+     */
+    function _requireActive() internal view virtual {
+        if (_currentState != PauseState.ACTIVE) {
+            if (_currentState == PauseState.FULL_PAUSE) {
+                revert EnforcedPause();
+            } else {
+                revert EnforcedPartialPause();
+            }
         }
     }
-    /**
-     * @dev Throws if the contract is not isPaused.
-     */
 
-    function _requirePartialPaused() internal view virtual {
-        if (!partialPaused()) {
-            revert ExpectedPartialPause();
-        }
-    }
+    function _updateOperationalState(uint8 _state) internal {
+        if (_state > 2) revert InvalidStateChange();
+        _currentState = PauseState(_state);
 
-    /**
-     * @dev Triggers stopped state.
-     *
-     * Requirements:
-     *
-     * - The contract must not be isPaused.
-     */
-    function _pause() internal virtual pausedOff {
-        _paused = true;
-        emit Paused(_msgSender());
-    }
-
-    /**
-     * @dev Triggers stopped state.
-     *
-     * Requirements:
-     *
-     * - The contract must not be isPaused and partial isPaused.
-     */
-    function _partialPause() internal virtual pausedOff partialPausedOff {
-        _partialPaused = true;
-        emit PartialPaused(_msgSender());
-    }
-
-    /**
-     * @dev Returns to normal state.
-     *
-     * Requirements:
-     *
-     * - The contract must be isPaused.
-     */
-    function _unpause() internal virtual pausedOn {
-        _paused = false;
-        emit Unpaused(_msgSender());
-    }
-    /**
-     * @dev Returns to normal state.
-     *
-     * Requirements:
-     *
-     * - The contract must be isPaused.
-     */
-
-    function _partialUnpause() internal virtual pausedOff partialPausedOn {
-        _partialPaused = false;
-        emit PartialUnpaused(_msgSender());
+        emit PauseStateChanged(_msgSender(), _currentState);
     }
 }
