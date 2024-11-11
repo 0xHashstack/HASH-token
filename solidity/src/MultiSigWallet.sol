@@ -51,14 +51,14 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
 
     // ========== STRUCTS ==========
     struct Transaction {
-        address proposer;
-        bytes4 selector; // The function call data
-        bytes params;
         uint256 proposedAt; // When the transaction was proposed
         uint256 firstSignAt; // When the first signer approved
         uint256 approvals; // Number of approvals received
+        address proposer;
+        bytes4 selector; // The function call data
         TransactionState state; //state of the transaction(pending,)
         bool isFallbackAdmin; // Whether this was proposed by fallback admin
+        bytes params;
     }
 
     // ========== STATE ==========
@@ -193,6 +193,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
      * @param amount The amount of tokens to mint
      * @return The transaction ID
      */
+    /// TODO: add modifiers for amount != 0
     function createMintTransaction(address to, uint256 amount) external virtual notZeroAddress(to) returns (uint256) {
         return _createStandardTransaction(MINT_SELECTOR, abi.encode(to, amount));
     }
@@ -304,9 +305,9 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         transactions[txId].selector = _selector;
         transactions[txId].params = _params;
         transactions[txId].proposedAt = block.timestamp;
-        transactions[txId].firstSignAt = 0;
-        transactions[txId].approvals = 0;
-        transactions[txId].state = TransactionState.Pending;
+        // transactions[txId].firstSignAt = 0; //already 0 when creating
+        // transactions[txId].approvals = 0;
+        // transactions[txId].state = TransactionState.Pending;
         transactions[txId].isFallbackAdmin = isFallbackAdmin;
 
         emit TransactionProposed(txId, _msgSender(), block.timestamp);

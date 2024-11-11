@@ -77,9 +77,9 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
         }
     }
 
-    function removeSigner(address _signer) external virtual onlySuperAdmin notZeroAddress(_signer) {
+    function removeSigner(address _signer) external virtual onlySuperAdmin {
         if (!isSigner(_signer)) revert NonExistingSigner();
-        if (_signer == superAdmin()) revert SuperAdminCannotRemoved();
+        if (_signer == _msgSender()) revert SuperAdminCannotRemoved();
         if (totalSigners() == 1) revert WalletCannotBeSignerLess();
         // require(totalSigners() > 1, "ACL::wallet cannot be ownerless");
         signers[_signer] = false;

@@ -18,11 +18,11 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     uint256 private constant FALLBACK_ADMIN_WINDOW = 72 hours;
     uint256 private constant APPROVAL_THRESHOLD = 60; // 60% of signers must approve
 
-    ///@dev bytes4(keccak256("mint(address,uint256)"))
-    bytes4 private constant MINT_SELECTOR = 0x40c10f19;
+    ///@dev bytes4(keccak256("authorizeBridge(address)"))
+    bytes4 private constant AUTHORIZE_BRIDGE_SELECTOR = 0xe53595ee;
 
-    ///@dev bytes4(keccak256("burn(address,uint256)"))
-    bytes4 private constant BURN_SELECTOR = 0x9dc29fac;
+    ///@dev bytes4(keccak256("revokeBridgeAuthorization(address)"))
+    bytes4 private constant REVOKE_BRDIGE_AUTHORIZE_SELECTOR = 0xaf84ce93;
 
     ///@dev bytes4(keccak256("updateOperationalState(uint8)"))
     bytes4 private constant PAUSE_STATE_SELECTOR = 0x50f20190;
@@ -106,8 +106,8 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         _initializeAccessRegistry(_superAdmin, _fallbackAdmin);
         // Set up function permissions
         // Fallback admin can only mint and burn
-        fallbackAdminFunctions[MINT_SELECTOR] = true;
-        fallbackAdminFunctions[BURN_SELECTOR] = true;
+        fallbackAdminFunctions[AUTHORIZE_BRIDGE_SELECTOR] = true;
+        fallbackAdminFunctions[REVOKE_BRDIGE_AUTHORIZE_SELECTOR] = true;
 
         // Signers can pause/unpause and manage blacklist
         signerFunctions[PAUSE_STATE_SELECTOR] = true;
@@ -188,28 +188,21 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     }
 
     /**
-     * @notice Creates a mint transaction
-     * @param to The address to mint tokens to
-     * @param amount The amount of tokens to mint
+     * @notice Creates a transaction to Authorize Bridge
+     * @param bridge The address to authorize bridges
      * @return The transaction ID
      */
-    function createMintTransaction(address to, uint256 amount) external virtual notZeroAddress(to) returns (uint256) {
-        return _createStandardTransaction(MINT_SELECTOR, abi.encode(to, amount));
+    function createAuthorizeBridgeTransaction(address bridge) external virtual returns (uint256) {
+        return _createStandardTransaction(AUTHORIZE_BRIDGE_SELECTOR, abi.encode(bridge));
     }
 
     /**
-     * @notice Creates a burn transaction
-     * @param from The address from which to burn tokens
-     * @param amount The amount of tokens to burn
+     * @notice Creates a transaction to Revoke Authorization of Bridge
+     * @param bridge The address from which to revoke authorization
      * @return The transaction ID
      */
-    function createBurnTransaction(address from, uint256 amount)
-        external
-        virtual
-        notZeroAddress(from)
-        returns (uint256)
-    {
-        return _createStandardTransaction(BURN_SELECTOR, abi.encode(from, amount));
+    function createRevokeBridgeAuthorizationTransaction(address bridge) external virtual returns (uint256) {
+        return _createStandardTransaction(REVOKE_BRDIGE_AUTHORIZE_SELECTOR, abi.encode(bridge));
     }
 
     /**

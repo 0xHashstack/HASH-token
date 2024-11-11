@@ -73,12 +73,12 @@ contract OptimismMintableERC20 is IOptimismMintableERC20, ILegacyMintableERC20, 
     event Burn(address indexed account, uint256 amount);
 
     /**
- * @notice A modifier that restricts function access to authorized bridges only
- */
-modifier onlyAuthorizedBridge() {
-    require(isAuthorizedBridge(_msgSender()), "OptimismMintableERC20: caller is not an authorized bridge");
-    _;
-}
+     * @notice A modifier that restricts function access to authorized bridges only
+     */
+    modifier onlyAuthorizedBridge() {
+        require(isAuthorizedBridge(_msgSender()), "OptimismMintableERC20: caller is not an authorized bridge");
+        _;
+    }
 
     /**
      * @custom:semver 1.0.0
@@ -96,41 +96,40 @@ modifier onlyAuthorizedBridge() {
         authorizedBridges[_bridge] = true;
     }
 
-   
-/**
- * @notice Authorizes a new bridge to mint and burn tokens
- * @dev Can only be called by contract admin/owner
- * @param _bridge Address of the bridge to authorize
- */
-function authorizeBridge(address _bridge) external onlyMultiSig {
-    require(_bridge != address(0), "OptimismMintableERC20: bridge cannot be zero address");
-    require(!authorizedBridges[_bridge], "OptimismMintableERC20: bridge already authorized");
-    
-    authorizedBridges[_bridge] = true;
-    emit BridgeAuthorized(_bridge, _msgSender());
-}
+    /**
+     * @notice Authorizes a new bridge to mint and burn tokens
+     * @dev Can only be called by contract admin/owner
+     * @param _bridge Address of the bridge to authorize
+     */
+    function authorizeBridge(address _bridge) external onlyMultiSig {
+        require(_bridge != address(0), "OptimismMintableERC20: bridge cannot be zero address");
+        require(!authorizedBridges[_bridge], "OptimismMintableERC20: bridge already authorized");
 
-/**
- * @notice Revokes a bridge's authorization to mint and burn tokens
- * @dev Can only be called by contract admin/owner
- * @param _bridge Address of the bridge to unauthorized
- */
-function revokeBridgeAuthorization(address _bridge) external onlyMultiSig {
-    require(_bridge != address(0), "OptimismMintableERC20: bridge cannot be zero address");
-    require(authorizedBridges[_bridge], "OptimismMintableERC20: bridge not authorized");
-    
-    authorizedBridges[_bridge] = false;
-    emit BridgeUnauthorized(_bridge, _msgSender());
-}
+        authorizedBridges[_bridge] = true;
+        emit BridgeAuthorized(_bridge, _msgSender());
+    }
 
-/**
- * @notice Checks if a given address is an authorized bridge
- * @param _bridge Address to check for bridge authorization
- * @return bool True if the address is an authorized bridge, false otherwise
- */
-function isAuthorizedBridge(address _bridge) public view returns(bool) {
-    return authorizedBridges[_bridge];
-}
+    /**
+     * @notice Revokes a bridge's authorization to mint and burn tokens
+     * @dev Can only be called by contract admin/owner
+     * @param _bridge Address of the bridge to unauthorized
+     */
+    function revokeBridgeAuthorization(address _bridge) external onlyMultiSig {
+        // require(_bridge != address(0), "OptimismMintableERC20: bridge cannot be zero address");
+        require(authorizedBridges[_bridge], "OptimismMintableERC20: bridge not authorized");
+
+        authorizedBridges[_bridge] = false;
+        emit BridgeUnauthorized(_bridge, _msgSender());
+    }
+
+    /**
+     * @notice Checks if a given address is an authorized bridge
+     * @param _bridge Address to check for bridge authorization
+     * @return bool True if the address is an authorized bridge, false otherwise
+     */
+    function isAuthorizedBridge(address _bridge) public view returns (bool) {
+        return authorizedBridges[_bridge];
+    }
 
     /**
      * @notice Allows the StandardBridge on this network to mint tokens.
@@ -262,11 +261,12 @@ function isAuthorizedBridge(address _bridge) public view returns(bool) {
     function l1Token() public view returns (address) {
         return REMOTE_TOKEN;
     }
-
+    /// TODO: Repeated fnc Here
     /**
      * @custom:legacy
      * @notice Legacy getter for REMOTE_TOKEN.
      */
+
     function remoteToken() public view returns (address) {
         return REMOTE_TOKEN;
     }
