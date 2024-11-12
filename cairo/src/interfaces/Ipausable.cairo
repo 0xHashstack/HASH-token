@@ -1,4 +1,4 @@
-use cairo_starknet::helpers::constants;
+use cairo::helpers::constants;
 // Define the pause states using an enum
 #[derive(Drop, Copy, Serde)]
 pub enum PauseState {
@@ -8,7 +8,7 @@ pub enum PauseState {
 }
 
 #[starknet::interface]
-pub trait IPausable<T1>{
+pub trait IPausable<T1> {
     fn get_current_state(self: @T1) -> PauseState;
     fn is_active(self: @T1) -> bool;
     fn is_partial_paused(self: @T1) -> bool;

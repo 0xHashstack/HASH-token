@@ -21,7 +21,7 @@ pub mod FallbackAdminTwoStep {
     use cairo::interfaces::IfallbackAdmin2Step;
 
     use starknet::ContractAddress;
-    use starknet::{get_caller_address,get_block_timestamp};
+    use starknet::{get_caller_address, get_block_timestamp};
 
     #[storage]
     pub struct Storage {
@@ -51,7 +51,6 @@ pub mod FallbackAdminTwoStep {
         pub previous_fallback_admin: ContractAddress,
         #[key]
         pub new_fallback_admin: ContractAddress,
-
     }
 
     pub mod Errors {
@@ -76,9 +75,9 @@ pub mod FallbackAdminTwoStep {
         fn pending_fallback_admin(self: @ComponentState<TContractState>) -> ContractAddress {
             self.pending_admin.read()
         }
-        
+
         //Returns the handover expiry of the pending fallback_admin
-        fn fallback_handover_expires_at(self:@ComponentState<TContractState> ) -> u64 {
+        fn fallback_handover_expires_at(self: @ComponentState<TContractState>) -> u64 {
             self.handover_expires.read()
         }
 
@@ -93,9 +92,11 @@ pub mod FallbackAdminTwoStep {
         fn accept_fallback_adminship(ref self: ComponentState<TContractState>) {
             let caller = get_caller_address();
             let pending_fallback_admin = self.pending_admin.read();
-            let fallback_adminship_expires_at:u64 = self.handover_expires.read();
+            let fallback_adminship_expires_at: u64 = self.handover_expires.read();
             assert(caller == pending_fallback_admin, Errors::NOT_PENDING_OWNER);
-            assert(get_block_timestamp()<= fallback_adminship_expires_at,Errors::HANDOVER_EXPIRED);
+            assert(
+                get_block_timestamp() <= fallback_adminship_expires_at, Errors::HANDOVER_EXPIRED
+            );
             self._transfer_fallback_adminship(pending_fallback_admin);
         }
 
@@ -114,10 +115,9 @@ pub mod FallbackAdminTwoStep {
         }
 
         /// Returns the time for which handover is valid for pending fallback_admin.
-        fn fallback_admin_ownership_valid_for(self:@ComponentState<TContractState>)->u64{
-            72*3600
+        fn fallback_admin_ownership_valid_for(self: @ComponentState<TContractState>) -> u64 {
+            72 * 3600
         }
-        
     }
 
     #[generate_trait]
@@ -156,7 +156,10 @@ pub mod FallbackAdminTwoStep {
             self.fallback_admin.write(new_fallback_admin);
             self
                 .emit(
-                    FallbackOwnershipTransferred{ previous_fallback_admin: previous_fallback_admin, new_fallback_admin: new_fallback_admin }
+                    FallbackOwnershipTransferred {
+                        previous_fallback_admin: previous_fallback_admin,
+                        new_fallback_admin: new_fallback_admin
+                    }
                 );
         }
 
@@ -165,15 +168,19 @@ pub mod FallbackAdminTwoStep {
         /// Internal function without access restriction.
         ///
         /// Emits an `OwnershipTransferStarted` event.
-        fn _propose_fallback_admin(ref self: ComponentState<TContractState>, new_fallback_admin: ContractAddress) {
+        fn _propose_fallback_admin(
+            ref self: ComponentState<TContractState>, new_fallback_admin: ContractAddress
+        ) {
             let previous_fallback_admin = self.fallback_admin.read();
             self.pending_admin.write(new_fallback_admin);
-            let fallback_adminship_expires_at = get_block_timestamp() + self.fallback_admin_ownership_valid_for();
+            let fallback_adminship_expires_at = get_block_timestamp()
+                + self.fallback_admin_ownership_valid_for();
             self.handover_expires.write(fallback_adminship_expires_at);
             self
                 .emit(
                     FallbackOwnershipTransferStarted {
-                        previous_fallback_admin: previous_fallback_admin, new_fallback_admin: new_fallback_admin
+                        previous_fallback_admin: previous_fallback_admin,
+                        new_fallback_admin: new_fallback_admin
                     }
                 );
         }

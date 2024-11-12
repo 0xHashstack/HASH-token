@@ -1,7 +1,7 @@
 use starknet::ContractAddress;
 #[starknet::interface]
 pub trait IBlackListedComponent<TContractState> {
-    fn blackList_account(ref self:TContractState, account:ContractAddress);
-    fn remove_blackListed_account(ref self: TContractState,account: ContractAddress);
-    fn is_blackListed_account(self: @TContractState) -> bool;
+    fn is_blacklisted_account(self: @TContractState, account: ContractAddress) -> bool;
+    fn blacklist_account(ref self: TContractState, account: ContractAddress);
+    fn remove_blacklisted_account(ref self: TContractState, account: ContractAddress);
 }

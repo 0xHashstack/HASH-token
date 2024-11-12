@@ -6,15 +6,12 @@
 //     mod BlackListed;
 //     mod Pausable;
 // }
-pub mod components{
+pub mod components {
     pub mod Pausable;
     pub mod BlackListed;
     pub mod AccessRegistry;
-        pub mod utils{
-            pub mod SuperAdmin2Step;
-            pub mod FallbackAdmin2Step;
-        }
-    }
+    pub mod SuperAdmin2Step;
+}
 pub mod interfaces {
     pub mod Ipausable;
     pub mod IblackListed;
@@ -26,5 +23,5 @@ pub mod helpers {
     pub mod constants;
 }
 
-pub mod HSTK;
+// pub mod HSTK;
 pub mod MultiSigl2;

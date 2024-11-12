@@ -7,11 +7,5 @@
 
 //     component!(path: BlackListedComponent, storage: black, event: SupplyEvent);
 
-
-
-
-
-
-    
-
 // }
+

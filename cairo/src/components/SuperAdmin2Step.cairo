@@ -21,7 +21,7 @@ pub mod SuperAdminTwoStep {
     use cairo::interfaces::IsuperAdmin2Step;
 
     use starknet::ContractAddress;
-    use starknet::{get_caller_address,get_block_timestamp};
+    use starknet::{get_caller_address, get_block_timestamp};
 
     #[storage]
     pub struct Storage {
@@ -51,7 +51,6 @@ pub mod SuperAdminTwoStep {
         pub previous_super_admin: ContractAddress,
         #[key]
         pub new_super_admin: ContractAddress,
-
     }
 
     pub mod Errors {
@@ -63,10 +62,9 @@ pub mod SuperAdminTwoStep {
     }
 
     /// Adds support for two step super_adminship transfer.
-    #[embeddable_as(SuperAdminTwoStepImpl)]
-    impl SuperAdminTwoStep<
-        TContractState, 
-        +HasComponent<TContractState>
+    #[embeddable_as(SuperAdminTwoStep)]
+    pub impl SuperAdminTwoStepImpl<
+        TContractState, +HasComponent<TContractState>
     > of IsuperAdmin2Step::ISuperAdminTwoStep<ComponentState<TContractState>> {
         /// Returns the address of the current super_admin.
         fn super_admin(self: @ComponentState<TContractState>) -> ContractAddress {
@@ -77,9 +75,9 @@ pub mod SuperAdminTwoStep {
         fn pending_super_admin(self: @ComponentState<TContractState>) -> ContractAddress {
             self.pending_admin.read()
         }
-        
+
         //Returns the handover expiry of the pending super_admin
-        fn super_handover_expires_at(self:@ComponentState<TContractState> ) -> u64 {
+        fn super_handover_expires_at(self: @ComponentState<TContractState>) -> u64 {
             self.handover_expires.read()
         }
 
@@ -99,16 +97,14 @@ pub mod SuperAdminTwoStep {
         }
 
         /// Returns the time for which handover is valid for pending super_admin.
-        fn super_admin_ownership_valid_for(self:@ComponentState<TContractState>)->u64{
-            72*3600
+        fn super_admin_ownership_valid_for(self: @ComponentState<TContractState>) -> u64 {
+            72 * 3600
         }
-        
     }
 
     #[generate_trait]
     pub impl InternalImpl<
-        TContractState, 
-        +HasComponent<TContractState>
+        TContractState, +HasComponent<TContractState>
     > of InternalTrait<TContractState> {
         /// Sets the contract's initial super_admin.
         ///
@@ -137,9 +133,9 @@ pub mod SuperAdminTwoStep {
         fn _accept_super_adminship(ref self: ComponentState<TContractState>) {
             let caller = get_caller_address();
             let pending_super_admin = self.pending_admin.read();
-            let super_adminship_expires_at:u64 = self.handover_expires.read();
+            let super_adminship_expires_at: u64 = self.handover_expires.read();
             assert(caller == pending_super_admin, Errors::NOT_PENDING_OWNER);
-            assert(get_block_timestamp()<= super_adminship_expires_at,Errors::HANDOVER_EXPIRED);
+            assert(get_block_timestamp() <= super_adminship_expires_at, Errors::HANDOVER_EXPIRED);
             self._transfer_super_adminship(pending_super_admin);
         }
 
@@ -159,7 +155,9 @@ pub mod SuperAdminTwoStep {
             self.super_admin.write(new_super_admin);
             self
                 .emit(
-                    SuperOwnershipTransferred { previous_super_admin: previous_super_admin, new_super_admin: new_super_admin }
+                    SuperOwnershipTransferred {
+                        previous_super_admin: previous_super_admin, new_super_admin: new_super_admin
+                    }
                 );
         }
 
@@ -168,10 +166,13 @@ pub mod SuperAdminTwoStep {
         /// Internal function without access restriction.
         ///
         /// Emits an `OwnershipTransferStarted` event.
-        fn _propose_super_admin(ref self: ComponentState<TContractState>, new_super_admin: ContractAddress) {
+        fn _propose_super_admin(
+            ref self: ComponentState<TContractState>, new_super_admin: ContractAddress
+        ) {
             let previous_super_admin = self.super_admin.read();
             self.pending_admin.write(new_super_admin);
-            let super_adminship_expires_at = get_block_timestamp() + self.super_admin_ownership_valid_for();
+            let super_adminship_expires_at = get_block_timestamp()
+                + self.super_admin_ownership_valid_for();
             self.handover_expires.write(super_adminship_expires_at);
             self
                 .emit(
