@@ -11,7 +11,7 @@ mod BlackListedComp {
 
     #[storage]
     struct Storage {
-        blacklisted_account: LegacyMap<ContractAddress, bool>,
+        blacklisted_account: LegacyMap::<ContractAddress, bool>,
         multi_sig: ContractAddress,
     }
 

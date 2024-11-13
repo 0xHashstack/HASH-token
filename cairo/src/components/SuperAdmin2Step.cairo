@@ -14,7 +14,7 @@
 /// transfer where the new super_admin first has to accept their super_adminship to
 /// finalize the transfer.
 #[starknet::component]
-pub mod SuperAdminTwoStep {
+pub mod SuperAdminTwoStepComp {
     use core::num::traits::Zero;
     use cairo::interfaces::IsuperAdmin2Step::ISuperAdminTwoStep;
     // use cairo_starknet::interfaces::IsuperAdmin2Step;
@@ -62,9 +62,9 @@ pub mod SuperAdminTwoStep {
     }
 
     /// Adds support for two step super_adminship transfer.
-    #[embeddable_as(SuperAdminTwoStep)]
-    pub impl SuperAdminTwoStepImpl<
-        TContractState, +HasComponent<TContractState>
+    #[embeddable_as(SuperAdminTwoStepImpl)]
+    pub impl SuperAdminTwoStep<
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>
     > of IsuperAdmin2Step::ISuperAdminTwoStep<ComponentState<TContractState>> {
         /// Returns the address of the current super_admin.
         fn super_admin(self: @ComponentState<TContractState>) -> ContractAddress {
@@ -172,7 +172,7 @@ pub mod SuperAdminTwoStep {
             let previous_super_admin = self.super_admin.read();
             self.pending_admin.write(new_super_admin);
             let super_adminship_expires_at = get_block_timestamp()
-                + self.super_admin_ownership_valid_for();
+                + 72 * 3600;
             self.handover_expires.write(super_adminship_expires_at);
             self
                 .emit(

@@ -7,14 +7,13 @@ edition = "2023_11"
 
 # ...
 
-[workspace.dependencies]
+[dependencies]
 snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry.git", tag = "v0.27.0" }
 openzeppelin = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v0.19.0" }
+starknet = "2.8.4"
 
 [[target.starknet-contract]]
-
-[dependencies]
-starknet = ">=2.5.4"
-
+casm = true
+sierra = true
 
 
