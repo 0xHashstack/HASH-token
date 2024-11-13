@@ -8,6 +8,18 @@ pub enum TransactionState {
     Expired,
     Executed,
 }
+
+pub fn resolve_tx_state(state: TransactionState) -> felt252 {
+    match state {
+        TransactionState::Pending => 0,
+        TransactionState::Active => 1,
+        TransactionState::Queued => 2,
+        TransactionState::Expired => 3,
+        TransactionState::Executed => 4,
+      
+    }
+}
+
 #[starknet::interface]
 pub trait IMultiSigL2<TContractState> {
     fn upgrade(ref self: TContractState, new_class_hash: ClassHash);
@@ -38,7 +50,7 @@ mod MultiSigL2{
     // use cairo::components::SuperAdmin2Step::SuperAdminTwoStep::SuperAdminTwoStepImpl;
     use openzeppelin::upgrades::{UpgradeableComponent, interface::IUpgradeable};
     use openzeppelin::introspection::src5::SRC5Component;
-    use super::TransactionState;
+    use super::{TransactionState,resolve_tx_state};
     use core::num::traits::Zero;
     use core::pedersen::PedersenTrait;
     use starknet::account::Call;
@@ -217,19 +229,19 @@ mod MultiSigL2{
             self._assert_transaction_exists(tx_id);
             let mut transaction:Transaction = self.transactions.read(tx_id);
 
-            if(transaction.state == TransactionState.Expired || transaction.state == TransactionState.Executed){
+            if resolve_tx_state(transaction.state) == resolve_tx_state(TransactionState::Expired) || resolve_tx_state(transaction.state) == resolve_tx_state(TransactionState::Executed){
                 transaction.state
             }
             let current_time = get_block_timestamp();
             
             let isExpired:bool = current_time > transaction.first_sign_at + SIGNER_WINDOW;
 
-            let new_state:TransactionState = transaction.state;
+            let mut new_state:TransactionState = transaction.state;
             let total_signers:u64 = self.accessRegistry.total_signers();
 
             if(isExpired){
                 if((transaction.approvals * 100) / total_signers >= APPROVAL_THRESHOLD){
-                    new_state = TransactionState.Queued;
+                    new_state = TransactionState::Queued;
                 }else{
                     //emit an Insufficient Approval Event
                     self.emit(
@@ -237,13 +249,13 @@ mod MultiSigL2{
                             tx_id: tx_id
                         }
                     );
-                    new_state = TransactionState.Expired;
+                    new_state = TransactionState::Expired;
                 }
             }else if(transaction.first_sign_at!=0){
-                new_state = TransactionState.Active;
+                new_state = TransactionState::Active;
             }
 
-            if (new_state != transaction.state) {
+            if (resolve_tx_state(new_state) != resolve_tx_state(transaction.state)) {
                 transaction.state = new_state;
                 // self.(emit{TransactionStateChanged(txId, transaction.state)});
             }
@@ -267,8 +279,8 @@ mod MultiSigL2{
                 let current_state = self.update_transaction_state(tx_id);
                 
                 assert(
-                    current_state == TransactionState::Pending || 
-                    current_state == TransactionState::Active,
+                    resolve_tx_state(current_state) == resolve_tx_state(TransactionState::Pending) || 
+                    resolve_tx_state(current_state) == resolve_tx_state(TransactionState::Active),
                     'Invalid state'
                 );
     
@@ -294,7 +306,7 @@ mod MultiSigL2{
                 let current_state:TransactionState = self.update_transaction_state(tx_id);
                 
                 assert( 
-                    current_state == TransactionState::Active,
+                    resolve_tx_state(current_state) == resolve_tx_state(TransactionState::Active),
                     'Invalid state for Revoke Signature'
                 );
                 transaction.approvals -= 1;
@@ -309,7 +321,7 @@ mod MultiSigL2{
             let mut transaction = self.transactions.read(tx_id);
             let current_state = self.update_transaction_state(tx_id);
 
-            assert(current_state == TransactionState::Queued, 'Invalid state');
+            assert(resolve_tx_state(current_state) == resolve_tx_state(TransactionState::Queued), 'Invalid state');
             transaction.state = TransactionState::Executed;
             self.transactions.write(tx_id, transaction);
 
@@ -323,7 +335,7 @@ mod MultiSigL2{
         fn _route_standarad_transaction(ref self: ContractState, function_selector: felt252 , calldata:Array<felt252>)->felt252{
             let caller: ContractAddress = get_caller_address();
             let super_admin:ContractAddress = self.accessRegistry.super_admin();
-            if(caller==super_admin){
+            if caller==super_admin {
                 self._call(function_selector,calldata)
             }else{
                 self._create_transaction(function_selector,calldata)
