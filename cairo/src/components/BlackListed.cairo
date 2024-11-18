@@ -3,7 +3,7 @@ use core::traits::Into;
 use core::option::OptionTrait;
 
 #[starknet::component]
-mod BlackListedComp {
+pub mod BlackListedComp {
     use core::num::traits::zero::Zero;
     use cairo::interfaces::IblackListed::IBlackListedComponent;
     use starknet::{ContractAddress, get_caller_address};
@@ -17,19 +17,19 @@ mod BlackListedComp {
 
     #[event]
     #[derive(Drop, starknet::Event)]
-    enum Event {
+    pub enum Event {
         NewAccountBlackListed: NewAccountBlackListed,
         RemovedAccountBlackListed: RemovedAccountBlackListed,
     }
 
     #[derive(Drop, starknet::Event)]
-    struct NewAccountBlackListed {
+    pub struct NewAccountBlackListed {
         #[key]
         blacklisted_account: ContractAddress
     }
 
     #[derive(Drop, starknet::Event)]
-    struct RemovedAccountBlackListed {
+    pub struct RemovedAccountBlackListed {
         #[key]
         removed_account: ContractAddress
     }
@@ -65,9 +65,9 @@ mod BlackListedComp {
     }
 
     #[generate_trait]
-    impl InternalFunctions<
+    pub impl InternalImpl<
         TContractState, +HasComponent<TContractState>
-    > of InternalFunctionsTrait<TContractState> {
+    > of InternalTrait<TContractState> {
         fn initializer(ref self: ComponentState<TContractState>, multi_sig: ContractAddress) {
             assert(multi_sig.is_zero(), errors::ZERO_ADDRESS);
             self.multi_sig.write(multi_sig);

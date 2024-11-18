@@ -1,28 +1,30 @@
-//dsdedewded
+
 #[starknet::component]
 pub mod AccessRegistryComp {
     use starknet::{get_caller_address,get_block_timestamp};
     use starknet::ContractAddress;
-    use cairo::interfaces::IaccessRegistry::IAccessRegistryComponent;
+    use cairo::interfaces::IaccessRegistry::IAccessRegistry;
     // use cairo::components::SuperAdmin2Step::SuperAdminTwoStepComp::SuperAdminTwoStepImpl;
     // use cairo::components::SuperAdmin2Step::SuperAdminTwoStepComp::InternalImpl;
     // use cairo::components::SuperAdmin2Step::SuperAdminTwoStepComp;
     use core::num::traits::Zero;
     // use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     // use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
-
+    use openzeppelin_introspection::src5::SRC5Component::InternalImpl as SRC5InternalImpl;
+    use openzeppelin_introspection::src5::SRC5Component::SRC5Impl;
+    use openzeppelin_introspection::src5::SRC5Component;
 
     #[storage]
     pub struct Storage {
-        super_admin:ContractAddress,
-        pending_admin: ContractAddress,
-        handover_expires: u64,
-        total_signers: u64,
-        signers:LegacyMap::<ContractAddress, bool>,
+        pub super_admin: ContractAddress,
+        pub pending_admin: ContractAddress,
+        pub signers: LegacyMap::<ContractAddress, bool>,
+        pub handover_expires: u64,
+        pub total_signer: u64,
     }
 
     #[event]
-    #[derive(Drop, PartialEq, starknet::Event)]
+    #[derive(Drop,PartialEq, starknet::Event)]
     pub enum Event {
         SignerAdded: SignerAdded,
         SignerRemoved: SignerRemoved,
@@ -31,39 +33,33 @@ pub mod AccessRegistryComp {
         SuperOwnershipTransferStarted: SuperOwnershipTransferStarted
     }
 
-    #[derive(Drop, PartialEq, starknet::Event)]
+    #[derive(Drop,PartialEq, starknet::Event)]
     pub struct SignerAdded {
         #[key]
-        pub signer: ContractAddress
+        signer: ContractAddress
     }
 
-    #[derive(Drop, PartialEq, starknet::Event)]
+    #[derive(Drop,PartialEq, starknet::Event)]
     pub struct SignerRemoved {
         #[key]
-        pub signer: ContractAddress
+        signer: ContractAddress
     }
 
-    #[derive(Drop, PartialEq, starknet::Event)]
+    #[derive(Drop,PartialEq, starknet::Event)]
     pub struct SignerRenounced {
-        #[key]
-        pub from: ContractAddress,
-        #[key]
-        pub to: ContractAddress
+        from: ContractAddress,
+        to: ContractAddress
     }
-    #[derive(Drop, PartialEq, starknet::Event)]
+    #[derive(Drop,PartialEq, starknet::Event)]
     pub struct SuperOwnershipTransferred {
-        #[key]
-        pub previous_super_admin: ContractAddress,
-        #[key]
-        pub new_super_admin: ContractAddress,
+        previous_super_admin: ContractAddress,
+        new_super_admin: ContractAddress,
     }
 
-    #[derive(Drop, PartialEq, starknet::Event)]
+    #[derive(Drop,PartialEq, starknet::Event)]
     pub struct SuperOwnershipTransferStarted {
-        #[key]
-        pub previous_super_admin: ContractAddress,
-        #[key]
-        pub new_super_admin: ContractAddress,
+        previous_super_admin: ContractAddress,
+        new_super_admin: ContractAddress,
     }
 
     pub mod Error {
@@ -75,23 +71,21 @@ pub mod AccessRegistryComp {
         pub const NOT_OWNER: felt252 = 'Caller is not super admin';
         pub const NOT_PENDING_OWNER: felt252 = 'Caller not pending super admin';
         pub const ZERO_ADDRESS_CALLER: felt252 = 'Caller is the zero address';
-        pub const ZERO_ADDRESS_OWNER: felt252 = 'Calldata consist zero address';
         pub const HANDOVER_EXPIRED: felt252 = 'Super Admin Ownership expired';
     }
 
 
-    #[embeddable_as(AccessRegistryImpl)]
-    pub impl AccessRegisty<
-        TContractState,
-        +HasComponent<TContractState>,
-        // impl SuperAdminTwoStepImpl: SuperAdminTwoStepComp::HasComponent<TContractState>,
-        +Drop<TContractState>
-    > of IAccessRegistryComponent<ComponentState<TContractState>> {
+    #[embeddable_as(AccessRegistry)]
+    impl AccessRegistyImpl<
+        TContractState,+HasComponent<TContractState>,+Drop<TContractState>,
+        +SRC5Component::HasComponent<TContractState>,
+    > of super::IAccessRegistry<ComponentState<TContractState>> {
+
         fn is_signer(self: @ComponentState<TContractState>, account: ContractAddress) -> bool {
             self.signers.read(account)
         }
-        fn total_signer(self:@ComponentState<TContractState>)->u64{
-            self.total_signers.read()
+        fn get_total_signer(self:@ComponentState<TContractState>)->u64{
+            self.total_signer.read()
         }
 
         fn add_signer(ref self: ComponentState<TContractState>, new_signer: ContractAddress) {
@@ -101,7 +95,7 @@ pub mod AccessRegistryComp {
             // let super_admin_comp = get_dep_component!(@self, SuperAdminTwoStepImpl);
             self.assert_only_super_admin();
             self.signers.write(new_signer, true);
-            self.total_signers.write(self.total_signers.read() + 1);
+            self.total_signer.write(self.total_signer.read() + 1);
             self.emit(SignerAdded { signer: new_signer });
         }
 
@@ -116,7 +110,7 @@ pub mod AccessRegistryComp {
             self.assert_only_super_admin();
 
             self.signers.write(existing_owner, false);
-            self.total_signers.write(self.total_signers.read() - 1);
+            self.total_signer.write(self.total_signer.read() - 1);
 
             self.emit(SignerRemoved { signer: existing_owner });
         }
@@ -142,24 +136,7 @@ pub mod AccessRegistryComp {
             self._renounce_signership(caller,super_admin);
         }
 
-        // fn initializer(ref self: ComponentState<TContractState>, super_admin: ContractAddress) {
-         
-        //     .initializer(super_admin);
-        //     self.total_signers.write(1);
-        //     self.signers.write(super_admin, true);
-        // }
-
-        // fn initializer(
-        //     ref self: ComponentState<TContractState>,
-        //     parent_storage: &mut Storage<TContractState>
-        // ) {
-        //     let mut super_admin_comp = get_dep_component_mut!(ref self, SuperAdminTwoStepImpl);
-        //     super_admin_comp.initializer(parent_storage.super_admin);
-        //     self.total_signers.write(1);
-        //     self.signers.write(parent_storage.super_admin, true);
-        // }
-
-        fn super_admin(self: @ComponentState<TContractState>) -> ContractAddress {
+        fn get_super_admin(self: @ComponentState<TContractState>) -> ContractAddress {
             self.super_admin.read()
         }
 
@@ -196,11 +173,22 @@ pub mod AccessRegistryComp {
     }
 
     #[generate_trait]
-    pub impl InternalImp<
-        TContractState,
-        +HasComponent<TContractState>,
-        +Drop<TContractState>
+    pub impl InternalImpl<
+        TContractState, +HasComponent<TContractState>,+Drop<TContractState>,
+        impl SRC5: SRC5Component::HasComponent<TContractState>,
     > of InternalTrait<TContractState> {
+
+        /// Sets the contract's initial super_admin.
+        ///
+        /// This function should be called at construction time.
+        fn initializer(ref self: ComponentState<TContractState>, super_admin: ContractAddress) {
+            self.super_admin(super_admin);
+            self.total_signer.write(1);
+            self.signers.write(super_admin, true);
+            let mut src5_component = get_dep_component_mut!(ref self, SRC5);
+            src5_component.register_interface(IaccessRegistry::IACCESSCONTROL_ID);
+        }
+        
         fn _renounce_signership(
             ref self: ComponentState<TContractState>, _from: ContractAddress, _to: ContractAddress
         ) {
@@ -209,15 +197,6 @@ pub mod AccessRegistryComp {
 
             self.emit(SignerRenounced { from: _from, to: _to });
         }
-          /// Sets the contract's initial super_admin.
-        ///
-        /// This function should be called at construction time.
-        fn initializer(ref self: ComponentState<TContractState>, super_admin: ContractAddress) {
-            self._transfer_super_adminship(super_admin);
-            self.total_signers.write(1);
-            self.signers.write(super_admin, true);
-        }
-
         /// Panics if called by any account other than the super_admin. Use this
         /// to restrict access to certain functions to the super_admin.
         fn assert_only_super_admin(self: @ComponentState<TContractState>) {

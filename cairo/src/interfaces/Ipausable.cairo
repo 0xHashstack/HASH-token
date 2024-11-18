@@ -22,3 +22,4 @@ fn get_state_felt(state: PauseState) -> felt252 {
         PauseState::FullPause => constants::FullPause
     }
 }
+

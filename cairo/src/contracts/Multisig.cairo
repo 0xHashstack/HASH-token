@@ -63,8 +63,6 @@
 //     component!(path: AccessRegistryComp , storage: access_registry , event: AccessRegistryEvent);
 
 
-//     #[abi(embed_v0)]
-//     impl AccessRegistyImpl = AccessRegistryComp::Access_Registry<ContractState>;
 //     /// Upgradeable
 //     impl UpgradeableInternalImpl = UpgradeableComponent::InternalImpl<ContractState>;
 //     impl AccessRegistryInternalImpl = AccessRegistryComp::InternalImpl<ContractState>;
@@ -79,15 +77,14 @@
 //     pub const REMOVE_BLACKLIST_ACCOUNT_SELECTOR: felt252 = selector!("remove_blacklisted(ContractAddress)");
 //     pub const RECOVER_TOKENS_SELECTOR: felt252 = selector!("recover_tokens(ContractAddress,ContractAddress)");
 
-//     #[derive(Drop, Serde,starknet::Store)]
+//     #[derive(Drop, Serde,starknet::store)]
 //     pub struct Transaction {
 //         proposer: ContractAddress,
 //         selector: felt252,
 //         params : Array<felt252>,
 //         proposed_at: u64,
 //         first_sign_at: u64,
-//         approvals: u64,
-//         state: TransactionState
+//         approvals: u64
 //     }
 
 //     #[storage]
@@ -103,7 +100,8 @@
 //         transactions: LegacyMap::<felt252, Transaction>,
 //         has_approved: LegacyMap::<(felt252, ContractAddress), bool>,
 //         transaction_exists: LegacyMap::<felt252, bool>,
-//         signer_functions: LegacyMap::<felt252, bool>
+//         signer_functions: LegacyMap::<felt252, bool>,
+//         transaction_state: LegacyMap::<felt252,TransactionState>,
 //     }
 
 //     #[event]
@@ -173,7 +171,10 @@
 //         pub const ZERO_ADDRESS:felt252 = 'CAlldata consist Zero Address';
 //     }
 
- 
+//     #[abi(embed_v0)]
+//     impl AccessRegistyImpl =
+//     AccessRegistryComp::Access_Registry<ContractState>;
+
 //     #[constructor]
 //     fn constructor(ref self: ContractState,token_l2:ContractAddress, super_admin:ContractAddress){
 //         assert(!token_l2.is_zero() && !super_admin.is_zero(),Error::ZERO_ADDRESS);
@@ -193,16 +194,16 @@
 
 //             assert(!account.is_zero(),Error::ZERO_ADDRESS);
 //             assert(!self.access_registry.is_signer(get_caller_address()),'Not Signer');
-//             let calldata:Array<felt252> = array![account.into()];
-//             // Serde::serialize(@account, ref calldata);
+//             let mut calldata:Array<felt252> = array![];
+//             Serde::serialize(@account, ref calldata);
 //             self._route_standarad_transaction(BLACKLIST_ACCOUNT_SELECTOR,calldata)
 //         }
 //         fn create_removeBlacklisted_tx(ref self:ContractState, account:ContractAddress)->felt252{
 
 //             assert(!account.is_zero(),Error::ZERO_ADDRESS);
 //             assert(!self.access_registry.is_signer(get_caller_address()),'Not Signer');
-//             let mut calldata:Array<felt252> = array![account.into()];
-//             // Serde::serialize(@account, ref calldata);
+//             let mut calldata:Array<felt252> = array![];
+//             Serde::serialize(@account, ref calldata);
 //             self._route_standarad_transaction(REMOVE_BLACKLIST_ACCOUNT_SELECTOR,calldata)
 
 //         }
@@ -210,35 +211,37 @@
 
 //             assert(!asset.is_zero() &&!receipient.is_zero() ,Error::ZERO_ADDRESS);
 //             assert(!self.access_registry.is_signer(get_caller_address()),'Not Signer');
-//             let mut calldata:Array<felt252> = array![asset.into(),receipient.into()];
-//             // Serde::serialize(@asset, ref calldata);
-//             // Serde::serialize(@receipient, ref calldata);
+//             let mut calldata:Array<felt252> = array![];
+//             Serde::serialize(@asset, ref calldata);
+//             Serde::serialize(@receipient, ref calldata);
 //             self._route_standarad_transaction(RECOVER_TOKENS_SELECTOR,calldata)
 
 //         }
-//         fn update_pauseState_tx(ref self:ContractState,state:felt252)->felt252{
+//         fn update_pauseState_tx(ref self:ContractState,state:u8)->felt252{
 
 //             assert(!self.access_registry.is_signer(get_caller_address()),'Not Signer');
-//             let mut calldata:Array<felt252> = array![state.into()];
-//             // Serde::serialize(@state, ref calldata);
+//             let mut calldata:Array<felt252> = array![];
+//             Serde::serialize(@state, ref calldata);
 //             self._route_standarad_transaction(PAUSE_STATE_SELECTOR,calldata)
 
 //         }
 //         fn update_transaction_state(ref self:ContractState,tx_id:felt252)->TransactionState{
 //             self._assert_transaction_exists(tx_id);
-//             let mut transaction= self.transactions.read(tx_id);
 
-//             if (resolve_tx_state(transaction.state.read()) == resolve_tx_state(TransactionState::Expired)){
-//                 transaction.state
+//             let mut transaction= self.transactions.read(tx_id);
+//             let transaction_s = self.transaction_state.read(tx_id);
+
+//             if (transaction_s == TransactionState::Expired){
+//                 transaction_s
 //             }
-//             if(resolve_tx_state(transaction.state.read()) == resolve_tx_state(TransactionState::Executed)){
-//                  transaction.state.read()
+//             if(transaction_s == TransactionState::Executed){
+//                 transaction_s
 //             }
 //             let current_time = get_block_timestamp();
             
-//             let isExpired:bool = current_time >  transaction.first_sign_at.read() + SIGNER_WINDOW;
+//             let isExpired:bool = current_time >  transaction.first_sign_at + SIGNER_WINDOW;
 
-//             let mut new_state:TransactionState =  transaction.state.read();
+//             let mut new_state:TransactionState =  transaction_s;
 //             let total_signers:u64 = self.access_registry.total_signer();
 
 //             if(isExpired){
@@ -257,8 +260,8 @@
 //                 new_state = TransactionState::Active;
 //             }
 
-//             if (resolve_tx_state(new_state) != resolve_tx_state(transaction.state)) {
-//                  transaction.state = new_state;
+//             if (new_state != transaction_s) {
+//                 self.transaction_state.write(tx_id,new_state);
 //                 // self.(emit{TransactionStateChanged(txId,  transaction.state)});
 //             }
     
@@ -281,8 +284,8 @@
 //                 let current_state = self.update_transaction_state(tx_id);
                 
 //                 assert(
-//                     resolve_tx_state(current_state) == resolve_tx_state(TransactionState::Pending) || 
-//                     resolve_tx_state(current_state) == resolve_tx_state(TransactionState::Active),
+//                     current_state == TransactionState::Pending || 
+//                     current_state == TransactionState::Active,
 //                     'Invalid state'
 //                 );
     
@@ -290,7 +293,7 @@
 //                      transaction.first_sign_at = current_timestamp;
 //                 }
                 
-//                  transaction.approvals.write(transaction.approvals.read()+1);
+//                 transaction.approvals += 1 ;
 //                 self.has_approved.write((tx_id, caller), true);
 //                 self.transactions.write(tx_id, transaction);
     
@@ -308,10 +311,10 @@
 //                 let current_state = self.update_transaction_state(tx_id);
                 
 //                 assert( 
-//                     resolve_tx_state(current_state) == resolve_tx_state(TransactionState::Active),
+//                     current_state == TransactionState::Active,
 //                     'Invalid state for Revoke Signature'
 //                 );
-//                 transaction.approvals.write(transaction.approvals.read()-1);
+//                 transaction.approvals -= 1;
 //                 self.has_approved.write((tx_id, caller), false);
 //                 self.transactions.write(tx_id, transaction);
 //                 self.emit(SignatoryRevoked { tx_id: tx_id, revoker: caller });
@@ -323,11 +326,11 @@
 //             let mut transaction = self.transactions.read(tx_id);
 //             let current_state = self.update_transaction_state(tx_id);
 
-//             assert(resolve_tx_state(current_state) == resolve_tx_state(TransactionState::Queued), 'Invalid state');
-//              transaction.state.read() = TransactionState::Executed;
+//             assert(current_state == TransactionState::Queued, 'Invalid state');
+//             self.transaction_state.write(tx_id,TransactionState::Executed);
 //             // self.transactions.write(tx_id, transaction);
-//             let function_selector =  transaction.selector.read();
-//             let params = transaction.params.read();
+//             let function_selector =  transaction.selector.clone();
+//             let params = transaction.params.clone();
 
 //             self._call(function_selector, params);
 //             self.emit(TransactionExecuted { tx_id });
@@ -377,11 +380,11 @@
 //                     params,
 //                     proposed_at: timestamp,
 //                     first_sign_at: 0,
-//                     approvals: 0,
-//                     state: TransactionState::Pending
+//                     approvals: 0
 //                 };
     
 //                 self.transactions.write(tx_id, transaction);
+//                 self.transaction_state.write(tx_id,TransactionState::Pending);
 //                 self.emit(TransactionProposed { 
 //                     tx_id,
 //                     proposer: caller,
