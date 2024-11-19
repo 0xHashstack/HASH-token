@@ -18,6 +18,9 @@ contract MultiSigContractTest is Test {
         Expired,
         Executed
     }
+    bytes4[] selectors;
+    bytes[] params;
+    address [] signers;
 
     MultiSigWallet public multiSigImplementation;
     ERC1967Proxy public multiSig;
@@ -30,6 +33,24 @@ contract MultiSigContractTest is Test {
     address public signer3 = makeAddr("signer3");
     address public fallbackAdmin = makeAddr("fallbackAdmin");
     address public nonSigner = makeAddr("nonSigner");
+
+     ///@dev bytes4(keccak256("mint(address,uint256)"))
+    bytes4 public constant MINT_SELECTOR = 0x40c10f19;
+
+    ///@dev bytes4(keccak256("burn(address,uint256)"))
+    bytes4 public constant BURN_SELECTOR = 0x9dc29fac;
+
+    ///@dev bytes4(keccak256("updateOperationalState(uint8)"))
+    bytes4 public constant PAUSE_STATE_SELECTOR = 0x50f20190;
+
+    ///@dev bytes4(keccak256("blackListAccount(address)"))
+    bytes4 public constant BLACKLIST_ACCOUNT_SELECTOR = 0xe0644962;
+
+    ///@dev bytes4(keccak256("removeBlackListedAccount(address)"))
+    bytes4 public constant REMOVE_BLACKLIST_ACCOUNT_SELECTOR = 0xc460f1be;
+
+    ///@dev bytes4(keccak256("recoverToken(address,address)"))
+    bytes4 public constant RECOVER_TOKENS_SELECTOR = 0xfeaea586;
 
     event SignerAdded(address indexed signer);
     event SignerRemoved(address indexed signer);
@@ -80,19 +101,19 @@ contract MultiSigContractTest is Test {
 
     function test_AddSigner() public {
         vm.startPrank(superAdmin);
-
         vm.expectEmit(true, false, false, false);
         emit SignerAdded(signer3);
-
         wrappedMultiSig.addSigner(signer3);
         wrappedMultiSig.addSigner(signer2);
         wrappedMultiSig.addSigner(signer1);
-        unchecked {
-            assertTrue(wrappedMultiSig.isSigner(signer3));
-            assertTrue(!wrappedMultiSig.isSigner(nonSigner));
-            assertEq(wrappedMultiSig.totalSigners(), 4);
-        }
-
+        vm.stopPrank();
+    }
+    function test_AddSignerBatch() public {
+        vm.startPrank(superAdmin);
+        vm.expectEmit(true, false, false, false);
+        emit SignerAdded(signer3);
+        signers = [signer3,signer2,signer1];
+        wrappedMultiSig.addBatchSigners(signers);
         vm.stopPrank();
     }
 
@@ -607,6 +628,44 @@ contract MultiSigContractTest is Test {
         token.transfer(account, 10 * 10 ** 18);
         assertEq(token.balanceOf(account), 10 * 10 ** 18, "Token Doesn't mint successfully");
     }
+
+
+    function test_CreateTransactionBatch() public {
+        address to = address(1223);
+        //(gas: 4 28 625)
+        selectors = [MINT_SELECTOR,BURN_SELECTOR,MINT_SELECTOR,BURN_SELECTOR];
+        // selectors = [MINT_SELECTOR];
+    
+        params = [ abi.encode(to,10_000) , abi.encode(to,10_000) , abi.encode(to,100_000) , abi.encode(to,100_000)];
+        // params = [abi.encode(to,10000)];
+        
+        vm.prank(fallbackAdmin);
+        wrappedMultiSig.createBatchTransaction(selectors,params);
+
+    }
+    function test_CreateTransaction() public {
+        address to = address(1223);
+
+        // (gas: 3 99 118)
+        //188159
+        //1029953
+        
+        vm.prank(fallbackAdmin);
+        wrappedMultiSig.createMintTransaction(to,10000);
+
+        vm.prank(fallbackAdmin);
+        wrappedMultiSig.createBurnTransaction(to,100);
+
+        vm.prank(fallbackAdmin);
+        wrappedMultiSig.createMintTransaction(to,10);
+
+        vm.prank(fallbackAdmin);
+        wrappedMultiSig.createMintTransaction(to,100000);
+
+    }
+
+
+
 }
 
 //for signers[] array

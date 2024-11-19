@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import {AccessRegistry} from "../AccessRegistry/AccessRegistry.sol";
-import {UUPSUpgradeable} from "../utils/UUPSUpgradeable.sol";
-import {Initializable} from "../utils/Initializable.sol";
+import {AccessRegistry} from "../../src/AccessRegistry/AccessRegistry.sol";
+import {UUPSUpgradeable} from "../../src/utils/UUPSUpgradeable.sol";
+import {Initializable} from "../../src/utils/Initializable.sol";
 
 /**
  * @title MultisigWallet
@@ -19,33 +19,33 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     uint256 private constant APPROVAL_THRESHOLD = 60; // 60% of signers must approve
 
     ///@dev bytes4(keccak256("mint(address,uint256)"))
-    bytes4 private constant MINT_SELECTOR = 0x40c10f19;
+    bytes4 public constant MINT_SELECTOR = 0x40c10f19;
 
     ///@dev bytes4(keccak256("burn(address,uint256)"))
-    bytes4 private constant BURN_SELECTOR = 0x9dc29fac;
+    bytes4 public constant BURN_SELECTOR = 0x9dc29fac;
 
     ///@dev bytes4(keccak256("updateOperationalState(uint8)"))
-    bytes4 private constant PAUSE_STATE_SELECTOR = 0x50f20190;
+    bytes4 public constant PAUSE_STATE_SELECTOR = 0x50f20190;
 
     ///@dev bytes4(keccak256("blackListAccount(address)"))
-    bytes4 private constant BLACKLIST_ACCOUNT_SELECTOR = 0xe0644962;
+    bytes4 public constant BLACKLIST_ACCOUNT_SELECTOR = 0xe0644962;
 
     ///@dev bytes4(keccak256("removeBlackListedAccount(address)"))
-    bytes4 private constant REMOVE_BLACKLIST_ACCOUNT_SELECTOR = 0xc460f1be;
+    bytes4 public constant REMOVE_BLACKLIST_ACCOUNT_SELECTOR = 0xc460f1be;
 
     ///@dev bytes4(keccak256("recoverToken(address,address)"))
-    bytes4 private constant RECOVER_TOKENS_SELECTOR = 0xfeaea586;
+    bytes4 public constant RECOVER_TOKENS_SELECTOR = 0xfeaea586;
 
     ///@dev keccak256("HASH.token.hashstack.slot")
-    bytes32 private constant TOKEN_CONTRACT_SLOT = 0x2e621e7466541a75ed3060ecb302663cf45f24d90bdac97ddad9918834bc5d75;
+    bytes32 public constant TOKEN_CONTRACT_SLOT = 0x2e621e7466541a75ed3060ecb302663cf45f24d90bdac97ddad9918834bc5d75;
 
     // ========== ENUMS ==========
     enum TransactionState {
-        Pending, // Just created, awaiting first signature
-        Active, // Has at least one signature, within time window
-        Queued, // Has enough signatures, ready for execution
-        Expired, // Time window passed without enough signatures
-        Executed // Successfully executed
+        Pending,       // Just created, awaiting first signature
+        Active,        // Has at least one signature, within time window
+        Queued,       // Has enough signatures, ready for execution
+        Expired,      // Time window passed without enough signatures
+        Executed      // Successfully executed
 
     }
 
@@ -172,96 +172,22 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         return newState;
     }
 
-    /**
-     * @notice Creates a standard transaction or calls it if sender is superAdmin
-     * @param _selector The function selector for the transaction
-     * @param _params The parameters to pass with the transaction
-     * @return The timestamp of the transaction
-     */
-    function _createStandardTransaction(bytes4 _selector, bytes memory _params) private returns (uint256) {
-        if (_msgSender() == superAdmin()) {
+    function createBatchTransaction(bytes4[] calldata _selector,bytes[] calldata _params) external returns(uint256[] memory txId){
+
+        if(_selector.length!=_params.length) revert();
+        uint size = _selector.length;
+
+        if(_msgSender() == superAdmin()){
+        for(uint i =0; i< size ;i++){
             emit TransactionProposedBySuperAdmin(block.timestamp);
-            _call(_selector, _params);
-            return 10;
+            _call(_selector[i],_params[i]);
         }
-        return createTransaction(_selector, _params);
-    }
-
-    /**
-     * @notice Creates a mint transaction
-     * @param to The address to mint tokens to
-     * @param amount The amount of tokens to mint
-     * @return The transaction ID
-     */
-    function createMintTransaction(address to, uint256 amount) external virtual notZeroAddress(to) returns (uint256) {
-        return _createStandardTransaction(MINT_SELECTOR, abi.encode(to, amount));
-    }
-
-    /**
-     * @notice Creates a burn transaction
-     * @param from The address from which to burn tokens
-     * @param amount The amount of tokens to burn
-     * @return The transaction ID
-     */
-    function createBurnTransaction(address from, uint256 amount)
-        external
-        virtual
-        notZeroAddress(from)
-        returns (uint256)
-    {
-        return _createStandardTransaction(BURN_SELECTOR, abi.encode(from, amount));
-    }
-
-    /**
-     * @notice Creates a transaction to blacklist an account
-     * @param account The account to blacklist
-     * @return The transaction ID
-     */
-    function createBlacklistAccountTransaction(address account)
-        external
-        virtual
-        notZeroAddress(account)
-        returns (uint256)
-    {
-        return _createStandardTransaction(BLACKLIST_ACCOUNT_SELECTOR, abi.encode(account));
-    }
-
-    /**
-     * @notice Creates a transaction to remove an account from the blacklist
-     * @param account The account to remove from the blacklist
-     * @return The transaction ID
-     */
-    function createBlacklistRemoveTransaction(address account)
-        external
-        virtual
-        notZeroAddress(account)
-        returns (uint256)
-    {
-        return _createStandardTransaction(REMOVE_BLACKLIST_ACCOUNT_SELECTOR, abi.encode(account));
-    }
-
-    /**
-     * @notice Creates a transaction to change the Pause State of Token
-     * @return The transaction ID
-     */
-    function createPauseStateTransaction(uint8 _state) external virtual returns (uint256) {
-        return _createStandardTransaction(PAUSE_STATE_SELECTOR, abi.encode(_state));
-    }
-
-    /**
-     * @notice Creates a transaction to recover tokens
-     * @param token The token address
-     * @param to The address to send the recovered tokens
-     * @return The transaction ID
-     */
-    function createRecoverTokensTransaction(address token, address to)
-        external
-        virtual
-        notZeroAddress(token)
-        notZeroAddress(to)
-        returns (uint256)
-    {
-        return _createStandardTransaction(RECOVER_TOKENS_SELECTOR, abi.encode(token, to));
+        }
+        else{
+            for(uint i =0;i<size;i++){
+                txId[i] = createTransaction(_selector[i],_params[i]);
+            }
+        }
     }
 
     /**
@@ -320,7 +246,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
      * @notice Approves a transaction
      * @param txId The transaction ID to approve
      */
-    function approveTransaction(uint256 txId) external virtual txExist(txId) {
+    function approveTransaction(uint256 txId) public virtual txExist(txId) {
         if (!isSigner(_msgSender())) revert UnauthorizedCall();
         if (hasApproved[txId][_msgSender()]) revert AlreadyApproved();
 
@@ -344,11 +270,23 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         updateTransactionState(txId);
     }
 
+    function approveBatchTransaction(uint256[] calldata txId) external virtual {
+        for(uint i=0; i< txId.length ;i++){
+            approveTransaction(txId[i]);
+        }
+    }
+
+     function revokeBatchTransaction(uint256[] calldata txId) external virtual {
+        for(uint i=0; i< txId.length ;i++){
+            revokeConfirmation(txId[i]);
+        }
+    }
+
     /**
      * @notice Revokes a previously approved transaction
      * @param txId The transaction ID to revoke
      */
-    function revokeConfirmation(uint256 txId) external virtual txExist(txId) {
+    function revokeConfirmation(uint256 txId) public virtual txExist(txId) {
         if (!isSigner(_msgSender())) revert UnauthorizedCall();
         if (!hasApproved[txId][_msgSender()]) revert TransactionNotSigned();
 
@@ -368,11 +306,19 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         updateTransactionState(txId);
     }
 
+
+    function executeBatchTransaction(uint256[] calldata txId) external virtual {
+        for(uint i=0;i<txId.length; i++){
+            executeTransaction(txId[i]);
+
+        }
+    }
+
     /**
      * @notice Executes a transaction if it has enough approvals
      * @param txId The transaction ID to execute
      */
-    function executeTransaction(uint256 txId) external virtual txExist(txId) {
+    function executeTransaction(uint256 txId) public virtual txExist(txId) {
         Transaction storage transaction = transactions[txId];
         TransactionState currentState = updateTransactionState(txId);
 

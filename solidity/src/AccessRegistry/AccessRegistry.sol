@@ -55,48 +55,54 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
         signers[_superAdmin] = true;
     }
 
-    function addSigner(address _newSigner) external virtual onlySuperAdmin notZeroAddress(_newSigner) {
-        // require(!isSigner(_newSigner), "ACL::Already A Signer");
-        if (isSigner(_newSigner)) revert AlreadySigner();
-        signers[_newSigner] = true;
-        assembly {
-            // Emit SignerAdded event
-            log2(
-                0x00, // start of data
-                0x00, // length of data (0 as no data needed)
-                0x47d1c22a25bb3a5d4e481b9b1e6944c2eade3181a0a20b495ed61d35b5323f24, // keccak256("SignerAdded(address)")
-                _newSigner // indexed parameter
-            )
-
-            sstore(_TOTAL_SIGNER_SLOT, add(sload(_TOTAL_SIGNER_SLOT), 1))
+    function addSigner(address _newSigner) external virtual onlySuperAdmin {
+        _addSigner(_newSigner);
+        assembly{
+        sstore(_TOTAL_SIGNER_SLOT, add(sload(_TOTAL_SIGNER_SLOT), 1))
         }
+
     }
 
-    function removeSigner(address _signer) external virtual onlySuperAdmin notZeroAddress(_signer) {
-        if (!isSigner(_signer)) revert NonExistingSigner();
-        if (_signer == superAdmin()) revert SuperAdminCannotRemoved();
-        if (totalSigners() == 1) revert WalletCannotBeSignerLess();
-        // require(totalSigners() > 1, "ACL::wallet cannot be ownerless");
-        signers[_signer] = false;
-        assembly {
-            // Emit SignerAdded event
-            log2(
-                0x00, // start of data
-                0x00, // length of data (0 as no data needed)
-                0x3525e22824a8a7df2c9a6029941c824cf95b6447f1e13d5128fd3826d35afe8b, // keccak256("SignerRemoved(address)")
-                _signer // indexed parameter
-            )
-
-            sstore(_TOTAL_SIGNER_SLOT, sub(sload(_TOTAL_SIGNER_SLOT), 1))
+    function addBatchSigners(address[] calldata newSigners) external virtual onlySuperAdmin{
+        
+        uint256 totalSigners  = newSigners.length;
+        
+        for(uint i=0; i < totalSigners; i++){
+           _addSigner(newSigners[i]);
         }
+        assembly {     
+        sstore(_TOTAL_SIGNER_SLOT, add(sload(_TOTAL_SIGNER_SLOT),totalSigners))
+        }
+        
+    }
+
+
+    function removeBatchSigners(address[] calldata exisitingSigner) external virtual onlySuperAdmin{
+        
+        uint256 totalSigners  = exisitingSigner.length;
+
+        for(uint i=0;i<totalSigners;i++){
+        _removeSigner(exisitingSigner[i]);
+        }
+        assembly {      
+        sstore(_TOTAL_SIGNER_SLOT, sub(sload(_TOTAL_SIGNER_SLOT),totalSigners))
+        }
+        
+    }
+
+    function removeSigner(address _signer) external virtual onlySuperAdmin {
+       
+        _removeSigner(_signer);
+        assembly{
+            sstore(_TOTAL_SIGNER_SLOT, sub(sload(_TOTAL_SIGNER_SLOT),1))
+        }
+        
     }
 
     function renounceSignership(address _newSigner) public virtual onlySigner notZeroAddress(_newSigner) {
-        // require(_msgSender() != superAdmin(), "ACL:: Admin is restricted");
+
         if (_msgSender() == superAdmin()) revert SuperAdminIsRestricted();
         if (isSigner(_newSigner)) revert AlreadySigner();
-
-        // require(!isSigner(_newSigner), "ACL::New Address is Existing owner");
 
         signers[_msgSender()] = false;
         signers[_newSigner] = true;
@@ -113,12 +119,7 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
     }
 
     function isSigner(address _check) public view returns (bool result) {
-        assembly {
-            mstore(0x00, _check)
-            mstore(0x20, signers.slot)
-            let signersKey := keccak256(0x00, 0x40)
-            result := sload(signersKey)
-        }
+        return signers[_check];
     }
 
     modifier onlySigner() {
@@ -129,8 +130,45 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
     }
 
     function _setSuperAdmin(address _newSuperOwner) internal virtual override {
+
         signers[_msgSender()] = false;
         signers[_newSuperOwner] = true;
         super._setSuperAdmin(_newSuperOwner);
+
+    }
+
+    function _addSigner(address signer) internal{
+
+        if (signer == address(0)) revert CallerZeroAddress();
+        if (isSigner(signer)) revert AlreadySigner();
+        signers[signer] = true;
+        assembly {
+            // Emit SignerAdded event
+            log2(
+                0x00, // start of data
+                0x00, // length of data (0 as no data needed)
+                0x47d1c22a25bb3a5d4e481b9b1e6944c2eade3181a0a20b495ed61d35b5323f24, // keccak256("SignerAdded(address)")
+                signer // indexed parameter
+            )
+        }  
+    }
+
+    function _removeSigner(address _signer) internal {
+
+        if(_signer == address(0)) revert CallerZeroAddress();
+        if (!isSigner(_signer)) revert NonExistingSigner();
+        if (_signer == superAdmin()) revert SuperAdminCannotRemoved();
+        if (totalSigners() == 1) revert WalletCannotBeSignerLess();
+        signers[_signer] = false;
+        assembly {
+            // Emit SignerAdded event
+            log2(
+                0x00, // start of data
+                0x00, // length of data (0 as no data needed)
+                0x3525e22824a8a7df2c9a6029941c824cf95b6447f1e13d5128fd3826d35afe8b, // keccak256("SignerRemoved(address)")
+                _signer // indexed parameter
+            )
+        }
+
     }
 }

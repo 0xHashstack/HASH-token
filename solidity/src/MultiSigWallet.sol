@@ -4,6 +4,7 @@ pragma solidity ^0.8.4;
 import {AccessRegistry} from "./AccessRegistry/AccessRegistry.sol";
 import {UUPSUpgradeable} from "./utils/UUPSUpgradeable.sol";
 import {Initializable} from "./utils/Initializable.sol";
+import {console} from 'forge-std/console.sol';
 
 /**
  * @title MultisigWallet
@@ -19,33 +20,33 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     uint256 private constant APPROVAL_THRESHOLD = 60; // 60% of signers must approve
 
     ///@dev bytes4(keccak256("mint(address,uint256)"))
-    bytes4 private constant MINT_SELECTOR = 0x40c10f19;
+    bytes4 public constant MINT_SELECTOR = 0x40c10f19;
 
     ///@dev bytes4(keccak256("burn(address,uint256)"))
-    bytes4 private constant BURN_SELECTOR = 0x9dc29fac;
+    bytes4 public constant BURN_SELECTOR = 0x9dc29fac;
 
     ///@dev bytes4(keccak256("updateOperationalState(uint8)"))
-    bytes4 private constant PAUSE_STATE_SELECTOR = 0x50f20190;
+    bytes4 public constant PAUSE_STATE_SELECTOR = 0x50f20190;
 
     ///@dev bytes4(keccak256("blackListAccount(address)"))
-    bytes4 private constant BLACKLIST_ACCOUNT_SELECTOR = 0xe0644962;
+    bytes4 public constant BLACKLIST_ACCOUNT_SELECTOR = 0xe0644962;
 
     ///@dev bytes4(keccak256("removeBlackListedAccount(address)"))
-    bytes4 private constant REMOVE_BLACKLIST_ACCOUNT_SELECTOR = 0xc460f1be;
+    bytes4 public constant REMOVE_BLACKLIST_ACCOUNT_SELECTOR = 0xc460f1be;
 
     ///@dev bytes4(keccak256("recoverToken(address,address)"))
-    bytes4 private constant RECOVER_TOKENS_SELECTOR = 0xfeaea586;
+    bytes4 public constant RECOVER_TOKENS_SELECTOR = 0xfeaea586;
 
     ///@dev keccak256("HASH.token.hashstack.slot")
-    bytes32 private constant TOKEN_CONTRACT_SLOT = 0x2e621e7466541a75ed3060ecb302663cf45f24d90bdac97ddad9918834bc5d75;
+    bytes32 public constant TOKEN_CONTRACT_SLOT = 0x2e621e7466541a75ed3060ecb302663cf45f24d90bdac97ddad9918834bc5d75;
 
     // ========== ENUMS ==========
     enum TransactionState {
-        Pending, // Just created, awaiting first signature
-        Active, // Has at least one signature, within time window
-        Queued, // Has enough signatures, ready for execution
-        Expired, // Time window passed without enough signatures
-        Executed // Successfully executed
+        Pending,       // Just created, awaiting first signature
+        Active,        // Has at least one signature, within time window
+        Queued,       // Has enough signatures, ready for execution
+        Expired,      // Time window passed without enough signatures
+        Executed      // Successfully executed
 
     }
 
@@ -127,7 +128,8 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
      * @param txId The transaction ID to update
      * @return The current state of the transaction
      */
-    function updateTransactionState(uint256 txId) public txExist(txId) returns (TransactionState) {
+    function updateTransactionState(uint256 txId) public txExist(txId) returns (TransactionState){
+
         Transaction storage transaction = transactions[txId];
 
         // Don't update final states
@@ -170,6 +172,27 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         }
 
         return newState;
+    }
+
+    function createBatchTransaction(bytes4[] calldata _selector,bytes[] calldata _params) external returns(uint256[] memory txId){
+
+        if(_selector.length!=_params.length) revert();
+        uint size = _selector.length;
+        
+        if(_msgSender() == superAdmin()){
+            txId = new uint256[](0);
+            for(uint i=0; i<size ;i++){
+            emit TransactionProposedBySuperAdmin(block.timestamp);
+            _call(_selector[i],_params[i]);
+           }
+        }
+        else{
+            txId = new uint256[](size);
+            for(uint i=0; i<size; i++){
+                uint256 trnx = createTransaction(_selector[i],_params[i]);
+                txId[i] = trnx;
+            }
+        }
     }
 
     /**
@@ -270,12 +293,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
      * @return flag True if the transaction ID is valid, false otherwise
      */
     function isValidTransaction(uint256 txId) public view returns (bool flag) {
-        assembly {
-            mstore(0x00, txId)
-            mstore(0x20, transactionIdExists.slot)
-            let transactionKey := keccak256(0x00, 0x40)
-            flag := sload(transactionKey)
-        }
+        return transactionIdExists[txId];
     }
 
     /**
@@ -313,14 +331,13 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
 
         emit TransactionProposed(txId, _msgSender(), block.timestamp);
 
-        return txId;
     }
 
     /**
      * @notice Approves a transaction
      * @param txId The transaction ID to approve
      */
-    function approveTransaction(uint256 txId) external virtual txExist(txId) {
+    function approveTransaction(uint256 txId) public virtual txExist(txId) {
         if (!isSigner(_msgSender())) revert UnauthorizedCall();
         if (hasApproved[txId][_msgSender()]) revert AlreadyApproved();
 
@@ -344,11 +361,23 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         updateTransactionState(txId);
     }
 
+    function approveBatchTransaction(uint256[] calldata txId) external virtual {
+        for(uint i=0; i< txId.length ;i++){
+            approveTransaction(txId[i]);
+        }
+    }
+
+     function revokeBatchTransaction(uint256[] calldata txId) external virtual {
+        for(uint i=0; i< txId.length ;i++){
+            revokeConfirmation(txId[i]);
+        }
+    }
+
     /**
      * @notice Revokes a previously approved transaction
      * @param txId The transaction ID to revoke
      */
-    function revokeConfirmation(uint256 txId) external virtual txExist(txId) {
+    function revokeConfirmation(uint256 txId) public virtual txExist(txId) {
         if (!isSigner(_msgSender())) revert UnauthorizedCall();
         if (!hasApproved[txId][_msgSender()]) revert TransactionNotSigned();
 
@@ -368,11 +397,19 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         updateTransactionState(txId);
     }
 
+
+    function executeBatchTransaction(uint256[] calldata txId) external virtual {
+        for(uint i=0;i<txId.length; i++){
+            executeTransaction(txId[i]);
+
+        }
+    }
+
     /**
      * @notice Executes a transaction if it has enough approvals
      * @param txId The transaction ID to execute
      */
-    function executeTransaction(uint256 txId) external virtual txExist(txId) {
+    function executeTransaction(uint256 txId) public virtual txExist(txId) {
         Transaction storage transaction = transactions[txId];
         TransactionState currentState = updateTransactionState(txId);
 
