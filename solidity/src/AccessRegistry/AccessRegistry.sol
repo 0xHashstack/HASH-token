@@ -49,8 +49,6 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
     function _initializeAccessRegistry(address _superAdmin, address _fallbackAdmin)
         internal
         virtual
-        notZeroAddress(_superAdmin)
-        notZeroAddress(_fallbackAdmin)
     {
         _initializeSuperAdmin(_superAdmin);
         _initializeFallbackAdmin(_fallbackAdmin);

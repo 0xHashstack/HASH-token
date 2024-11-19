@@ -90,6 +90,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     error TransactionIdNotExist();
     error FunctionAlreadyExists();
     error FunctionDoesNotExist();
+    error ZeroAmountTransaction();
 
     // ========== INITIALIZATION ==========
     constructor() {
@@ -193,8 +194,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
      * @param amount The amount of tokens to mint
      * @return The transaction ID
      */
-    /// TODO: add modifiers for amount != 0
-    function createMintTransaction(address to, uint256 amount) external virtual notZeroAddress(to) returns (uint256) {
+    function createMintTransaction(address to, uint256 amount) external virtual notZeroAmount(amount) notZeroAddress(to) returns (uint256) {
         return _createStandardTransaction(MINT_SELECTOR, abi.encode(to, amount));
     }
 
@@ -207,6 +207,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     function createBurnTransaction(address from, uint256 amount)
         external
         virtual
+        notZeroAmount(amount) 
         notZeroAddress(from)
         returns (uint256)
     {
@@ -444,6 +445,13 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     modifier txExist(uint256 txId) {
         if (!isValidTransaction(txId)) {
             revert TransactionIdNotExist();
+        }
+        _;
+    }
+
+    modifier notZeroAmount(uint amount){
+        if(amount == 0){
+            revert ZeroAmountTransaction();
         }
         _;
     }

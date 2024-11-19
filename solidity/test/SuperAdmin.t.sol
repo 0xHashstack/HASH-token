@@ -60,7 +60,7 @@ contract SuperAdminTest is Test {
 
         // Revoke super admin and check if it resets
         vm.prank(oldAdmin);
-        superAdminMock.cancelOwnershipHandover(newAdmin);
+        superAdminMock.cancelOwnershipHandover();
 
         vm.startPrank(newAdmin);
         //should fail as adminship is accepted
@@ -94,6 +94,6 @@ contract SuperAdminTest is Test {
         // Ensure oldAdmin no longer has control
         vm.expectRevert();
         vm.prank(oldAdmin);
-        superAdminMock.cancelOwnershipHandover(newAdmin);
+        superAdminMock.cancelOwnershipHandover();
     }
 }
