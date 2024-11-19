@@ -51,14 +51,14 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
 
     // ========== STRUCTS ==========
     struct Transaction {
-        address proposer;
-        bytes4 selector; // The function call data
-        bytes params;
         uint256 proposedAt; // When the transaction was proposed
         uint256 firstSignAt; // When the first signer approved
         uint256 approvals; // Number of approvals received
+        address proposer;
+        bytes4 selector; // The function call data
         TransactionState state; //state of the transaction(pending,)
         bool isFallbackAdmin; // Whether this was proposed by fallback admin
+        bytes params;
     }
 
     // ========== STATE ==========
@@ -292,17 +292,11 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         }
 
         transactionIdExists[txId] = true;
-
-        transactions[txId] = Transaction({
-            proposer: _msgSender(),
-            selector: _selector,
-            params: _params,
-            proposedAt: block.timestamp,
-            firstSignAt: 0,
-            approvals: 0,
-            state: TransactionState.Pending,
-            isFallbackAdmin: isFallbackAdmin
-        });
+        transactions[txId].proposer = _msgSender();
+        transactions[txId].selector = _selector;
+        transactions[txId].params = _params;
+        transactions[txId].proposedAt = block.timestamp;
+        transactions[txId].isFallbackAdmin = isFallbackAdmin;
 
         emit TransactionProposed(txId, _msgSender(), block.timestamp);
 
