@@ -46,10 +46,7 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
         return true;
     }
 
-    function _initializeAccessRegistry(address _superAdmin, address _fallbackAdmin)
-        internal
-        virtual
-    {
+    function _initializeAccessRegistry(address _superAdmin, address _fallbackAdmin) internal virtual {
         _initializeSuperAdmin(_superAdmin);
         _initializeFallbackAdmin(_fallbackAdmin);
         assembly {

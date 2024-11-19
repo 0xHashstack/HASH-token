@@ -194,7 +194,13 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
      * @param amount The amount of tokens to mint
      * @return The transaction ID
      */
-    function createMintTransaction(address to, uint256 amount) external virtual notZeroAmount(amount) notZeroAddress(to) returns (uint256) {
+    function createMintTransaction(address to, uint256 amount)
+        external
+        virtual
+        notZeroAmount(amount)
+        notZeroAddress(to)
+        returns (uint256)
+    {
         return _createStandardTransaction(MINT_SELECTOR, abi.encode(to, amount));
     }
 
@@ -207,7 +213,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     function createBurnTransaction(address from, uint256 amount)
         external
         virtual
-        notZeroAmount(amount) 
+        notZeroAmount(amount)
         notZeroAddress(from)
         returns (uint256)
     {
@@ -449,8 +455,8 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         _;
     }
 
-    modifier notZeroAmount(uint amount){
-        if(amount == 0){
+    modifier notZeroAmount(uint256 amount) {
+        if (amount == 0) {
             revert ZeroAmountTransaction();
         }
         _;
