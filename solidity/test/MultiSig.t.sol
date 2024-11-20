@@ -309,7 +309,7 @@ contract MultiSigContractTest is StdInvariant, Test {
         vm.startPrank(signer1);
 
         selectors = [MINT_SELECTOR];
-        params = [abi.encode(to,1000)];
+        params = [abi.encode(to, 1000)];
 
         txId = wrappedMultiSig.createBatchTransaction(selectors, params);
     }
@@ -323,7 +323,7 @@ contract MultiSigContractTest is StdInvariant, Test {
         // Fallback superAdmin creates transaction
         vm.startPrank(fallbackAdmin);
         selectors = [MINT_SELECTOR];
-        params = [abi.encode(to,1000 * 10**18)];
+        params = [abi.encode(to, 1000 * 10 ** 18)];
 
         txId = wrappedMultiSig.createBatchTransaction(selectors, params);
 
@@ -359,8 +359,7 @@ contract MultiSigContractTest is StdInvariant, Test {
 
         address to = makeAddr("to");
         selectors = [BURN_SELECTOR];
-        params = [abi.encode(to,500)];
-        
+        params = [abi.encode(to, 500)];
 
         vm.startPrank(fallbackAdmin);
         txId = wrappedMultiSig.createBatchTransaction(selectors, params);
@@ -386,7 +385,8 @@ contract MultiSigContractTest is StdInvariant, Test {
         wrappedMultiSig.revokeBatchConfirmation(txId);
 
         MultiSigWallet.TransactionState currentState = wrappedMultiSig.updateTransactionState(txId[0]);
-        (,,,,, uint256 approvals, MultiSigWallet.TransactionState currentState2,) = wrappedMultiSig.getTransaction(txId[0]);
+        (,,,,, uint256 approvals, MultiSigWallet.TransactionState currentState2,) =
+            wrappedMultiSig.getTransaction(txId[0]);
 
         assertEq(approvals, 1);
         assertEq(uint8(currentState2), uint8(TransactionState.Expired));
@@ -403,7 +403,7 @@ contract MultiSigContractTest is StdInvariant, Test {
         // Fallback superAdmin creates transaction
 
         selectors = [BURN_SELECTOR];
-        params = [abi.encode(to,500 *10**18)];
+        params = [abi.encode(to, 500 * 10 ** 18)];
         vm.startPrank(fallbackAdmin);
         txId = wrappedMultiSig.createBatchTransaction(selectors, params);
 
@@ -431,7 +431,7 @@ contract MultiSigContractTest is StdInvariant, Test {
         wrappedMultiSig.executeBatchTransaction(txId);
 
         // Verify mint
-        assertEq(token.balanceOf(to), 500*10**18);
+        assertEq(token.balanceOf(to), 500 * 10 ** 18);
     }
 
     // function test_multipleFunctionsHighGas() public {
@@ -469,7 +469,7 @@ contract MultiSigContractTest is StdInvariant, Test {
         vm.assume(account != address(0));
         selectors = [BLACKLIST_ACCOUNT_SELECTOR];
         params = [abi.encode(account)];
-        trnx = wrappedMultiSig.createBatchTransaction(selectors,params);
+        trnx = wrappedMultiSig.createBatchTransaction(selectors, params);
         return trnx;
     }
 
@@ -495,7 +495,7 @@ contract MultiSigContractTest is StdInvariant, Test {
         vm.assume(to != address(0) && amount > 0 && amount < 9_000_000_000 * 10 ** 18 - 10 ** 18);
 
         selectors = [MINT_SELECTOR];
-        params = [abi.encode(to,amount)];
+        params = [abi.encode(to, amount)];
         vm.prank(fallbackAdmin);
         txId = wrappedMultiSig.createBatchTransaction(selectors, params);
 
@@ -723,10 +723,10 @@ contract MultiSigContractTest is StdInvariant, Test {
         address to = makeAddr("to");
         test_FallbackAdminMintTransaction();
 
-        selectors = [BLACKLIST_ACCOUNT_SELECTOR]; 
-        params = [abi.encode(account)]; 
+        selectors = [BLACKLIST_ACCOUNT_SELECTOR];
+        params = [abi.encode(account)];
         vm.prank(signer1);
-        txId = wrappedMultiSig.createBatchTransaction(selectors,params);
+        txId = wrappedMultiSig.createBatchTransaction(selectors, params);
 
         vm.prank(signer1);
         wrappedMultiSig.approveBatchTransaction(txId);
@@ -761,7 +761,7 @@ contract MultiSigContractTest is StdInvariant, Test {
         params = [abi.encode(account)];
 
         vm.prank(signer1);
-        txId = wrappedMultiSig.createBatchTransaction(selectors,params);
+        txId = wrappedMultiSig.createBatchTransaction(selectors, params);
 
         vm.prank(signer1);
         wrappedMultiSig.approveBatchTransaction(txId);
@@ -816,7 +816,6 @@ contract MultiSigContractTest is StdInvariant, Test {
     //     // (gas: 3 99 118)
     //     //188159
     //     //1029953
-
 
     //     uint256 gasBefore = gasleft();
     //     vm.prank(superAdmin);
