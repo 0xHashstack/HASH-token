@@ -142,9 +142,8 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
     }
 
     function _removeSigner(address _signer) internal {
-        if (_signer == address(0)) revert CallerZeroAddress();
         if (!isSigner(_signer)) revert NonExistingSigner();
-        if (_signer == superAdmin()) revert SuperAdminCannotRemoved();
+        if (_signer == _msgSender()) revert SuperAdminCannotRemoved();
         if (totalSigners() == 1) revert WalletCannotBeSignerLess();
         signers[_signer] = false;
         assembly {

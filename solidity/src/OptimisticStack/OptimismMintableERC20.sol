@@ -82,12 +82,6 @@ contract OptimismMintableERC20 is IOptimismMintableERC20, ILegacyMintableERC20, 
         require(isAuthorizedBridge(_msgSender()), "OptimismMintableERC20: caller is not an authorized bridge");
         _;
     }
-     * @notice A modifier that restricts function access to authorized bridges only
-     */
-    modifier onlyAuthorizedBridge() {
-        require(isAuthorizedBridge(_msgSender()), "OptimismMintableERC20: caller is not an authorized bridge");
-        _;
-    }
 
     /**
      * @custom:semver 1.0.0

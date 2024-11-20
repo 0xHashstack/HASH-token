@@ -220,7 +220,6 @@ contract MultiSigContractTest is StdInvariant, Test {
 
         // vm.expectRevert(MultiSigWallet.UnauthorizedCall.selector);
         // vm.prank(fallbackAdmin);
-        // wrappedMultiSig.approveTransaction(txId);
 
         vm.prank(superAdmin);
         wrappedMultiSig.approveBatchTransaction(txId);
@@ -329,7 +328,6 @@ contract MultiSigContractTest is StdInvariant, Test {
         txId = wrappedMultiSig.createBatchTransaction(selectors, params);
 
         // Approve and wait for activation period
-        // wrappedMultiSig.approveTransaction(txId);
         vm.stopPrank();
 
         vm.prank(signer1);
@@ -395,7 +393,6 @@ contract MultiSigContractTest is StdInvariant, Test {
 
         // vm.expectRevert(MultiSigWallet.InvalidState.selector);
         // vm.prank(signer2);
-        // wrappedMultiSig.approveTransaction(txId);
     }
 
     function test_fallbackAdminBurnTransaction() public {
@@ -411,7 +408,6 @@ contract MultiSigContractTest is StdInvariant, Test {
         txId = wrappedMultiSig.createBatchTransaction(selectors, params);
 
         // Approve and wait for activation period
-        // wrappedMultiSig.approveTransaction(txId);
         vm.stopPrank();
 
         vm.prank(signer1);
@@ -601,13 +597,11 @@ contract MultiSigContractTest is StdInvariant, Test {
 
     function test_TransactionCancellationDueToLackOfApprovals() public {
         test_AddSigner();
-
-        bytes4 pauseSelector = bytes4(keccak256("pause()"));
         vm.startPrank(signer1);
-        uint256 txId = createPauseTransaction();
+        uint256[] memory txId = createPauseTransaction();
 
         // Approve partially
-        wrappedMultiSig.approveTransaction(txId);
+        wrappedMultiSig.approveBatchTransaction(txId);
         vm.stopPrank();
 
         // Advance time beyond expiration
@@ -616,7 +610,7 @@ contract MultiSigContractTest is StdInvariant, Test {
         // Attempt to execute and expect failure due to insufficient approvals
         vm.startPrank(fallbackAdmin);
         vm.expectRevert();
-        wrappedMultiSig.executeTransaction(txId);
+        wrappedMultiSig.executeBatchTransaction(txId);
     }
 
     function test_InitializeOnlyOnce() public {
@@ -678,7 +672,9 @@ contract MultiSigContractTest is StdInvariant, Test {
 
         // Attempt approval after renouncing (should fail)
         vm.expectRevert();
-        wrappedMultiSig.approveTransaction(1);
+        uint256[] memory txIds = new uint256[](1);
+        txIds[0] = 1;
+        wrappedMultiSig.approveBatchTransaction(txIds);
         vm.stopPrank();
     }
 
@@ -694,28 +690,29 @@ contract MultiSigContractTest is StdInvariant, Test {
         test_AddSigner();
         vm.startPrank(address(0xDEADBEEF)); // A non-signer
         vm.expectRevert();
-        wrappedMultiSig.approveTransaction(1);
+        uint256[] memory txIds = new uint256[](1);
+        txIds[0] = 1;
+        wrappedMultiSig.approveBatchTransaction(txIds);
         vm.stopPrank();
     }
 
     function test_ExecuteTransaction_InsufficientApprovals() public {
         test_AddSigner();
         vm.startPrank(signer1);
-        uint256 txId = createPauseTransaction();
+        uint256[] memory txId = createPauseTransaction();
         vm.expectRevert();
-        wrappedMultiSig.executeTransaction(txId);
+        wrappedMultiSig.executeBatchTransaction(txId);
         vm.stopPrank();
     }
 
     function test_TransactionExpiration() public {
         test_AddSigner();
         vm.startPrank(signer1);
-        uint256 txId = createPauseTransaction();
-
-        wrappedMultiSig.approveTransaction(txId);
+        uint256[] memory txId = createPauseTransaction();
+        wrappedMultiSig.approveBatchTransaction(txId);
         vm.warp(block.timestamp + 7 days + 1); // Fast-forward past expiration
-        wrappedMultiSig.updateTransactionState(txId);
-        (,,,,,, MultiSigWallet.TransactionState state,) = wrappedMultiSig.getTransaction(txId);
+        wrappedMultiSig.updateTransactionState(txId[0]);
+        (,,,,,, MultiSigWallet.TransactionState state,) = wrappedMultiSig.getTransaction(txId[0]);
         assertEq(uint8(state), uint8(MultiSigWallet.TransactionState.Expired));
         vm.stopPrank();
     }
@@ -804,6 +801,13 @@ contract MultiSigContractTest is StdInvariant, Test {
         uint256 gasAfter = gasleft();
 
         console.log("Gas used", gasBefore - gasAfter);
+    }
+
+    function createPauseTransaction() public returns (uint256[] memory) {
+        selectors = [PAUSE_STATE_SELECTOR];
+        params = [abi.encode(2)];
+        uint256[] memory trnx = wrappedMultiSig.createBatchTransaction(selectors, params);
+        return trnx;
     }
 
     // function test_CreateTransaction() public {
