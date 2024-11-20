@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import {AccessRegistry} from "../AccessRegistry/AccessRegistry.sol";
-import {UUPSUpgradeable} from "../utils/UUPSUpgradeable.sol";
-import {Initializable} from "../utils/Initializable.sol";
+import {AccessRegistry} from "../../src/AccessRegistry/AccessRegistry.sol";
+import {UUPSUpgradeable} from "../../src/utils/UUPSUpgradeable.sol";
+import {Initializable} from "../../src/utils/Initializable.sol";
 
 /**
  * @title MultisigWallet
@@ -18,26 +18,26 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     uint256 private constant FALLBACK_ADMIN_WINDOW = 72 hours;
     uint256 private constant APPROVAL_THRESHOLD = 60; // 60% of signers must approve
 
-    ///@dev bytes4(keccak256("authorizeBridge(address)"))
-    bytes4 private constant AUTHORIZE_BRIDGE_SELECTOR = 0xe53595ee;
+    ///@dev bytes4(keccak256("mint(address,uint256)"))
+    bytes4 public constant MINT_SELECTOR = 0x40c10f19;
 
-    ///@dev bytes4(keccak256("revokeBridgeAuthorization(address)"))
-    bytes4 private constant REVOKE_BRDIGE_AUTHORIZE_SELECTOR = 0xaf84ce93;
+    ///@dev bytes4(keccak256("burn(address,uint256)"))
+    bytes4 public constant BURN_SELECTOR = 0x9dc29fac;
 
     ///@dev bytes4(keccak256("updateOperationalState(uint8)"))
-    bytes4 private constant PAUSE_STATE_SELECTOR = 0x50f20190;
+    bytes4 public constant PAUSE_STATE_SELECTOR = 0x50f20190;
 
     ///@dev bytes4(keccak256("blackListAccount(address)"))
-    bytes4 private constant BLACKLIST_ACCOUNT_SELECTOR = 0xe0644962;
+    bytes4 public constant BLACKLIST_ACCOUNT_SELECTOR = 0xe0644962;
 
     ///@dev bytes4(keccak256("removeBlackListedAccount(address)"))
-    bytes4 private constant REMOVE_BLACKLIST_ACCOUNT_SELECTOR = 0xc460f1be;
+    bytes4 public constant REMOVE_BLACKLIST_ACCOUNT_SELECTOR = 0xc460f1be;
 
     ///@dev bytes4(keccak256("recoverToken(address,address)"))
-    bytes4 private constant RECOVER_TOKENS_SELECTOR = 0xfeaea586;
+    bytes4 public constant RECOVER_TOKENS_SELECTOR = 0xfeaea586;
 
     ///@dev keccak256("HASH.token.hashstack.slot")
-    bytes32 private constant TOKEN_CONTRACT_SLOT = 0x2e621e7466541a75ed3060ecb302663cf45f24d90bdac97ddad9918834bc5d75;
+    bytes32 public constant TOKEN_CONTRACT_SLOT = 0x2e621e7466541a75ed3060ecb302663cf45f24d90bdac97ddad9918834bc5d75;
 
     // ========== ENUMS ==========
     enum TransactionState {
@@ -51,14 +51,14 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
 
     // ========== STRUCTS ==========
     struct Transaction {
+        address proposer;
+        bytes4 selector; // The function call data
+        bytes params;
         uint256 proposedAt; // When the transaction was proposed
         uint256 firstSignAt; // When the first signer approved
         uint256 approvals; // Number of approvals received
-        address proposer;
-        bytes4 selector; // The function call data
         TransactionState state; //state of the transaction(pending,)
         bool isFallbackAdmin; // Whether this was proposed by fallback admin
-        bytes params;
     }
 
     // ========== STATE ==========
@@ -106,8 +106,8 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         _initializeAccessRegistry(_superAdmin, _fallbackAdmin);
         // Set up function permissions
         // Fallback admin can only mint and burn
-        fallbackAdminFunctions[AUTHORIZE_BRIDGE_SELECTOR] = true;
-        fallbackAdminFunctions[REVOKE_BRDIGE_AUTHORIZE_SELECTOR] = true;
+        fallbackAdminFunctions[MINT_SELECTOR] = true;
+        fallbackAdminFunctions[BURN_SELECTOR] = true;
 
         // Signers can pause/unpause and manage blacklist
         signerFunctions[PAUSE_STATE_SELECTOR] = true;
@@ -172,89 +172,23 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         return newState;
     }
 
-    /**
-     * @notice Creates a standard transaction or calls it if sender is superAdmin
-     * @param _selector The function selector for the transaction
-     * @param _params The parameters to pass with the transaction
-     * @return The timestamp of the transaction
-     */
-    function _createStandardTransaction(bytes4 _selector, bytes memory _params) private returns (uint256) {
+    function createBatchTransaction(bytes4[] calldata _selector, bytes[] calldata _params)
+        external
+        returns (uint256[] memory txId)
+    {
+        if (_selector.length != _params.length) revert();
+        uint256 size = _selector.length;
+
         if (_msgSender() == superAdmin()) {
-            emit TransactionProposedBySuperAdmin(block.timestamp);
-            _call(_selector, _params);
-            return 10;
+            for (uint256 i = 0; i < size; i++) {
+                emit TransactionProposedBySuperAdmin(block.timestamp);
+                _call(_selector[i], _params[i]);
+            }
+        } else {
+            for (uint256 i = 0; i < size; i++) {
+                txId[i] = createTransaction(_selector[i], _params[i]);
+            }
         }
-        return createTransaction(_selector, _params);
-    }
-
-    /**
-     * @notice Creates a transaction to Authorize Bridge
-     * @param bridge The address to authorize bridges
-     * @return The transaction ID
-     */
-    function createAuthorizeBridgeTransaction(address bridge) external virtual returns (uint256) {
-        return _createStandardTransaction(AUTHORIZE_BRIDGE_SELECTOR, abi.encode(bridge));
-    }
-
-    /**
-     * @notice Creates a transaction to Revoke Authorization of Bridge
-     * @param bridge The address from which to revoke authorization
-     * @return The transaction ID
-     */
-    function createRevokeBridgeAuthorizationTransaction(address bridge) external virtual returns (uint256) {
-        return _createStandardTransaction(REVOKE_BRDIGE_AUTHORIZE_SELECTOR, abi.encode(bridge));
-    }
-
-    /**
-     * @notice Creates a transaction to blacklist an account
-     * @param account The account to blacklist
-     * @return The transaction ID
-     */
-    function createBlacklistAccountTransaction(address account)
-        external
-        virtual
-        notZeroAddress(account)
-        returns (uint256)
-    {
-        return _createStandardTransaction(BLACKLIST_ACCOUNT_SELECTOR, abi.encode(account));
-    }
-
-    /**
-     * @notice Creates a transaction to remove an account from the blacklist
-     * @param account The account to remove from the blacklist
-     * @return The transaction ID
-     */
-    function createBlacklistRemoveTransaction(address account)
-        external
-        virtual
-        notZeroAddress(account)
-        returns (uint256)
-    {
-        return _createStandardTransaction(REMOVE_BLACKLIST_ACCOUNT_SELECTOR, abi.encode(account));
-    }
-
-    /**
-     * @notice Creates a transaction to change the Pause State of Token
-     * @return The transaction ID
-     */
-    function createPauseStateTransaction(uint8 _state) external virtual returns (uint256) {
-        return _createStandardTransaction(PAUSE_STATE_SELECTOR, abi.encode(_state));
-    }
-
-    /**
-     * @notice Creates a transaction to recover tokens
-     * @param token The token address
-     * @param to The address to send the recovered tokens
-     * @return The transaction ID
-     */
-    function createRecoverTokensTransaction(address token, address to)
-        external
-        virtual
-        notZeroAddress(token)
-        notZeroAddress(to)
-        returns (uint256)
-    {
-        return _createStandardTransaction(RECOVER_TOKENS_SELECTOR, abi.encode(token, to));
     }
 
     /**
@@ -292,11 +226,17 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         }
 
         transactionIdExists[txId] = true;
-        transactions[txId].proposer = _msgSender();
-        transactions[txId].selector = _selector;
-        transactions[txId].params = _params;
-        transactions[txId].proposedAt = block.timestamp;
-        transactions[txId].isFallbackAdmin = isFallbackAdmin;
+
+        transactions[txId] = Transaction({
+            proposer: _msgSender(),
+            selector: _selector,
+            params: _params,
+            proposedAt: block.timestamp,
+            firstSignAt: 0,
+            approvals: 0,
+            state: TransactionState.Pending,
+            isFallbackAdmin: isFallbackAdmin
+        });
 
         emit TransactionProposed(txId, _msgSender(), block.timestamp);
 
@@ -307,7 +247,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
      * @notice Approves a transaction
      * @param txId The transaction ID to approve
      */
-    function approveTransaction(uint256 txId) external virtual txExist(txId) {
+    function approveTransaction(uint256 txId) public virtual txExist(txId) {
         if (!isSigner(_msgSender())) revert UnauthorizedCall();
         if (hasApproved[txId][_msgSender()]) revert AlreadyApproved();
 
@@ -331,11 +271,23 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         updateTransactionState(txId);
     }
 
+    function approveBatchTransaction(uint256[] calldata txId) external virtual {
+        for (uint256 i = 0; i < txId.length; i++) {
+            approveTransaction(txId[i]);
+        }
+    }
+
+    function revokeBatchTransaction(uint256[] calldata txId) external virtual {
+        for (uint256 i = 0; i < txId.length; i++) {
+            revokeConfirmation(txId[i]);
+        }
+    }
+
     /**
      * @notice Revokes a previously approved transaction
      * @param txId The transaction ID to revoke
      */
-    function revokeConfirmation(uint256 txId) external virtual txExist(txId) {
+    function revokeConfirmation(uint256 txId) public virtual txExist(txId) {
         if (!isSigner(_msgSender())) revert UnauthorizedCall();
         if (!hasApproved[txId][_msgSender()]) revert TransactionNotSigned();
 
@@ -355,11 +307,17 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         updateTransactionState(txId);
     }
 
+    function executeBatchTransaction(uint256[] calldata txId) external virtual {
+        for (uint256 i = 0; i < txId.length; i++) {
+            executeTransaction(txId[i]);
+        }
+    }
+
     /**
      * @notice Executes a transaction if it has enough approvals
      * @param txId The transaction ID to execute
      */
-    function executeTransaction(uint256 txId) external virtual txExist(txId) {
+    function executeTransaction(uint256 txId) public virtual txExist(txId) {
         Transaction storage transaction = transactions[txId];
         TransactionState currentState = updateTransactionState(txId);
 

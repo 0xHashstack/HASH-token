@@ -4,8 +4,6 @@ pragma solidity ^0.8.20;
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {ILegacyMintableERC20, IOptimismMintableERC20} from "./IOptimismMintableERC20.sol";
-import {Pausable} from "../utils/Pausable.sol";
-import {BlackListed} from "../utils/BlackListed.sol";
 import {Semver} from "./Semver.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
@@ -19,13 +17,18 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
  *         Designed to be backwards compatible with the older StandardL2ERC20 token which was only
  *         meant for use on L2.
  */
-contract OptimismMintableERC20 is IOptimismMintableERC20, ILegacyMintableERC20, ERC20, Semver, Pausable, BlackListed {
+contract OptimismMintableERC20 is IOptimismMintableERC20, ILegacyMintableERC20, ERC20, Semver {
     using SafeERC20 for IERC20;
     /**
      * @notice Address of the corresponding version of this token on the remote chain.
      */
 
     address public immutable REMOTE_TOKEN;
+
+    /**
+     * @notice Address of the corresponding version of this token on the remote chain.
+     */
+    address public admin;
 
     /**
      * @notice Mapping to track authorized bridge addresses that can mint and burn tokens
@@ -79,6 +82,12 @@ contract OptimismMintableERC20 is IOptimismMintableERC20, ILegacyMintableERC20, 
         require(isAuthorizedBridge(_msgSender()), "OptimismMintableERC20: caller is not an authorized bridge");
         _;
     }
+     * @notice A modifier that restricts function access to authorized bridges only
+     */
+    modifier onlyAuthorizedBridge() {
+        require(isAuthorizedBridge(_msgSender()), "OptimismMintableERC20: caller is not an authorized bridge");
+        _;
+    }
 
     /**
      * @custom:semver 1.0.0
@@ -86,14 +95,10 @@ contract OptimismMintableERC20 is IOptimismMintableERC20, ILegacyMintableERC20, 
      * @param _bridge      Address of the L2 standard bridge.
      * @param _remoteToken Address of the corresponding L1 token.
      */
-    constructor(address _bridge, address _remoteToken, address _multiSig)
-        ERC20("HSTK", "HSTK")
-        Semver(1, 0, 0)
-        Pausable()
-        BlackListed(_multiSig)
-    {
+    constructor(address _bridge, address _remoteToken, address _admin) ERC20("HSTK", "HSTK") Semver(1, 0, 0) {
         REMOTE_TOKEN = _remoteToken;
         authorizedBridges[_bridge] = true;
+        admin = _admin;
     }
 
     /**
@@ -101,7 +106,8 @@ contract OptimismMintableERC20 is IOptimismMintableERC20, ILegacyMintableERC20, 
      * @dev Can only be called by contract admin/owner
      * @param _bridge Address of the bridge to authorize
      */
-    function authorizeBridge(address _bridge) external onlyMultiSig {
+    function authorizeBridge(address _bridge) external {
+        require(_msgSender() == admin, "Caller Needs to be Admin");
         require(_bridge != address(0), "OptimismMintableERC20: bridge cannot be zero address");
         require(!authorizedBridges[_bridge], "OptimismMintableERC20: bridge already authorized");
 
@@ -114,8 +120,9 @@ contract OptimismMintableERC20 is IOptimismMintableERC20, ILegacyMintableERC20, 
      * @dev Can only be called by contract admin/owner
      * @param _bridge Address of the bridge to unauthorized
      */
-    function revokeBridgeAuthorization(address _bridge) external onlyMultiSig {
-        // require(_bridge != address(0), "OptimismMintableERC20: bridge cannot be zero address");
+    function revokeBridgeAuthorization(address _bridge) external {
+        require(_msgSender() == admin, "Caller Needs to be Admin");
+        require(_bridge != address(0), "OptimismMintableERC20: bridge cannot be zero address");
         require(authorizedBridges[_bridge], "OptimismMintableERC20: bridge not authorized");
 
         authorizedBridges[_bridge] = false;
@@ -142,8 +149,6 @@ contract OptimismMintableERC20 is IOptimismMintableERC20, ILegacyMintableERC20, 
         virtual
         override(IOptimismMintableERC20, ILegacyMintableERC20)
         onlyAuthorizedBridge
-        allowedInActiveOrPartialPause
-        notBlackListed(_to)
     {
         _mint(_to, _amount);
         emit Mint(_to, _amount);
@@ -160,72 +165,9 @@ contract OptimismMintableERC20 is IOptimismMintableERC20, ILegacyMintableERC20, 
         virtual
         override(IOptimismMintableERC20, ILegacyMintableERC20)
         onlyAuthorizedBridge
-        allowedInActiveOrPartialPause
     {
         _burn(_from, _amount);
         emit Burn(_from, _amount);
-    }
-
-    /**
-     * @dev See {ERC20-transfer}.
-     * Added partialPausedOff and pausedOff modifiers
-     */
-    function transfer(address to, uint256 value)
-        public
-        override
-        whenActive
-        notBlackListed(_msgSender())
-        notBlackListed(to)
-        returns (bool)
-    {
-        return super.transfer(to, value);
-    }
-
-    /**
-     * @dev See {ERC20-transferFrom}.
-     * Added partialPausedOff and pausedOff modifiers
-     */
-    function transferFrom(address from, address to, uint256 value)
-        public
-        override
-        whenActive
-        notBlackListed(_msgSender())
-        notBlackListed(from)
-        notBlackListed(to)
-        returns (bool)
-    {
-        return super.transferFrom(from, to, value);
-    }
-
-    /**
-     * @dev See {ERC20-approve}.
-     * Added pausedOff modifier
-     */
-    function approve(address spender, uint256 value)
-        public
-        override
-        allowedInActiveOrPartialPause
-        notBlackListed(_msgSender())
-        notBlackListed(spender)
-        returns (bool)
-    {
-        return super.approve(spender, value);
-    }
-
-    /**
-     * @dev Recovers tokens accidentally sent to this contract
-     * @param asset The address of the token to recover
-     * @param to The address to send the recovered tokens
-     * Requirements:
-     * - Can only be called by the admin
-     * - `asset` and `to` cannot be the zero address
-     * @notice This function can be used to recover any ERC20 tokens sent to this contract by mistake
-     */
-    function recoverToken(address asset, address to) external allowedInActiveOrPartialPause onlyMultiSig {
-        IERC20 interfaceAsset = IERC20(asset);
-        uint256 balance = interfaceAsset.balanceOf(address(this));
-        interfaceAsset.safeTransfer(to, balance);
-        emit Token_Rescued(asset, to, balance);
     }
 
     /**
@@ -242,16 +184,6 @@ contract OptimismMintableERC20 is IOptimismMintableERC20, ILegacyMintableERC20, 
         // Interface corresponding to the updated OptimismMintableERC20 (this contract).
         bytes4 iface3 = type(IOptimismMintableERC20).interfaceId;
         return _interfaceId == iface1 || _interfaceId == iface2 || _interfaceId == iface3;
-    }
-
-    /**
-     * @dev Updates the contract's operational state
-     * @param newState The new state to set (0: Active, 1: Partial Pause, 2: Full Pause)
-     * Requirements:
-     * - Can only be called by the MultiSig
-     */
-    function updateOperationalState(uint8 newState) external onlyMultiSig {
-        _updateOperationalState(newState);
     }
 
     /**
