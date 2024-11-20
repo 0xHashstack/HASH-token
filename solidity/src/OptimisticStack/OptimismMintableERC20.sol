@@ -17,18 +17,17 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
  *         Designed to be backwards compatible with the older StandardL2ERC20 token which was only
  *         meant for use on L2.
  */
-contract OptimismMintableERC20 is IOptimismMintableERC20, ILegacyMintableERC20, ERC20, Semver{
+contract OptimismMintableERC20 is IOptimismMintableERC20, ILegacyMintableERC20, ERC20, Semver {
     using SafeERC20 for IERC20;
     /**
      * @notice Address of the corresponding version of this token on the remote chain.
-    */
+     */
 
     address public immutable REMOTE_TOKEN;
 
     /**
      * @notice Address of the corresponding version of this token on the remote chain.
-    */
-
+     */
     address public admin;
 
     /**
@@ -77,12 +76,12 @@ contract OptimismMintableERC20 is IOptimismMintableERC20, ILegacyMintableERC20, 
     event Burn(address indexed account, uint256 amount);
 
     /**
- * @notice A modifier that restricts function access to authorized bridges only
- */
-modifier onlyAuthorizedBridge() {
-    require(isAuthorizedBridge(_msgSender()), "OptimismMintableERC20: caller is not an authorized bridge");
-    _;
-}
+     * @notice A modifier that restricts function access to authorized bridges only
+     */
+    modifier onlyAuthorizedBridge() {
+        require(isAuthorizedBridge(_msgSender()), "OptimismMintableERC20: caller is not an authorized bridge");
+        _;
+    }
 
     /**
      * @custom:semver 1.0.0
@@ -90,52 +89,46 @@ modifier onlyAuthorizedBridge() {
      * @param _bridge      Address of the L2 standard bridge.
      * @param _remoteToken Address of the corresponding L1 token.
      */
-    constructor(address _bridge, address _remoteToken, address _admin)
-        ERC20("HSTK", "HSTK")
-        Semver(1, 0, 0)
-    {
+    constructor(address _bridge, address _remoteToken, address _admin) ERC20("HSTK", "HSTK") Semver(1, 0, 0) {
         REMOTE_TOKEN = _remoteToken;
         authorizedBridges[_bridge] = true;
-        admin =_admin;
+        admin = _admin;
     }
 
-   
-/**
- * @notice Authorizes a new bridge to mint and burn tokens
- * @dev Can only be called by contract admin/owner
- * @param _bridge Address of the bridge to authorize
- */
-function authorizeBridge(address _bridge) external  {
+    /**
+     * @notice Authorizes a new bridge to mint and burn tokens
+     * @dev Can only be called by contract admin/owner
+     * @param _bridge Address of the bridge to authorize
+     */
+    function authorizeBridge(address _bridge) external {
+        require(_msgSender() == admin, "Caller Needs to be Admin");
+        require(_bridge != address(0), "OptimismMintableERC20: bridge cannot be zero address");
+        require(!authorizedBridges[_bridge], "OptimismMintableERC20: bridge already authorized");
 
-    require(_msgSender() == admin,"Caller Needs to be Admin");
-    require(_bridge != address(0), "OptimismMintableERC20: bridge cannot be zero address");
-    require(!authorizedBridges[_bridge], "OptimismMintableERC20: bridge already authorized");
-    
-    authorizedBridges[_bridge] = true;
-    emit BridgeAuthorized(_bridge, _msgSender());
-}
-
-/**
- * @notice Revokes a bridge's authorization to mint and burn tokens
- * @dev Can only be called by contract admin/owner
- * @param _bridge Address of the bridge to unauthorized
- */
-function revokeBridgeAuthorization(address _bridge) external {
-
-    require(_msgSender() == admin,"Caller Needs to be Admin");
-    require(_bridge != address(0), "OptimismMintableERC20: bridge cannot be zero address");
-    require(authorizedBridges[_bridge], "OptimismMintableERC20: bridge not authorized");
-    
-    authorizedBridges[_bridge] = false;
-    emit BridgeUnauthorized(_bridge, _msgSender());
-}
+        authorizedBridges[_bridge] = true;
+        emit BridgeAuthorized(_bridge, _msgSender());
+    }
 
     /**
-      * @notice Checks if a given address is an authorized bridge
-      * @param _bridge Address to check for bridge authorization
-      * @return bool True if the address is an authorized bridge, false otherwise
-    */
-    function isAuthorizedBridge(address _bridge) public view returns(bool) {
+     * @notice Revokes a bridge's authorization to mint and burn tokens
+     * @dev Can only be called by contract admin/owner
+     * @param _bridge Address of the bridge to unauthorized
+     */
+    function revokeBridgeAuthorization(address _bridge) external {
+        require(_msgSender() == admin, "Caller Needs to be Admin");
+        require(_bridge != address(0), "OptimismMintableERC20: bridge cannot be zero address");
+        require(authorizedBridges[_bridge], "OptimismMintableERC20: bridge not authorized");
+
+        authorizedBridges[_bridge] = false;
+        emit BridgeUnauthorized(_bridge, _msgSender());
+    }
+
+    /**
+     * @notice Checks if a given address is an authorized bridge
+     * @param _bridge Address to check for bridge authorization
+     * @return bool True if the address is an authorized bridge, false otherwise
+     */
+    function isAuthorizedBridge(address _bridge) public view returns (bool) {
         return authorizedBridges[_bridge];
     }
 

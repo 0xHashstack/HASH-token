@@ -18,9 +18,11 @@ contract MultiSigContractTest is Test {
         Expired,
         Executed
     }
+
     bytes4[] selectors;
     bytes[] params;
-    address [] signers;
+    address[] signers;
+    uint256[] txId;
 
     MultiSigWallet public multiSigImplementation;
     ERC1967Proxy public multiSig;
@@ -34,7 +36,7 @@ contract MultiSigContractTest is Test {
     address public fallbackAdmin = makeAddr("fallbackAdmin");
     address public nonSigner = makeAddr("nonSigner");
 
-     ///@dev bytes4(keccak256("mint(address,uint256)"))
+    ///@dev bytes4(keccak256("mint(address,uint256)"))
     bytes4 public constant MINT_SELECTOR = 0x40c10f19;
 
     ///@dev bytes4(keccak256("burn(address,uint256)"))
@@ -103,17 +105,25 @@ contract MultiSigContractTest is Test {
         vm.startPrank(superAdmin);
         vm.expectEmit(true, false, false, false);
         emit SignerAdded(signer3);
+        uint256 gasBefore = gasleft();
         wrappedMultiSig.addSigner(signer3);
         wrappedMultiSig.addSigner(signer2);
         wrappedMultiSig.addSigner(signer1);
+        uint256 gasAfter = gasleft();
+
+        console.log("gas used Add signer: ", gasBefore - gasAfter);
         vm.stopPrank();
     }
+
     function test_AddSignerBatch() public {
         vm.startPrank(superAdmin);
         vm.expectEmit(true, false, false, false);
         emit SignerAdded(signer3);
-        signers = [signer3,signer2,signer1];
+        signers = [signer3, signer1, signer2];
+        uint256 gasBefore = gasleft();
         wrappedMultiSig.addBatchSigners(signers);
+        uint256 gasAfter = gasleft();
+        console.log("gas used Add signer batch: ", gasBefore - gasAfter);
         vm.stopPrank();
     }
 
@@ -174,48 +184,48 @@ contract MultiSigContractTest is Test {
     function test_CreateAndExecuteTransaction() public {
         test_AddSigner();
 
-        bytes4 selector_ = bytes4(keccak256("updateOperationalState(uint8)"));
-        bytes memory param = bytes(abi.encode(2));
+        selectors = [PAUSE_STATE_SELECTOR];
+        params = [abi.encode(2)];
 
         // Signer1 creates transaction
         vm.startPrank(signer1);
-        uint256 txId = wrappedMultiSig.createPauseStateTransaction(2);
+        txId = wrappedMultiSig.createBatchTransaction(selectors, params);
 
         // Verify transaction created
         (
             address proposer,
             bytes4 selector,
-            bytes memory params,
+            bytes memory _params,
             uint256 proposedAt,
             uint256 firstSignAt,
             uint256 approvals,
             MultiSigWallet.TransactionState state,
             bool isFallbackAdmin
-        ) = wrappedMultiSig.getTransaction(txId);
+        ) = wrappedMultiSig.getTransaction(txId[0]);
         unchecked {
             assertEq(proposer, signer1);
-            assertEq(selector, selector_);
-            assertEq(params, param);
+            assertEq(selector, PAUSE_STATE_SELECTOR);
+            assertEq(_params, params[0]);
             assertEq(proposedAt, block.timestamp);
             assertEq(approvals, 0);
             assertEq(uint8(state), 0);
         }
 
         // Both signers approve
-        wrappedMultiSig.approveTransaction(txId);
+        wrappedMultiSig.approveBatchTransaction(txId);
         vm.stopPrank();
 
         vm.prank(signer2);
-        wrappedMultiSig.approveTransaction(txId);
+        wrappedMultiSig.approveBatchTransaction(txId);
 
         // vm.expectRevert(MultiSigWallet.UnauthorizedCall.selector);
         // vm.prank(fallbackAdmin);
         // wrappedMultiSig.approveTransaction(txId);
 
         vm.prank(superAdmin);
-        wrappedMultiSig.approveTransaction(txId);
+        wrappedMultiSig.approveBatchTransaction(txId);
 
-        (,,,,, approvals,,) = wrappedMultiSig.getTransaction(txId);
+        (,,,,, approvals,,) = wrappedMultiSig.getTransaction(txId[0]);
 
         assertEq(approvals, 3);
 
@@ -224,9 +234,9 @@ contract MultiSigContractTest is Test {
 
         // Execute transaction
         vm.prank(fallbackAdmin);
-        wrappedMultiSig.executeTransaction(txId);
+        wrappedMultiSig.executeBatchTransaction(txId);
 
-        (,,,,,, state,) = wrappedMultiSig.getTransaction(txId);
+        (,,,,,, state,) = wrappedMultiSig.getTransaction(txId[0]);
 
         assertEq(uint8(state), 4);
 
@@ -237,20 +247,24 @@ contract MultiSigContractTest is Test {
     }
 
     function test_RevertWhen_NonSignerCreatesTransaction() public {
+        selectors = [PAUSE_STATE_SELECTOR];
+        params = [abi.encode(2)];
         vm.startPrank(nonSigner);
         vm.expectRevert(MultiSigWallet.UnauthorizedCall.selector);
-        wrappedMultiSig.createPauseStateTransaction(2);
+        wrappedMultiSig.createBatchTransaction(selectors, params);
         vm.stopPrank();
     }
 
     function test_RevertWhen_InsufficientConfirmations() public {
         test_AddSigner();
         // Signer1 creates and approves transaction
+        selectors = [PAUSE_STATE_SELECTOR];
+        params = [abi.encode(2)];
         vm.startPrank(signer1);
-        uint256 txId = wrappedMultiSig.createPauseStateTransaction(2);
-        wrappedMultiSig.approveTransaction(txId);
+        txId = wrappedMultiSig.createBatchTransaction(selectors, params);
+        wrappedMultiSig.approveBatchTransaction(txId);
 
-        (,,,,, uint256 approvals,,) = wrappedMultiSig.getTransaction(txId);
+        (,,,,, uint256 approvals,,) = wrappedMultiSig.getTransaction(txId[0]);
 
         // Wait for activation period
         vm.warp(block.timestamp + 24 hours + 1);
@@ -259,7 +273,7 @@ contract MultiSigContractTest is Test {
         // vm.expectEmit(true, true, false, false);
         // emit InsufficientApprovals(txId, approvals);
         vm.expectRevert();
-        wrappedMultiSig.executeTransaction(txId);
+        wrappedMultiSig.executeBatchTransaction(txId);
         vm.stopPrank();
     }
 
@@ -267,17 +281,19 @@ contract MultiSigContractTest is Test {
         test_AddSigner();
 
         // Signer1 creates and approves transaction
+        selectors = [PAUSE_STATE_SELECTOR];
+        params = [abi.encode(2)];
         vm.startPrank(signer1);
-        uint256 txId = wrappedMultiSig.createPauseStateTransaction(2);
-        wrappedMultiSig.approveTransaction(txId);
-        (,,,,, uint256 approvals, MultiSigWallet.TransactionState state,) = wrappedMultiSig.getTransaction(txId);
+        txId = wrappedMultiSig.createBatchTransaction(selectors, params);
+        wrappedMultiSig.approveBatchTransaction(txId);
+        (,,,,, uint256 approvals, MultiSigWallet.TransactionState state,) = wrappedMultiSig.getTransaction(txId[0]);
 
         assertEq(approvals, 1);
 
         // Revoke confirmation
-        wrappedMultiSig.revokeConfirmation(txId);
+        wrappedMultiSig.revokeBatchConfirmation(txId);
 
-        (,,,,, approvals,,) = wrappedMultiSig.getTransaction(txId);
+        (,,,,, approvals,,) = wrappedMultiSig.getTransaction(txId[0]);
         assertEq(approvals, 0);
         vm.stopPrank();
     }
@@ -293,7 +309,10 @@ contract MultiSigContractTest is Test {
         vm.expectRevert(MultiSigWallet.UnauthorizedCall.selector);
         vm.startPrank(signer1);
 
-        uint256 txId = wrappedMultiSig.createMintTransaction(to, 1000);
+        selectors = [MINT_SELECTOR];
+        params = [abi.encode(to,1000)];
+
+        txId = wrappedMultiSig.createBatchTransaction(selectors, params);
     }
 
     function test_FallbackAdminMintTransaction() public {
@@ -304,31 +323,34 @@ contract MultiSigContractTest is Test {
         test_AddSigner();
         // Fallback superAdmin creates transaction
         vm.startPrank(fallbackAdmin);
-        uint256 txId = wrappedMultiSig.createMintTransaction(to, 1000 * 10 ** 18);
+        selectors = [MINT_SELECTOR];
+        params = [abi.encode(to,1000 * 10**18)];
+
+        txId = wrappedMultiSig.createBatchTransaction(selectors, params);
 
         // Approve and wait for activation period
         // wrappedMultiSig.approveTransaction(txId);
         vm.stopPrank();
 
         vm.prank(signer1);
-        wrappedMultiSig.approveTransaction(txId);
+        wrappedMultiSig.approveBatchTransaction(txId);
 
         vm.prank(signer2);
-        wrappedMultiSig.approveTransaction(txId);
+        wrappedMultiSig.approveBatchTransaction(txId);
 
         vm.prank(signer3);
-        wrappedMultiSig.approveTransaction(txId);
+        wrappedMultiSig.approveBatchTransaction(txId);
 
-        (,,,,, uint256 approvals, MultiSigWallet.TransactionState state,) = wrappedMultiSig.getTransaction(txId);
+        (,,,,, uint256 approvals, MultiSigWallet.TransactionState state,) = wrappedMultiSig.getTransaction(txId[0]);
         assertEq(approvals, 3);
 
         vm.warp(block.timestamp + 24 hours + 3);
         vm.expectRevert();
         vm.prank(superAdmin);
-        wrappedMultiSig.approveTransaction(txId);
+        wrappedMultiSig.approveBatchTransaction(txId);
         // Execute transaction
         vm.prank(fallbackAdmin);
-        wrappedMultiSig.executeTransaction(txId);
+        wrappedMultiSig.executeBatchTransaction(txId);
 
         // Verify mint
         assertEq(token.balanceOf(to), 1000 * 10 ** 18);
@@ -338,32 +360,35 @@ contract MultiSigContractTest is Test {
         test_FallbackAdminMintTransaction();
 
         address to = makeAddr("to");
+        selectors = [BURN_SELECTOR];
+        params = [abi.encode(to,500)];
+        
 
         vm.startPrank(fallbackAdmin);
-        uint256 txId = wrappedMultiSig.createBurnTransaction(to, 500);
+        txId = wrappedMultiSig.createBatchTransaction(selectors, params);
 
         // Approve and wait for activation period
         vm.stopPrank();
 
         vm.prank(signer1);
-        wrappedMultiSig.approveTransaction(txId);
+        wrappedMultiSig.approveBatchTransaction(txId);
 
         vm.warp(block.timestamp + 72 hours + 1);
 
         vm.prank(signer2);
         vm.expectRevert(MultiSigWallet.InvalidState.selector);
-        wrappedMultiSig.approveTransaction(txId);
+        wrappedMultiSig.approveBatchTransaction(txId);
 
         vm.prank(signer1);
         vm.expectRevert(MultiSigWallet.InvalidState.selector);
-        wrappedMultiSig.executeTransaction(txId);
+        wrappedMultiSig.executeBatchTransaction(txId);
 
         vm.prank(signer1);
         vm.expectRevert(MultiSigWallet.InvalidState.selector);
-        wrappedMultiSig.revokeConfirmation(txId);
+        wrappedMultiSig.revokeBatchConfirmation(txId);
 
-        MultiSigWallet.TransactionState currentState = wrappedMultiSig.updateTransactionState(txId);
-        (,,,,, uint256 approvals, MultiSigWallet.TransactionState currentState2,) = wrappedMultiSig.getTransaction(txId);
+        MultiSigWallet.TransactionState currentState = wrappedMultiSig.updateTransactionState(txId[0]);
+        (,,,,, uint256 approvals, MultiSigWallet.TransactionState currentState2,) = wrappedMultiSig.getTransaction(txId[0]);
 
         assertEq(approvals, 1);
         assertEq(uint8(currentState2), uint8(TransactionState.Expired));
@@ -379,98 +404,106 @@ contract MultiSigContractTest is Test {
         address to = makeAddr("to");
 
         // Fallback superAdmin creates transaction
+
+        selectors = [BURN_SELECTOR];
+        params = [abi.encode(to,500 *10**18)];
         vm.startPrank(fallbackAdmin);
-        uint256 txId = wrappedMultiSig.createBurnTransaction(to, 100);
+        txId = wrappedMultiSig.createBatchTransaction(selectors, params);
 
         // Approve and wait for activation period
         // wrappedMultiSig.approveTransaction(txId);
         vm.stopPrank();
 
         vm.prank(signer1);
-        wrappedMultiSig.approveTransaction(txId);
+        wrappedMultiSig.approveBatchTransaction(txId);
 
         vm.prank(signer2);
-        wrappedMultiSig.approveTransaction(txId);
+        wrappedMultiSig.approveBatchTransaction(txId);
 
         vm.prank(signer3);
-        wrappedMultiSig.approveTransaction(txId);
+        wrappedMultiSig.approveBatchTransaction(txId);
 
-        (,,,,, uint256 approvals, MultiSigWallet.TransactionState state,) = wrappedMultiSig.getTransaction(txId);
+        (,,,,, uint256 approvals, MultiSigWallet.TransactionState state,) = wrappedMultiSig.getTransaction(txId[0]);
         assertEq(approvals, 3);
 
         vm.warp(block.timestamp + 24 hours + 3);
         vm.expectRevert();
         vm.prank(superAdmin);
-        wrappedMultiSig.approveTransaction(txId);
+        wrappedMultiSig.approveBatchTransaction(txId);
         // Execute transaction
         vm.prank(fallbackAdmin);
-        wrappedMultiSig.executeTransaction(txId);
+        wrappedMultiSig.executeBatchTransaction(txId);
 
         // Verify mint
-        assertEq(token.balanceOf(to), 900);
+        assertEq(token.balanceOf(to), 500*10**18);
     }
 
-    function test_multipleFunctionsHighGas() public {
-        uint256[100] memory _transactions;
-        address[100] memory signers;
-        for (uint256 i = 0; i < 100; i++) {
-            signers[i] = address(uint160(i + 1));
-            addSigner(signers[i]);
-            vm.startPrank(fallbackAdmin);
-            _transactions[i] = wrappedMultiSig.createMintTransaction(signers[i], block.timestamp);
-            vm.stopPrank();
-        }
-        for (uint256 i = 0; i < 100; i++) {
-            uint256 trnx = _transactions[i];
-            for (uint256 j = 0; j < 100; j++) {
-                vm.prank(signers[j]);
-                wrappedMultiSig.approveTransaction(trnx);
-            }
-            (,,,,, uint256 approvals,,) = wrappedMultiSig.getTransaction(trnx);
-            assertEq(approvals, 100);
-        }
+    // function test_multipleFunctionsHighGas() public {
+    //     uint256[100] memory _transactions;
+    //     address[100] memory signers;
+    //     for (uint256 i = 0; i < 100; i++) {
+    //         signers[i] = address(uint160(i + 1));
+    //         addSigner(signers[i]);
+    //         vm.startPrank(fallbackAdmin);
+    //         _transactions[i] = wrappedMultiSig.createMintTransaction(signers[i], block.timestamp);
+    //         vm.stopPrank();
+    //     }
+    //     for (uint256 i = 0; i < 100; i++) {
+    //         uint256 trnx = _transactions[i];
+    //         for (uint256 j = 0; j < 100; j++) {
+    //             vm.prank(signers[j]);
+    //             wrappedMultiSig.approveTransaction(trnx);
+    //         }
+    //         (,,,,, uint256 approvals,,) = wrappedMultiSig.getTransaction(trnx);
+    //         assertEq(approvals, 100);
+    //     }
 
-        vm.warp(block.timestamp + 24 hours + 5);
+    //     vm.warp(block.timestamp + 24 hours + 5);
 
-        for (uint256 i = 0; i < 100; i++) {
-            uint256 trnx = _transactions[i];
-            //Execute transaction;
-            wrappedMultiSig.executeTransaction(trnx);
-            (,,,,,, MultiSigWallet.TransactionState state,) = wrappedMultiSig.getTransaction(trnx);
-            assertEq(uint8(state), 4);
-        }
-    }
+    //     for (uint256 i = 0; i < 100; i++) {
+    //         uint256 trnx = _transactions[i];
+    //         //Execute transaction;
+    //         wrappedMultiSig.executeTransaction(trnx);
+    //         (,,,,,, MultiSigWallet.TransactionState state,) = wrappedMultiSig.getTransaction(trnx);
+    //         assertEq(uint8(state), 4);
+    //     }
+    // }
 
-    function createBlacklistTrnx(address account) public returns (uint256) {
+    function createBlacklistTrnx(address account) public returns (uint256[] memory trnx) {
         vm.assume(account != address(0));
-        uint256 trnx = wrappedMultiSig.createBlacklistAccountTransaction(account);
+        selectors = [BLACKLIST_ACCOUNT_SELECTOR];
+        params = [abi.encode(account)];
+        trnx = wrappedMultiSig.createBatchTransaction(selectors,params);
         return trnx;
     }
 
-    function createPauseTransaction() public returns (uint256) {
-        uint256 trnx = wrappedMultiSig.createPauseStateTransaction(2);
-        return trnx;
-    }
+    // function createPauseTransaction() public returns (uint256) {
+    //     uint256 trnx = wrappedMultiSig.createPauseStateTransaction(2);
+    //     return trnx;
+    // }
 
-    function addSigner(address _signer) public {
-        vm.startPrank(superAdmin);
-        wrappedMultiSig.addSigner(_signer);
-        vm.stopPrank();
-    }
+    // function addSigner(address _signer) public {
+    //     vm.startPrank(superAdmin);
+    //     wrappedMultiSig.addSigner(_signer);
+    //     vm.stopPrank();
+    // }
 
-    function removeSigner(address _signer) public {
-        vm.startPrank(superAdmin);
-        wrappedMultiSig.removeSigner(_signer);
-        vm.stopPrank();
-    }
+    // function removeSigner(address _signer) public {
+    //     vm.startPrank(superAdmin);
+    //     wrappedMultiSig.removeSigner(_signer);
+    //     vm.stopPrank();
+    // }
 
     function test_checkTransactionStateLogic(address to, uint256 amount) public {
         test_AddSigner();
         vm.assume(to != address(0) && amount > 0 && amount < 9_000_000_000 * 10 ** 18 - 10 ** 18);
-        vm.prank(fallbackAdmin);
-        uint256 trnx = wrappedMultiSig.createMintTransaction(to, amount);
 
-        (,,,,,, MultiSigWallet.TransactionState state,) = wrappedMultiSig.getTransaction(trnx);
+        selectors = [MINT_SELECTOR];
+        params = [abi.encode(to,amount)];
+        vm.prank(fallbackAdmin);
+        txId = wrappedMultiSig.createBatchTransaction(selectors, params);
+
+        (,,,,,, MultiSigWallet.TransactionState state,) = wrappedMultiSig.getTransaction(txId[0]);
         assertEq(uint8(state), 0, "Transaction need to be in Pending State");
 
         // vm.warp(block.timestamp + 72 hours - 1);
@@ -493,15 +526,15 @@ contract MultiSigContractTest is Test {
         // assertEq(uint8(state),1,"Transaction need to be in Active State");
 
         vm.prank(signer1);
-        wrappedMultiSig.approveTransaction(trnx);
-        (,,,,,, state,) = wrappedMultiSig.getTransaction(trnx);
+        wrappedMultiSig.approveBatchTransaction(txId);
+        (,,,,,, state,) = wrappedMultiSig.getTransaction(txId[0]);
         assertEq(uint8(state), 1, "Transaction need to be in Active State");
 
         vm.warp(block.timestamp + 24 hours + 1);
         vm.expectRevert();
         vm.prank(signer1);
-        wrappedMultiSig.revokeConfirmation(trnx);
-        MultiSigWallet.TransactionState state_ = wrappedMultiSig.updateTransactionState(trnx);
+        wrappedMultiSig.revokeBatchConfirmation(txId);
+        MultiSigWallet.TransactionState state_ = wrappedMultiSig.updateTransactionState(txId[0]);
         assertEq(uint8(state_), 3, "Transaction should be expired");
     }
 
@@ -571,24 +604,27 @@ contract MultiSigContractTest is Test {
         address account = makeAddr("account");
         address to = makeAddr("to");
         test_FallbackAdminMintTransaction();
+
+        selectors = [BLACKLIST_ACCOUNT_SELECTOR]; 
+        params = [abi.encode(account)]; 
         vm.prank(signer1);
-        uint256 txId = wrappedMultiSig.createBlacklistAccountTransaction(account);
+        txId = wrappedMultiSig.createBatchTransaction(selectors,params);
 
         vm.prank(signer1);
-        wrappedMultiSig.approveTransaction(txId);
+        wrappedMultiSig.approveBatchTransaction(txId);
 
         vm.prank(signer2);
-        wrappedMultiSig.approveTransaction(txId);
+        wrappedMultiSig.approveBatchTransaction(txId);
 
         vm.prank(signer3);
-        wrappedMultiSig.approveTransaction(txId);
+        wrappedMultiSig.approveBatchTransaction(txId);
 
         vm.prank(superAdmin);
-        wrappedMultiSig.approveTransaction(txId);
+        wrappedMultiSig.approveBatchTransaction(txId);
 
         vm.prank(address(3));
         vm.warp(block.timestamp + 24 hours + 1);
-        wrappedMultiSig.executeTransaction(txId);
+        wrappedMultiSig.executeBatchTransaction(txId);
 
         assertEq(token.isBlackListed(account), true, "Inconsistent State");
 
@@ -603,24 +639,27 @@ contract MultiSigContractTest is Test {
         address account = makeAddr("account");
         address to = makeAddr("to");
 
-        vm.prank(signer1);
-        uint256 txId = wrappedMultiSig.createBlacklistRemoveTransaction(account);
+        selectors = [REMOVE_BLACKLIST_ACCOUNT_SELECTOR];
+        params = [abi.encode(account)];
 
         vm.prank(signer1);
-        wrappedMultiSig.approveTransaction(txId);
+        txId = wrappedMultiSig.createBatchTransaction(selectors,params);
+
+        vm.prank(signer1);
+        wrappedMultiSig.approveBatchTransaction(txId);
 
         vm.prank(signer2);
-        wrappedMultiSig.approveTransaction(txId);
+        wrappedMultiSig.approveBatchTransaction(txId);
 
         vm.prank(signer3);
-        wrappedMultiSig.approveTransaction(txId);
+        wrappedMultiSig.approveBatchTransaction(txId);
 
         vm.prank(superAdmin);
-        wrappedMultiSig.approveTransaction(txId);
+        wrappedMultiSig.approveBatchTransaction(txId);
 
         vm.prank(address(3));
         vm.warp(block.timestamp + 24 hours + 1);
-        wrappedMultiSig.executeTransaction(txId);
+        wrappedMultiSig.executeBatchTransaction(txId);
 
         assertEq(token.isBlackListed(account), false, "Inconsistent State");
 
@@ -629,43 +668,41 @@ contract MultiSigContractTest is Test {
         assertEq(token.balanceOf(account), 10 * 10 ** 18, "Token Doesn't mint successfully");
     }
 
-
     function test_CreateTransactionBatch() public {
         address to = address(1223);
         //(gas: 4 28 625)
-        selectors = [MINT_SELECTOR,BURN_SELECTOR,MINT_SELECTOR,BURN_SELECTOR];
+        selectors = [MINT_SELECTOR, BURN_SELECTOR, MINT_SELECTOR, BURN_SELECTOR];
         // selectors = [MINT_SELECTOR];
-    
-        params = [ abi.encode(to,10_000) , abi.encode(to,10_000) , abi.encode(to,100_000) , abi.encode(to,100_000)];
-        // params = [abi.encode(to,10000)];
-        
-        vm.prank(fallbackAdmin);
-        wrappedMultiSig.createBatchTransaction(selectors,params);
 
-    }
-    function test_CreateTransaction() public {
-        address to = address(1223);
+        params = [abi.encode(to, 10_000), abi.encode(to, 10_000), abi.encode(to, 100_000), abi.encode(to, 100_000)];
 
-        // (gas: 3 99 118)
-        //188159
-        //1029953
-        
-        vm.prank(fallbackAdmin);
-        wrappedMultiSig.createMintTransaction(to,10000);
+        uint256 gasBefore = gasleft();
+        vm.prank(superAdmin);
+        wrappedMultiSig.createBatchTransaction(selectors, params);
 
-        vm.prank(fallbackAdmin);
-        wrappedMultiSig.createBurnTransaction(to,100);
+        uint256 gasAfter = gasleft();
 
-        vm.prank(fallbackAdmin);
-        wrappedMultiSig.createMintTransaction(to,10);
-
-        vm.prank(fallbackAdmin);
-        wrappedMultiSig.createMintTransaction(to,100000);
-
+        console.log("Gas used", gasBefore - gasAfter);
     }
 
+    // function test_CreateTransaction() public {
+    //     address to = address(1223);
+
+    //     // (gas: 3 99 118)
+    //     //188159
+    //     //1029953
 
 
+    //     uint256 gasBefore = gasleft();
+    //     vm.prank(superAdmin);
+    //     wrappedMultiSig.createMintTransaction(to, 10_000);
+    //     uint256 gasAfter = gasleft();
+
+    //     console.log("gas USed : ", gasBefore - gasAfter);
+    // }
+
+    // function test_approveTransaction() public {
+    // }
 }
 
 //for signers[] array

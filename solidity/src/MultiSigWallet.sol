@@ -4,7 +4,7 @@ pragma solidity ^0.8.4;
 import {AccessRegistry} from "./AccessRegistry/AccessRegistry.sol";
 import {UUPSUpgradeable} from "./utils/UUPSUpgradeable.sol";
 import {Initializable} from "./utils/Initializable.sol";
-import {console} from 'forge-std/console.sol';
+import {console} from "forge-std/console.sol";
 
 /**
  * @title MultisigWallet
@@ -42,11 +42,11 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
 
     // ========== ENUMS ==========
     enum TransactionState {
-        Pending,       // Just created, awaiting first signature
-        Active,        // Has at least one signature, within time window
-        Queued,       // Has enough signatures, ready for execution
-        Expired,      // Time window passed without enough signatures
-        Executed      // Successfully executed
+        Pending, // Just created, awaiting first signature
+        Active, // Has at least one signature, within time window
+        Queued, // Has enough signatures, ready for execution
+        Expired, // Time window passed without enough signatures
+        Executed // Successfully executed
 
     }
 
@@ -91,6 +91,8 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     error TransactionIdNotExist();
     error FunctionAlreadyExists();
     error FunctionDoesNotExist();
+    // Helper error
+    error InvalidParams();
 
     // ========== INITIALIZATION ==========
     constructor() {
@@ -128,8 +130,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
      * @param txId The transaction ID to update
      * @return The current state of the transaction
      */
-    function updateTransactionState(uint256 txId) public txExist(txId) returns (TransactionState){
-
+    function updateTransactionState(uint256 txId) public txExist(txId) returns (TransactionState) {
         Transaction storage transaction = transactions[txId];
 
         // Don't update final states
@@ -174,253 +175,174 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         return newState;
     }
 
-    function createBatchTransaction(bytes4[] calldata _selector,bytes[] calldata _params) external returns(uint256[] memory txId){
+    // Optimized batch transaction functions with gas improvements
 
-        if(_selector.length!=_params.length) revert();
-        uint size = _selector.length;
-        
-        if(_msgSender() == superAdmin()){
-            txId = new uint256[](0);
-            for(uint i=0; i<size ;i++){
+    function createBatchTransaction(bytes4[] calldata _selector, bytes[] calldata _params)
+        external
+        returns (uint256[] memory txId)
+    {
+        uint256 size = _selector.length;
+        if (size == 0 || size != _params.length) revert InvalidParams();
+
+        address sender = _msgSender();
+        bool isSuperAdmin = sender == superAdmin();
+
+        // For super admin, we don't need to store or return txIds
+        if (isSuperAdmin) {
+            for (uint256 i; i < size;) {
+                _call(_selector[i], _params[i]);
+                unchecked {
+                    ++i;
+                }
+            }
             emit TransactionProposedBySuperAdmin(block.timestamp);
-            _call(_selector[i],_params[i]);
-           }
+            return new uint256[](0);
         }
-        else{
-            txId = new uint256[](size);
-            for(uint i=0; i<size; i++){
-                uint256 trnx = createTransaction(_selector[i],_params[i]);
-                txId[i] = trnx;
+
+        // For other users, batch create transactions
+        txId = new uint256[](size);
+        uint256 timestamp = block.timestamp;
+        bool isSigner = isSigner(sender);
+        bool isFallbackAdmin = sender == fallbackAdmin();
+
+        for (uint256 i; i < size;) {
+            bytes4 selector = _selector[i];
+            // Cache permission check result
+            bool isValidFunction = isSigner ? signerFunctions[selector] : fallbackAdminFunctions[selector];
+            if (!isValidFunction || (!isSigner && !isFallbackAdmin)) {
+                revert UnauthorizedCall();
+            }
+
+            // Generate txId more efficiently
+            txId[i] = uint256(keccak256(abi.encode(timestamp, sender, selector, _params[i])));
+
+            if (transactionIdExists[txId[i]]) {
+                revert TransactionAlreadyExist();
+            }
+
+            transactionIdExists[txId[i]] = true;
+
+            // Store transaction with minimal storage writes
+            Transaction storage transaction = transactions[txId[i]];
+            transaction.proposer = sender;
+            transaction.selector = selector;
+            transaction.params = _params[i];
+            transaction.proposedAt = timestamp;
+            transaction.isFallbackAdmin = isFallbackAdmin;
+            // Other fields default to 0/false/Pending
+
+            emit TransactionProposed(txId[i], sender, timestamp);
+
+            unchecked {
+                ++i;
             }
         }
     }
-
-    /**
-     * @notice Creates a standard transaction or calls it if sender is superAdmin
-     * @param _selector The function selector for the transaction
-     * @param _params The parameters to pass with the transaction
-     * @return The timestamp of the transaction
-     */
-    function _createStandardTransaction(bytes4 _selector, bytes memory _params) private returns (uint256) {
-        if (_msgSender() == superAdmin()) {
-            emit TransactionProposedBySuperAdmin(block.timestamp);
-            _call(_selector, _params);
-            return 10;
-        }
-        return createTransaction(_selector, _params);
-    }
-
-    /**
-     * @notice Creates a mint transaction
-     * @param to The address to mint tokens to
-     * @param amount The amount of tokens to mint
-     * @return The transaction ID
-     */
-    function createMintTransaction(address to, uint256 amount) external virtual notZeroAddress(to) returns (uint256) {
-        return _createStandardTransaction(MINT_SELECTOR, abi.encode(to, amount));
-    }
-
-    /**
-     * @notice Creates a burn transaction
-     * @param from The address from which to burn tokens
-     * @param amount The amount of tokens to burn
-     * @return The transaction ID
-     */
-    function createBurnTransaction(address from, uint256 amount)
-        external
-        virtual
-        notZeroAddress(from)
-        returns (uint256)
-    {
-        return _createStandardTransaction(BURN_SELECTOR, abi.encode(from, amount));
-    }
-
-    /**
-     * @notice Creates a transaction to blacklist an account
-     * @param account The account to blacklist
-     * @return The transaction ID
-     */
-    function createBlacklistAccountTransaction(address account)
-        external
-        virtual
-        notZeroAddress(account)
-        returns (uint256)
-    {
-        return _createStandardTransaction(BLACKLIST_ACCOUNT_SELECTOR, abi.encode(account));
-    }
-
-    /**
-     * @notice Creates a transaction to remove an account from the blacklist
-     * @param account The account to remove from the blacklist
-     * @return The transaction ID
-     */
-    function createBlacklistRemoveTransaction(address account)
-        external
-        virtual
-        notZeroAddress(account)
-        returns (uint256)
-    {
-        return _createStandardTransaction(REMOVE_BLACKLIST_ACCOUNT_SELECTOR, abi.encode(account));
-    }
-
-    /**
-     * @notice Creates a transaction to change the Pause State of Token
-     * @return The transaction ID
-     */
-    function createPauseStateTransaction(uint8 _state) external virtual returns (uint256) {
-        return _createStandardTransaction(PAUSE_STATE_SELECTOR, abi.encode(_state));
-    }
-
-    /**
-     * @notice Creates a transaction to recover tokens
-     * @param token The token address
-     * @param to The address to send the recovered tokens
-     * @return The transaction ID
-     */
-    function createRecoverTokensTransaction(address token, address to)
-        external
-        virtual
-        notZeroAddress(token)
-        notZeroAddress(to)
-        returns (uint256)
-    {
-        return _createStandardTransaction(RECOVER_TOKENS_SELECTOR, abi.encode(token, to));
-    }
-
     /**
      * @notice Checks if a transaction ID is valid
      * @param txId The transaction ID to check
      * @return flag True if the transaction ID is valid, false otherwise
      */
+
     function isValidTransaction(uint256 txId) public view returns (bool flag) {
         return transactionIdExists[txId];
     }
 
     /**
-     * @notice Proposes a new transaction
-     * @param _selector The function call data to execute
-     * @param _params Parameters needs to passed with functional call
-     */
-    function createTransaction(bytes4 _selector, bytes memory _params) internal returns (uint256 txId) {
-        bool isSigner = isSigner(_msgSender());
-        bool isFallbackAdmin = _msgSender() == fallbackAdmin();
-        bool isValidFunction = isSigner ? signerFunctions[_selector] : fallbackAdminFunctions[_selector];
-
-        if (!isValidFunction || (!isSigner && !isFallbackAdmin)) {
-            revert UnauthorizedCall();
-        }
-
-        txId = uint256(keccak256(abi.encode(block.timestamp, _msgSender(), _selector, _params)));
-
-        if (isValidTransaction(txId)) {
-            revert TransactionAlreadyExist();
-        }
-
-        transactionIdExists[txId] = true;
-
-        transactions[txId] = Transaction({
-            proposer: _msgSender(),
-            selector: _selector,
-            params: _params,
-            proposedAt: block.timestamp,
-            firstSignAt: 0,
-            approvals: 0,
-            state: TransactionState.Pending,
-            isFallbackAdmin: isFallbackAdmin
-        });
-
-        emit TransactionProposed(txId, _msgSender(), block.timestamp);
-
-    }
-
-    /**
      * @notice Approves a transaction
-     * @param txId The transaction ID to approve
+     * @param txIds The transaction ID to approve
      */
-    function approveTransaction(uint256 txId) public virtual txExist(txId) {
-        if (!isSigner(_msgSender())) revert UnauthorizedCall();
-        if (hasApproved[txId][_msgSender()]) revert AlreadyApproved();
+    function approveBatchTransaction(uint256[] calldata txIds) public {
+        address sender = _msgSender();
+        if (!isSigner(sender)) revert UnauthorizedCall();
 
-        Transaction storage transaction = transactions[txId];
-        TransactionState currentState = updateTransactionState(txId);
+        uint256 len = txIds.length;
+        uint256 currentTime = block.timestamp;
 
-        if (currentState != TransactionState.Pending && currentState != TransactionState.Active) {
-            revert InvalidState();
-        }
+        for (uint256 i; i < len;) {
+            uint256 txId = txIds[i];
+            if (!transactionIdExists[txId]) revert TransactionIdNotExist();
+            if (hasApproved[txId][sender]) revert AlreadyApproved();
 
-        // Update first signature time if this is the first approval
-        if (transaction.approvals == 0) {
-            transaction.firstSignAt = block.timestamp;
-        }
-        unchecked {
-            transaction.approvals += 1;
-        }
-        hasApproved[txId][_msgSender()] = true;
+            Transaction storage transaction = transactions[txId];
+            TransactionState currentState = updateTransactionState(txId);
 
-        emit TransactionApproved(txId, _msgSender());
-        updateTransactionState(txId);
-    }
+            if (currentState != TransactionState.Pending && currentState != TransactionState.Active) {
+                revert InvalidState();
+            }
 
-    function approveBatchTransaction(uint256[] calldata txId) external virtual {
-        for(uint i=0; i< txId.length ;i++){
-            approveTransaction(txId[i]);
-        }
-    }
+            // Update first signature time if this is the first approval
+            if (transaction.approvals == 0) {
+                transaction.firstSignAt = currentTime;
+            }
+            unchecked {
+                transaction.approvals += 1;
+                ++i;
+            }
 
-     function revokeBatchTransaction(uint256[] calldata txId) external virtual {
-        for(uint i=0; i< txId.length ;i++){
-            revokeConfirmation(txId[i]);
+            hasApproved[txId][sender] = true;
+            emit TransactionApproved(txId, sender);
+            updateTransactionState(txId);
         }
     }
 
-    /**
-     * @notice Revokes a previously approved transaction
-     * @param txId The transaction ID to revoke
-     */
-    function revokeConfirmation(uint256 txId) public virtual txExist(txId) {
-        if (!isSigner(_msgSender())) revert UnauthorizedCall();
-        if (!hasApproved[txId][_msgSender()]) revert TransactionNotSigned();
+    // /**
+    //  * @notice Revokes a previously approved transaction
+    //  * @param txId The transaction ID to revoke
+    //  */
+    function revokeBatchConfirmation(uint256[] calldata txIds) external {
+        address revoker = _msgSender();
+        if (!isSigner(revoker)) revert UnauthorizedCall();
 
-        Transaction storage transaction = transactions[txId];
-        TransactionState currentState = updateTransactionState(txId);
+        uint256 len = txIds.length;
+        for (uint256 i; i < len;) {
+            uint256 txId = txIds[i];
+            if (!transactionIdExists[txId]) revert TransactionIdNotExist();
+            if (!hasApproved[txId][revoker]) revert TransactionNotSigned();
 
-        if (currentState != TransactionState.Active) {
-            revert InvalidState();
+            Transaction storage transaction = transactions[txId];
+            TransactionState currentState = updateTransactionState(txId);
+
+            if (currentState != TransactionState.Active) {
+                revert InvalidState();
+            }
+
+            unchecked {
+                transaction.approvals -= 1;
+                ++i;
+            }
+
+            hasApproved[txId][revoker] = false;
+            emit TransactionRevoked(txId, revoker);
+            updateTransactionState(txId);
         }
-        unchecked {
-            transaction.approvals -= 1;
-        }
-        hasApproved[txId][_msgSender()] = false;
-
-        emit TransactionRevoked(txId, _msgSender());
-
-        updateTransactionState(txId);
     }
 
+    // /**
+    //  * @notice Executes a transaction if it has enough approvals
+    //  * @param txId The transaction ID to execute
+    //  */
+    function executeBatchTransaction(uint256[] calldata txIds) external {
+        uint256 len = txIds.length;
+        for (uint256 i; i < len;) {
+            uint256 txId = txIds[i];
+            if (!transactionIdExists[txId]) revert TransactionIdNotExist();
 
-    function executeBatchTransaction(uint256[] calldata txId) external virtual {
-        for(uint i=0;i<txId.length; i++){
-            executeTransaction(txId[i]);
+            Transaction storage transaction = transactions[txId];
+            TransactionState currentState = updateTransactionState(txId);
 
+            if (currentState != TransactionState.Queued) {
+                revert InvalidState();
+            }
+
+            transaction.state = TransactionState.Executed;
+            _call(transaction.selector, transaction.params);
+            emit TransactionExecuted(txId);
+
+            unchecked {
+                ++i;
+            }
         }
-    }
-
-    /**
-     * @notice Executes a transaction if it has enough approvals
-     * @param txId The transaction ID to execute
-     */
-    function executeTransaction(uint256 txId) public virtual txExist(txId) {
-        Transaction storage transaction = transactions[txId];
-        TransactionState currentState = updateTransactionState(txId);
-
-        if (currentState != TransactionState.Queued) {
-            revert InvalidState();
-        }
-        transaction.state = TransactionState.Executed;
-
-        _call(transaction.selector, transaction.params);
-
-        emit TransactionExecuted(txId);
     }
 
     /**

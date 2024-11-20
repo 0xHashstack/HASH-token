@@ -57,50 +57,41 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
 
     function addSigner(address _newSigner) external virtual onlySuperAdmin {
         _addSigner(_newSigner);
-        assembly{
-        sstore(_TOTAL_SIGNER_SLOT, add(sload(_TOTAL_SIGNER_SLOT), 1))
+        assembly {
+            sstore(_TOTAL_SIGNER_SLOT, add(sload(_TOTAL_SIGNER_SLOT), 1))
         }
-
     }
 
-    function addBatchSigners(address[] calldata newSigners) external virtual onlySuperAdmin{
-        
-        uint256 totalSigners  = newSigners.length;
-        
-        for(uint i=0; i < totalSigners; i++){
-           _addSigner(newSigners[i]);
+    function addBatchSigners(address[] calldata newSigners) external virtual onlySuperAdmin {
+        uint256 totalSigners = newSigners.length;
+
+        for (uint256 i = 0; i < totalSigners; i++) {
+            _addSigner(newSigners[i]);
         }
-        assembly {     
-        sstore(_TOTAL_SIGNER_SLOT, add(sload(_TOTAL_SIGNER_SLOT),totalSigners))
+        assembly {
+            sstore(_TOTAL_SIGNER_SLOT, add(sload(_TOTAL_SIGNER_SLOT), totalSigners))
         }
-        
     }
 
+    function removeBatchSigners(address[] calldata exisitingSigner) external virtual onlySuperAdmin {
+        uint256 totalSigners = exisitingSigner.length;
 
-    function removeBatchSigners(address[] calldata exisitingSigner) external virtual onlySuperAdmin{
-        
-        uint256 totalSigners  = exisitingSigner.length;
-
-        for(uint i=0;i<totalSigners;i++){
-        _removeSigner(exisitingSigner[i]);
+        for (uint256 i = 0; i < totalSigners; i++) {
+            _removeSigner(exisitingSigner[i]);
         }
-        assembly {      
-        sstore(_TOTAL_SIGNER_SLOT, sub(sload(_TOTAL_SIGNER_SLOT),totalSigners))
+        assembly {
+            sstore(_TOTAL_SIGNER_SLOT, sub(sload(_TOTAL_SIGNER_SLOT), totalSigners))
         }
-        
     }
 
     function removeSigner(address _signer) external virtual onlySuperAdmin {
-       
         _removeSigner(_signer);
-        assembly{
-            sstore(_TOTAL_SIGNER_SLOT, sub(sload(_TOTAL_SIGNER_SLOT),1))
+        assembly {
+            sstore(_TOTAL_SIGNER_SLOT, sub(sload(_TOTAL_SIGNER_SLOT), 1))
         }
-        
     }
 
     function renounceSignership(address _newSigner) public virtual onlySigner notZeroAddress(_newSigner) {
-
         if (_msgSender() == superAdmin()) revert SuperAdminIsRestricted();
         if (isSigner(_newSigner)) revert AlreadySigner();
 
@@ -130,15 +121,12 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
     }
 
     function _setSuperAdmin(address _newSuperOwner) internal virtual override {
-
         signers[_msgSender()] = false;
         signers[_newSuperOwner] = true;
         super._setSuperAdmin(_newSuperOwner);
-
     }
 
-    function _addSigner(address signer) internal{
-
+    function _addSigner(address signer) internal {
         if (signer == address(0)) revert CallerZeroAddress();
         if (isSigner(signer)) revert AlreadySigner();
         signers[signer] = true;
@@ -150,12 +138,11 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
                 0x47d1c22a25bb3a5d4e481b9b1e6944c2eade3181a0a20b495ed61d35b5323f24, // keccak256("SignerAdded(address)")
                 signer // indexed parameter
             )
-        }  
+        }
     }
 
     function _removeSigner(address _signer) internal {
-
-        if(_signer == address(0)) revert CallerZeroAddress();
+        if (_signer == address(0)) revert CallerZeroAddress();
         if (!isSigner(_signer)) revert NonExistingSigner();
         if (_signer == superAdmin()) revert SuperAdminCannotRemoved();
         if (totalSigners() == 1) revert WalletCannotBeSignerLess();
@@ -169,6 +156,5 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
                 _signer // indexed parameter
             )
         }
-
     }
 }

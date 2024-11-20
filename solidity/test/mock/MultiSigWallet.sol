@@ -41,11 +41,11 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
 
     // ========== ENUMS ==========
     enum TransactionState {
-        Pending,       // Just created, awaiting first signature
-        Active,        // Has at least one signature, within time window
-        Queued,       // Has enough signatures, ready for execution
-        Expired,      // Time window passed without enough signatures
-        Executed      // Successfully executed
+        Pending, // Just created, awaiting first signature
+        Active, // Has at least one signature, within time window
+        Queued, // Has enough signatures, ready for execution
+        Expired, // Time window passed without enough signatures
+        Executed // Successfully executed
 
     }
 
@@ -172,20 +172,21 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         return newState;
     }
 
-    function createBatchTransaction(bytes4[] calldata _selector,bytes[] calldata _params) external returns(uint256[] memory txId){
+    function createBatchTransaction(bytes4[] calldata _selector, bytes[] calldata _params)
+        external
+        returns (uint256[] memory txId)
+    {
+        if (_selector.length != _params.length) revert();
+        uint256 size = _selector.length;
 
-        if(_selector.length!=_params.length) revert();
-        uint size = _selector.length;
-
-        if(_msgSender() == superAdmin()){
-        for(uint i =0; i< size ;i++){
-            emit TransactionProposedBySuperAdmin(block.timestamp);
-            _call(_selector[i],_params[i]);
-        }
-        }
-        else{
-            for(uint i =0;i<size;i++){
-                txId[i] = createTransaction(_selector[i],_params[i]);
+        if (_msgSender() == superAdmin()) {
+            for (uint256 i = 0; i < size; i++) {
+                emit TransactionProposedBySuperAdmin(block.timestamp);
+                _call(_selector[i], _params[i]);
+            }
+        } else {
+            for (uint256 i = 0; i < size; i++) {
+                txId[i] = createTransaction(_selector[i], _params[i]);
             }
         }
     }
@@ -271,13 +272,13 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     }
 
     function approveBatchTransaction(uint256[] calldata txId) external virtual {
-        for(uint i=0; i< txId.length ;i++){
+        for (uint256 i = 0; i < txId.length; i++) {
             approveTransaction(txId[i]);
         }
     }
 
-     function revokeBatchTransaction(uint256[] calldata txId) external virtual {
-        for(uint i=0; i< txId.length ;i++){
+    function revokeBatchTransaction(uint256[] calldata txId) external virtual {
+        for (uint256 i = 0; i < txId.length; i++) {
             revokeConfirmation(txId[i]);
         }
     }
@@ -306,11 +307,9 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         updateTransactionState(txId);
     }
 
-
     function executeBatchTransaction(uint256[] calldata txId) external virtual {
-        for(uint i=0;i<txId.length; i++){
+        for (uint256 i = 0; i < txId.length; i++) {
             executeTransaction(txId[i]);
-
         }
     }
 
