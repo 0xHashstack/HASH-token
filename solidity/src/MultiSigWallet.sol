@@ -52,14 +52,14 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
 
     // ========== STRUCTS ==========
     struct Transaction {
-        address proposer;
-        bytes4 selector; // The function call data
-        bytes params;
         uint256 proposedAt; // When the transaction was proposed
         uint256 firstSignAt; // When the first signer approved
         uint256 approvals; // Number of approvals received
+        address proposer;
+        bytes4 selector; // The function call data
         TransactionState state; //state of the transaction(pending,)
         bool isFallbackAdmin; // Whether this was proposed by fallback admin
+        bytes params;
     }
 
     // ========== STATE ==========
@@ -91,6 +91,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     error TransactionIdNotExist();
     error FunctionAlreadyExists();
     error FunctionDoesNotExist();
+    error ZeroAmountTransaction();
     // Helper error
     error InvalidParams();
 
@@ -185,10 +186,9 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         if (size == 0 || size != _params.length) revert InvalidParams();
 
         address sender = _msgSender();
-        bool isSuperAdmin = sender == superAdmin();
 
         // For super admin, we don't need to store or return txIds
-        if (isSuperAdmin) {
+        if (sender == superAdmin()) {
             for (uint256 i; i < size;) {
                 _call(_selector[i], _params[i]);
                 unchecked {

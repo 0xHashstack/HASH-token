@@ -187,11 +187,12 @@ contract OptimismMintableERC20 is IOptimismMintableERC20, ILegacyMintableERC20, 
     function l1Token() public view returns (address) {
         return REMOTE_TOKEN;
     }
-
+    /// TODO: Repeated fnc Here
     /**
      * @custom:legacy
      * @notice Legacy getter for REMOTE_TOKEN.
      */
+
     function remoteToken() public view returns (address) {
         return REMOTE_TOKEN;
     }
