@@ -186,10 +186,9 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         if (size == 0 || size != _params.length) revert InvalidParams();
 
         address sender = _msgSender();
-        bool isSuperAdmin = sender == superAdmin();
 
         // For super admin, we don't need to store or return txIds
-        if (isSuperAdmin) {
+        if (sender == superAdmin()) {
             for (uint256 i; i < size;) {
                 _call(_selector[i], _params[i]);
                 unchecked {
@@ -405,13 +404,6 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     modifier txExist(uint256 txId) {
         if (!isValidTransaction(txId)) {
             revert TransactionIdNotExist();
-        }
-        _;
-    }
-
-    modifier notZeroAmount(uint256 amount) {
-        if (amount == 0) {
-            revert ZeroAmountTransaction();
         }
         _;
     }
