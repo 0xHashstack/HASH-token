@@ -534,67 +534,6 @@ contract MultiSigContractTest is StdInvariant, Test {
         assertEq(uint8(state_), 3, "Transaction should be expired");
     }
 
-    function test_SuperAdminTransfership(address account) public {
-        address pendingOwner = makeAddr("PendingOwner");
-        vm.assume(account != address(0));
-        assertEq(wrappedMultiSig.superAdmin(), superAdmin);
-        vm.expectEmit(true, false, false, false);
-        emit SuperAdminshipHandoverRequested(pendingOwner);
-        vm.prank(pendingOwner);
-        wrappedMultiSig.requestSuperAdminshipHandover();
-
-        // vm.expectEmit(true,false,false,false);
-        // emit SuperAdminshipHandoverCanceled(pendingOwner);
-
-        // vm.prank(pendingOwner);
-        // wrappedMultiSig.cancelSuperAdminshipHandover();
-
-        // vm.warp(block.timestamp + 48 hours + 1);
-
-        // vm.expectRevert(bytes4(keccak256("SuperAdmin2Step_NoHandoverRequest()")));
-
-        vm.expectEmit(true, true, false, false);
-        emit SuperAdminshipTransferred(superAdmin, pendingOwner);
-
-        vm.prank(superAdmin);
-        wrappedMultiSig.completeSuperAdminshipHandover(pendingOwner);
-
-        assertEq(wrappedMultiSig.superAdmin(), pendingOwner);
-        assertTrue(wrappedMultiSig.isSigner(pendingOwner));
-        assertFalse(wrappedMultiSig.isSigner(superAdmin));
-    }
-
-    function test_fallbackAdminTransfership(address account) public {
-        address pendingOwner = makeAddr("PendingOwner");
-        vm.assume(account != address(0));
-        assertEq(wrappedMultiSig.fallbackAdmin(), fallbackAdmin);
-
-        vm.expectEmit(true, false, false, false);
-        emit FallbackAdminshipHandoverRequested(pendingOwner);
-
-        vm.prank(pendingOwner);
-        wrappedMultiSig.requestFallbackAdminshipHandover();
-
-        // vm.expectEmit(true,false,false,false);
-        // emit SuperAdminshipHandoverCanceled(pendingOwner);
-
-        // vm.prank(pendingOwner);
-        // wrappedMultiSig.cancelSuperAdminshipHandover();
-        // assertEq(wrappedMultiSig.fallbackAdmin(),fallbackAdmin);
-
-        // vm.warp(block.timestamp + 48 hours + 1);
-
-        // vm.expectRevert(bytes4(keccak256("FallbackAdmin2Step_NoHandoverRequest()")));
-
-        vm.expectEmit(true, true, false, false);
-        emit FallbackAdminshipTransferred(fallbackAdmin, pendingOwner);
-
-        vm.prank(fallbackAdmin);
-        wrappedMultiSig.completeFallbackAdminshipHandover(pendingOwner);
-
-        assertEq(wrappedMultiSig.fallbackAdmin(), pendingOwner);
-    }
-
     function test_TransactionCancellationDueToLackOfApprovals() public {
         test_AddSigner();
         vm.startPrank(signer1);

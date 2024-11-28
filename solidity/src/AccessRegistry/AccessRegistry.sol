@@ -2,10 +2,10 @@
 pragma solidity ^0.8.20;
 
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
-import {SuperAdmin2Step} from "./helpers/superAdmin2Step.sol";
-import {FallbackAdmin2Step} from "./helpers/fallbackAdmin2Step.sol";
+import {SuperAdmin} from "./helpers/superAdmin.sol";
+import {FallbackAdmin} from "./helpers/fallbackAdmin.sol";
 
-abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step {
+abstract contract AccessRegistry is Context, SuperAdmin, FallbackAdmin {
     event SignerAdded(address indexed newSigner);
     event SignerRemoved(address indexed removedSigner);
     event SignerRenounced(address indexed from, address indexed to);

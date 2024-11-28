@@ -36,16 +36,16 @@ abstract contract SuperAdmin {
     event SuperAdminshipHandoverCanceled(address indexed pendingSuperAdmin);
 
     /// @dev `keccak256(bytes("SuperAdminshipTransferred(address,address)"))`.
-    uint256 private constant _SUPERADMINSHIP_TRANSFERRED_EVENT_SIGNATURE =
-        0x04d129ae6ee1a7d168abd097a088e4f07a0292c23aefc0e49b5603d029b8543f;
+    // uint256 private constant _SUPERADMINSHIP_TRANSFERRED_EVENT_SIGNATURE =
+    //     0x04d129ae6ee1a7d168abd097a088e4f07a0292c23aefc0e49b5603d029b8543f;
 
     /// @dev `keccak256(bytes("SuperAdminshipHandoverRequested(address)"))`.
-    uint256 private constant _SUPERADMINSHIP_HANDOVER_REQUESTED_EVENT_SIGNATURE =
-        0xa391cf6317e44c1bf84ce787a20d5a7193fa44caff9e68b0597edf3cabd29fb7;
+    // uint256 private constant _SUPERADMINSHIP_HANDOVER_REQUESTED_EVENT_SIGNATURE =
+    //     0xa391cf6317e44c1bf84ce787a20d5a7193fa44caff9e68b0597edf3cabd29fb7;
 
     /// @dev `keccak256(bytes("SuperAdminshipHandoverCanceled(address)"))`.
-    uint256 private constant _SUPERADMINSHIP_HANDOVER_CANCELED_EVENT_SIGNATURE =
-        0x1570624318df302ecdd05ea20a0f8b0f8931a0cb8f4f1f8e07221e636988aa7b;
+    // uint256 private constant _SUPERADMINSHIP_HANDOVER_CANCELED_EVENT_SIGNATURE =
+    //     0x1570624318df302ecdd05ea20a0f8b0f8931a0cb8f4f1f8e07221e636988aa7b;
 
     /*                          STORAGE                           */
 
@@ -84,7 +84,7 @@ abstract contract SuperAdmin {
                 /// Clean the upper 96 bits.
                 newSuperAdmin := shr(96, shl(96, newSuperAdmin)) // Store the new value.
                 sstore(superAdminSlot, or(newSuperAdmin, shl(255, iszero(newSuperAdmin)))) // Emit the {SuperAdminshipTransferred} event.
-                log3(0, 0, _SUPERADMINSHIP_TRANSFERRED_EVENT_SIGNATURE, 0, newSuperAdmin)
+                log3(0, 0, 0x04d129ae6ee1a7d168abd097a088e4f07a0292c23aefc0e49b5603d029b8543f, 0, newSuperAdmin)
             }
         } else {
             /// @solidity memory-safe-assembly
@@ -94,13 +94,13 @@ abstract contract SuperAdmin {
                 // Store the new value.
                 sstore(_SUPERADMIN_SLOT, newSuperAdmin)
                 // Emit the {SuperAdminshipTransferred} event.
-                log3(0, 0, _SUPERADMINSHIP_TRANSFERRED_EVENT_SIGNATURE, 0, newSuperAdmin)
+                log3(0, 0, 0x04d129ae6ee1a7d168abd097a088e4f07a0292c23aefc0e49b5603d029b8543f, 0, newSuperAdmin)
             }
         }
     }
 
     /// @dev Sets the superAdmin directly without authorization guard.
-    function _setSuperAdmin(address newSuperAdmin) internal {
+    function _setSuperAdmin(address newSuperAdmin) internal virtual{
         if (_guardInitializeSuperAdmin()) {
             /// @solidity memory-safe-assembly
             assembly {
@@ -108,7 +108,7 @@ abstract contract SuperAdmin {
                 // Clean the upper 96 bits.
                 newSuperAdmin := shr(96, shl(96, newSuperAdmin))
                 // Emit the {SuperAdminshipTransferred} event.
-                log3(0, 0, _SUPERADMINSHIP_TRANSFERRED_EVENT_SIGNATURE, sload(superAdminSlot), newSuperAdmin)
+                log3(0, 0, 0x04d129ae6ee1a7d168abd097a088e4f07a0292c23aefc0e49b5603d029b8543f, sload(superAdminSlot), newSuperAdmin)
                 // Store the new value.
                 sstore(superAdminSlot, or(newSuperAdmin, shl(255, iszero(newSuperAdmin))))
             }
@@ -119,7 +119,7 @@ abstract contract SuperAdmin {
                 // Clean the upper 96 bits.
                 newSuperAdmin := shr(96, shl(96, newSuperAdmin))
                 // Emit the {SuperAdminshipTransferred} event.
-                log3(0, 0, _SUPERADMINSHIP_TRANSFERRED_EVENT_SIGNATURE, sload(superAdminSlot), newSuperAdmin)
+                log3(0, 0, 0x04d129ae6ee1a7d168abd097a088e4f07a0292c23aefc0e49b5603d029b8543f, sload(superAdminSlot), newSuperAdmin)
                 // Store the new value.
                 sstore(superAdminSlot, newSuperAdmin)
             }
@@ -162,7 +162,7 @@ abstract contract SuperAdmin {
                 sstore(_PENDINGADMIN_SLOT, newSuperAdmin)
                 sstore(_HANDOVERTIME_SLOT_SEED, expires)
                 // Emit the {OwnershipHandoverRequested} event.
-                log2(0, 0, _SUPERADMINSHIP_HANDOVER_REQUESTED_EVENT_SIGNATURE, caller())
+                log2(0, 0, 0xa391cf6317e44c1bf84ce787a20d5a7193fa44caff9e68b0597edf3cabd29fb7, caller())
             }
         }
     }
@@ -178,7 +178,7 @@ abstract contract SuperAdmin {
             sstore(_PENDINGADMIN_SLOT, 0)
             sstore(_HANDOVERTIME_SLOT_SEED, 0)
             // Emit the {OwnershipHandoverCanceled} event.
-            log2(0, 0, _SUPERADMINSHIP_HANDOVER_CANCELED_EVENT_SIGNATURE, newSuperAdmin)
+            log2(0, 0, 0x1570624318df302ecdd05ea20a0f8b0f8931a0cb8f4f1f8e07221e636988aa7b, newSuperAdmin)
         }
     }
 
@@ -202,7 +202,7 @@ abstract contract SuperAdmin {
             sstore(_PENDINGADMIN_SLOT, 0)
             sstore(_HANDOVERTIME_SLOT_SEED, 0)
             let newSuperAdmin := shr(96, shl(96, caller())) // Store the new value.
-            log3(0, 0, _SUPERADMINSHIP_TRANSFERRED_EVENT_SIGNATURE, 0, newSuperAdmin)
+            log3(0, 0, 0x04d129ae6ee1a7d168abd097a088e4f07a0292c23aefc0e49b5603d029b8543f, 0, newSuperAdmin)
         }
         _setSuperAdmin(msg.sender);
     }

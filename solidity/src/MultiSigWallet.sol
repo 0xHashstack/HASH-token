@@ -82,16 +82,16 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
 
     // ========== ERRORS ==========
     error UnauthorizedCall();
-    error InvalidToken();
-    error InvalidState();
-    error AlreadyApproved();
-    error TransactionNotSigned();
-    error WindowExpired();
-    error TransactionAlreadyExist();
-    error TransactionIdNotExist();
-    error FunctionAlreadyExists();
-    error FunctionDoesNotExist();
-    error ZeroAmountTransaction();
+    error InvalidToken();//not used
+    error InvalidState(uint transactionID);
+    error AlreadyApproved(uint transactionID);
+    error TransactionNotSigned(uint transactionID);
+    error WindowExpired();//not used
+    error TransactionAlreadyExist(uint transactionID);
+    error TransactionIdNotExist(uint transactionID);
+    error FunctionAlreadyExists();//not used
+    error FunctionDoesNotExist();//not used
+    error ZeroAmountTransaction();//not
     // Helper error
     error InvalidParams();
 
@@ -217,7 +217,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
             txId[i] = uint256(keccak256(abi.encode(timestamp, sender, selector, _params[i])));
 
             if (transactionIdExists[txId[i]]) {
-                revert TransactionAlreadyExist();
+                revert TransactionAlreadyExist(txId[i]);
             }
 
             transactionIdExists[txId[i]] = true;
@@ -261,14 +261,14 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
 
         for (uint256 i; i < len;) {
             uint256 txId = txIds[i];
-            if (!transactionIdExists[txId]) revert TransactionIdNotExist();
-            if (hasApproved[txId][sender]) revert AlreadyApproved();
+            if (!transactionIdExists[txId]) revert TransactionIdNotExist(txId);
+            if (hasApproved[txId][sender]) revert AlreadyApproved(txId);
 
             Transaction storage transaction = transactions[txId];
             TransactionState currentState = updateTransactionState(txId);
 
             if (currentState != TransactionState.Pending && currentState != TransactionState.Active) {
-                revert InvalidState();
+                revert InvalidState(txId);
             }
 
             // Update first signature time if this is the first approval
@@ -297,14 +297,14 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         uint256 len = txIds.length;
         for (uint256 i; i < len;) {
             uint256 txId = txIds[i];
-            if (!transactionIdExists[txId]) revert TransactionIdNotExist();
-            if (!hasApproved[txId][revoker]) revert TransactionNotSigned();
+            if (!transactionIdExists[txId]) revert TransactionIdNotExist(txId);
+            if (!hasApproved[txId][revoker]) revert TransactionNotSigned(txId);
 
             Transaction storage transaction = transactions[txId];
             TransactionState currentState = updateTransactionState(txId);
 
             if (currentState != TransactionState.Active) {
-                revert InvalidState();
+                revert InvalidState(txId);
             }
 
             unchecked {
@@ -326,13 +326,13 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         uint256 len = txIds.length;
         for (uint256 i; i < len;) {
             uint256 txId = txIds[i];
-            if (!transactionIdExists[txId]) revert TransactionIdNotExist();
+            if (!transactionIdExists[txId]) revert TransactionIdNotExist(txId);
 
             Transaction storage transaction = transactions[txId];
             TransactionState currentState = updateTransactionState(txId);
 
             if (currentState != TransactionState.Queued) {
-                revert InvalidState();
+                revert InvalidState(txId);
             }
 
             transaction.state = TransactionState.Executed;
@@ -403,7 +403,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
 
     modifier txExist(uint256 txId) {
         if (!isValidTransaction(txId)) {
-            revert TransactionIdNotExist();
+            revert TransactionIdNotExist(txId);
         }
         _;
     }
