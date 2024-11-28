@@ -24,7 +24,7 @@ abstract contract FallbackAdmin {
 
     /// @dev Cannot double-initialize.
     error FallbackAdmin2Step_AlreadyInitialized();
-    
+
     /*                           EVENTS                           */
 
     /// @dev The fallbackAdminship is transferred from `oldFallbackAdmin` to `newFallbackAdmin`.
@@ -60,7 +60,8 @@ abstract contract FallbackAdmin {
     /// The choice of manual storage layout is to enable compatibility
     /// with both regular and upgradeable contracts.
     bytes32 internal constant _FALLBACKADMIN_SLOT = 0x0c5cbdbffd46dcbe9fc21989b921bb5428cb1a1f406b6975b85f43539eb5bba3;
-    bytes32 internal constant _PENDINGFALLBACKADMIN_SLOT = 0xd7695d11a3816d58521df826e1b82703428b9d6f01a588416b40a4e02023deae;
+    bytes32 internal constant _PENDINGFALLBACKADMIN_SLOT =
+        0xd7695d11a3816d58521df826e1b82703428b9d6f01a588416b40a4e02023deae;
     bytes32 internal constant _HANDOVERTIME_FALLBACK_SLOT_SEED =
         0xe73258ffc050df54d85cbff7148c2a66fde0cd543a82a20fd5b44d963b48ed6e;
 
@@ -105,7 +106,7 @@ abstract contract FallbackAdmin {
     }
 
     /// @dev Sets the fallbackAdmin directly without authorization guard.
-    
+
     function _setFallbackAdmin(address newFallbackAdmin) internal virtual {
         if (_guardInitializeFallbackAdmin()) {
             /// @solidity memory-safe-assembly
@@ -114,7 +115,13 @@ abstract contract FallbackAdmin {
                 // Clean the upper 96 bits.
                 newFallbackAdmin := shr(96, shl(96, newFallbackAdmin))
                 // Emit the {FallbackAdminshipTransferred} event.
-                log3(0, 0, 0xb3b235ec28c0c439d776d6b08d1186ca9e254ab0a45799e7c012c767fd388ab4, sload(fallbackAdminSlot), newFallbackAdmin)
+                log3(
+                    0,
+                    0,
+                    0xb3b235ec28c0c439d776d6b08d1186ca9e254ab0a45799e7c012c767fd388ab4,
+                    sload(fallbackAdminSlot),
+                    newFallbackAdmin
+                )
                 // Store the new value.
                 sstore(fallbackAdminSlot, or(newFallbackAdmin, shl(255, iszero(newFallbackAdmin))))
             }
@@ -125,7 +132,13 @@ abstract contract FallbackAdmin {
                 // Clean the upper 96 bits.
                 newFallbackAdmin := shr(96, shl(96, newFallbackAdmin))
                 // Emit the {FallbackAdminshipTransferred} event.
-                log3(0, 0, 0xb3b235ec28c0c439d776d6b08d1186ca9e254ab0a45799e7c012c767fd388ab4, sload(fallbackAdminSlot), newFallbackAdmin)
+                log3(
+                    0,
+                    0,
+                    0xb3b235ec28c0c439d776d6b08d1186ca9e254ab0a45799e7c012c767fd388ab4,
+                    sload(fallbackAdminSlot),
+                    newFallbackAdmin
+                )
                 // Store the new value.
                 sstore(fallbackAdminSlot, newFallbackAdmin)
             }

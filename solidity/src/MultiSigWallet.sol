@@ -82,16 +82,16 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
 
     // ========== ERRORS ==========
     error UnauthorizedCall();
-    error InvalidToken();//not used
-    error InvalidState(uint transactionID);
-    error AlreadyApproved(uint transactionID);
-    error TransactionNotSigned(uint transactionID);
-    error WindowExpired();//not used
-    error TransactionAlreadyExist(uint transactionID);
-    error TransactionIdNotExist(uint transactionID);
-    error FunctionAlreadyExists();//not used
-    error FunctionDoesNotExist();//not used
-    error ZeroAmountTransaction();//not
+    error InvalidToken(); //not used
+    error InvalidState(uint256 transactionID);
+    error AlreadyApproved(uint256 transactionID);
+    error TransactionNotSigned(uint256 transactionID);
+    error WindowExpired(); //not used
+    error TransactionAlreadyExist(uint256 transactionID);
+    error TransactionIdNotExist(uint256 transactionID);
+    error FunctionAlreadyExists(); //not used
+    error FunctionDoesNotExist(); //not used
+    error ZeroAmountTransaction(); //not
     // Helper error
     error InvalidParams();
 

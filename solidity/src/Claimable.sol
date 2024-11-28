@@ -12,7 +12,6 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
  * @dev Smart contract allowing recipients to claim ERC20 tokens with vesting schedule
  */
 contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
-
     uint256 public currentId;
     IERC20 public token;
 
@@ -38,8 +37,8 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     mapping(uint256 => Ticket) private tickets;
 
     event TicketCreated(uint256 indexed id, uint256 amount, bool irrevocable);
-    event Claimed(uint256 indexed id, uint256 amount,address claimer);
-    event ClaimDelegated(uint256 indexed id, uint256 amount,address pendingClaimer);
+    event Claimed(uint256 indexed id, uint256 amount, address claimer);
+    event ClaimDelegated(uint256 indexed id, uint256 amount, address pendingClaimer);
     event Revoked(uint256 indexed id, uint256 amount);
 
     error ZeroAddress();
@@ -131,7 +130,7 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     function delegateClaim(uint256 _id, address _pendingClaimer) public notRevoked(_id) returns (bool) {
         Ticket storage ticket = tickets[_id];
-        if(_pendingClaimer == address(0)) revert InvalidParams();
+        if (_pendingClaimer == address(0)) revert InvalidParams();
         if (ticket.beneficiary != msg.sender) revert UnauthorizedAccess();
         if (ticket.balance == 0) revert NothingToClaim();
         uint256 claimableAmount = available(_id);
@@ -141,21 +140,18 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         ticket.lastClaimedAt = uint32(block.timestamp);
         ticket.numClaims++;
 
-        if(_pendingClaimer == msg.sender){
-            emit Claimed(_id,claimableAmount,msg.sender);
-            token.transfer(msg.sender,claimableAmount);
-
-        }else{
+        if (_pendingClaimer == msg.sender) {
+            emit Claimed(_id, claimableAmount, msg.sender);
+            token.transfer(msg.sender, claimableAmount);
+        } else {
             ticket.pendingClaimer = _pendingClaimer;
-            emit ClaimDelegated(_id, claimableAmount,_pendingClaimer);
+            emit ClaimDelegated(_id, claimableAmount, _pendingClaimer);
         }
         return true;
     }
 
-
-    function acceptClaim(uint256 _ticketId) public returns(bool){
+    function acceptClaim(uint256 _ticketId) public returns (bool) {
         Ticket storage ticket = tickets[_id];
-        
     }
 
     function revoke(uint256 _id) public notRevoked(_id) returns (bool) {

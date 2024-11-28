@@ -100,7 +100,7 @@ abstract contract SuperAdmin {
     }
 
     /// @dev Sets the superAdmin directly without authorization guard.
-    function _setSuperAdmin(address newSuperAdmin) internal virtual{
+    function _setSuperAdmin(address newSuperAdmin) internal virtual {
         if (_guardInitializeSuperAdmin()) {
             /// @solidity memory-safe-assembly
             assembly {
@@ -108,7 +108,13 @@ abstract contract SuperAdmin {
                 // Clean the upper 96 bits.
                 newSuperAdmin := shr(96, shl(96, newSuperAdmin))
                 // Emit the {SuperAdminshipTransferred} event.
-                log3(0, 0, 0x04d129ae6ee1a7d168abd097a088e4f07a0292c23aefc0e49b5603d029b8543f, sload(superAdminSlot), newSuperAdmin)
+                log3(
+                    0,
+                    0,
+                    0x04d129ae6ee1a7d168abd097a088e4f07a0292c23aefc0e49b5603d029b8543f,
+                    sload(superAdminSlot),
+                    newSuperAdmin
+                )
                 // Store the new value.
                 sstore(superAdminSlot, or(newSuperAdmin, shl(255, iszero(newSuperAdmin))))
             }
@@ -119,7 +125,13 @@ abstract contract SuperAdmin {
                 // Clean the upper 96 bits.
                 newSuperAdmin := shr(96, shl(96, newSuperAdmin))
                 // Emit the {SuperAdminshipTransferred} event.
-                log3(0, 0, 0x04d129ae6ee1a7d168abd097a088e4f07a0292c23aefc0e49b5603d029b8543f, sload(superAdminSlot), newSuperAdmin)
+                log3(
+                    0,
+                    0,
+                    0x04d129ae6ee1a7d168abd097a088e4f07a0292c23aefc0e49b5603d029b8543f,
+                    sload(superAdminSlot),
+                    newSuperAdmin
+                )
                 // Store the new value.
                 sstore(superAdminSlot, newSuperAdmin)
             }
