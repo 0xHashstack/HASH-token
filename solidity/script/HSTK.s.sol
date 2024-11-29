@@ -8,8 +8,8 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/Proxy/ERC1967/ERC1967Proxy.s
 
 contract DeployHSTK is Script {
     HstkToken public hashToken;
-    address superAdmin = address(0x6C231C5e75e2b92B8e16508539b5431298dFF1E4); // Replace this with Address of the owner
-    address fallbackAdmin = address(0xE4f3B256c27cE7c76C5D16Ae81838aA14d8846C8);
+    address superAdmin = address(0xE4f3B256c27cE7c76C5D16Ae81838aA14d8846C8); // Replace this with Address of the owner
+    address fallbackAdmin = address(0x6C231C5e75e2b92B8e16508539b5431298dFF1E4);
     MultiSigWallet multiSigContract;
     ERC1967Proxy multiSig;
 

@@ -53,9 +53,9 @@ contract HstkToken is ERC20, Pausable, BlackListed {
      * @dev Constructor that gives the admin the initial supply of tokens
      * @param _multisig Address of the multiSig account
      */
-    constructor(address _multisig) ERC20("MOCK", "HSTK") Pausable() BlackListed(_multisig) {
+    constructor(address _multisig) ERC20("HSTK", "HSTK") Pausable() BlackListed(_multisig) {
         require(_multisig != address(0), "Address cannot be zero address");
-        _mint(_multisig, 100_000_000 * 10 ** decimals());
+        _mint(_multisig, 1 * 10 ** decimals());
     }
 
     /**

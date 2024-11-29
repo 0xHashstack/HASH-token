@@ -16,9 +16,14 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     uint256 private constant SECONDS_PER_DAY = 86400;
     uint256 private constant PERCENTAGE_DENOMINATOR = 100;
 
+    enum TicketType{
+        Investors,
+        Others
+    }
+
     struct Ticket {
         address beneficiary;
-        address pendingClaimer;
+        TicketType ticketType;
         uint256 cliff;
         uint256 vesting;
         uint256 amount;
@@ -33,10 +38,9 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     }
 
     mapping(address => uint256[]) public beneficiaryTickets;
-    mapping(address=>uint256[]) public claimerTickets;
     mapping(uint256 => Ticket) private tickets;
 
-    event TicketCreated(uint256 indexed id, uint256 amount, uint256 tgePercentage, bool irrevocable);
+    event TicketCreated(uint256 indexed id, uint256 amount, uint256 tgePercentage,uint8 ticketType, bool irrevocable);
     event Claimed(uint256 indexed id, uint256 amount, address claimer);
     event ClaimDelegated(uint256 indexed id, uint256 amount, address pendingClaimer);
     event Revoked(uint256 indexed id, uint256 amount);
@@ -53,6 +57,7 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     error IrrevocableTicket();
     error InvalidParams();
     error NoPendingClaim();
+    error InvalidTicketType();
 
     modifier notRevoked(uint256 _id) {
         if (tickets[_id].isRevoked) revert TicketRevoked();
@@ -71,12 +76,14 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         uint256 _vesting,
         uint256 _amount,
         uint256 _tgePercentage,
+        uint8 _ticketType,
         bool _irrevocable
     ) public onlyOwner returns (uint256 ticketId) {
         if (_beneficiary == address(0)) revert InvalidBeneficiary();
         if (_amount == 0) revert InvalidAmount();
         if (_vesting < _cliff) revert InvalidVestingPeriod();
         if (_tgePercentage > PERCENTAGE_DENOMINATOR) revert InvalidTGEPercentage();
+        if (_ticketType > 1) revert InvalidTicketType(); 
 
         ticketId = ++currentId;
         Ticket storage ticket = tickets[ticketId];
@@ -89,10 +96,11 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         ticket.createdAt = block.timestamp;
         ticket.irrevocable = _irrevocable;
         ticket.tgePercentage = _tgePercentage;
+        ticket.ticketType = TicketType(_ticketType);
 
         beneficiaryTickets[_beneficiary].push(ticketId);
 
-        emit TicketCreated(ticketId, _amount, _tgePercentage, _irrevocable);
+        emit TicketCreated(ticketId, _amount, _tgePercentage,_ticketType, _irrevocable);
     }
 
     /// @notice allow batch create tickets with the same terms same amount
@@ -102,12 +110,13 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         uint256 _vesting,
         uint256 _amount,
         uint256 _tgePercentage,
+        uint8 _ticketType,
         bool _irrevocable
     ) public {
         /// @dev set maximum array length?
         require(_beneficiaries.length > 0, "At least one beneficiary is required");
         for (uint256 i = 0; i < _beneficiaries.length; i++) {
-            create(_beneficiaries[i], _cliff, _vesting, _amount, _tgePercentage, _irrevocable);
+            create(_beneficiaries[i], _cliff, _vesting, _amount, _tgePercentage,_ticketType, _irrevocable);
         }
     }
 
@@ -117,6 +126,7 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         uint256 _vesting,
         uint256[] memory _amounts,
         uint256 _tgePercentage,
+        uint8 _ticketType,
         bool _irrevocable
     ) public onlyOwner {
         if (_beneficiaries.length != _amounts.length) revert InvalidParams();
@@ -124,7 +134,7 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
         for (uint256 i = 0; i < _beneficiaries.length; i++) {
             if (_amounts[i] > 0) {
-                create(_beneficiaries[i], _cliff, _vesting, _amounts[i], _tgePercentage, _irrevocable);
+                create(_beneficiaries[i], _cliff, _vesting, _amounts[i], _tgePercentage,_ticketType, _irrevocable);
             }
         }
     }
@@ -185,35 +195,20 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         return unlockedAmount > ticket.claimed ? unlockedAmount.sub(ticket.claimed) : 0;
     }
 
-    function delegateClaim(uint256 _id, address _pendingClaimer) public notRevoked(_id) returns (bool) {
+    function claimTicket(uint256 _id, address _recipient) public notRevoked(_id) returns (bool) {
         Ticket storage ticket = tickets[_id];
-        if (_pendingClaimer == address(0)) revert InvalidParams();
+        if (_recipient == address(0)) revert InvalidParams();
         if (ticket.beneficiary != msg.sender) revert UnauthorizedAccess();
         if (ticket.balance == 0) revert NothingToClaim();
 
         uint256 claimableAmount = available(_id);
         if (claimableAmount == 0) revert NothingToClaim();
 
-        if (_pendingClaimer == msg.sender) {
+        if (_recipient == msg.sender) {
             _processClaim(_id, claimableAmount, msg.sender);
         } else {
-            ticket.pendingClaimer = _pendingClaimer;
-            claimerTickets[_pendingClaimer].push(_id);
-            emit ClaimDelegated(_id, claimableAmount, _pendingClaimer);
+            _processClaim(_id,claimableAmount,_recipient);
         }
-        return true;
-    }
-
-    function acceptClaim(uint256 _id) external notRevoked(_id) returns (bool) {
-        Ticket storage ticket = tickets[_id];
-        if (ticket.pendingClaimer == address(0)) revert NoPendingClaim();
-        if (msg.sender != ticket.pendingClaimer) revert UnauthorizedAccess();
-
-        uint256 claimableAmount = available(_id);
-        if (claimableAmount == 0) revert NothingToClaim();
-
-        address claimer = ticket.pendingClaimer;
-        _processClaim(_id, claimableAmount, claimer);
         return true;
     }
 
@@ -243,6 +238,8 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         return true;
     }
 
+    // function claimAllTicket(uint _ids[],address _receipient)
+
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function viewTicket(uint256 _id) public view returns (Ticket memory) {
@@ -251,9 +248,6 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     function myBeneficiaryTickets(address _beneficiary) public view returns (uint256[] memory) {
         return beneficiaryTickets[_beneficiary];
-    }
-    function myClaimerTickets(address _claimer) public view returns (uint256[] memory) {
-        return claimerTickets[_claimer];
     }
 
     function transferToken(address _to, uint256 _amount) external onlyOwner {

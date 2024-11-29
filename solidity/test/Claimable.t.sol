@@ -34,7 +34,8 @@ contract ClaimableTest is Test {
         claimable = Claimable(address(claimableContract_));
 
         vm.prank(owner);
-        token.transfer(address(claimable), 10_000_000 * 10 ** 18);
+        token.mint(address(claimable),10_000_000 * 10 ** 18);
+
     }
 
     function testInitialization() public view {
@@ -47,7 +48,7 @@ contract ClaimableTest is Test {
     function test_CreateTicket() public {
         // Create ticket
         vm.prank(owner);
-        uint256 ticketId = claimable.create(beneficiary1, 30, 90, 1000, 20, false);
+        uint256 ticketId = claimable.create(beneficiary1, 30, 90, 1000, 20,0, false);
 
         // Verify ticket details
         Claimable.Ticket memory ticket = claimable.viewTicket(ticketId);
@@ -62,19 +63,19 @@ contract ClaimableTest is Test {
     function test_CreateTicket_Reverts_ZeroBeneficiary() public {
         vm.prank(owner);
         vm.expectRevert(Claimable.InvalidBeneficiary.selector);
-        claimable.create(address(0), 30, 90, 1000, 20, false);
+        claimable.create(address(0), 30, 90, 1000, 20,0, false);
     }
 
     function test_CreateTicket_Reverts_ZeroAmount() public {
         vm.prank(owner);
         vm.expectRevert(Claimable.InvalidAmount.selector);
-        claimable.create(beneficiary1, 30, 90, 0, 20, false);
+        claimable.create(beneficiary1, 30, 90, 0, 20,0, false);
     }
 
     function test_CreateTicket_Reverts_InvalidVestingPeriod() public {
         vm.prank(owner);
         vm.expectRevert(Claimable.InvalidVestingPeriod.selector);
-        claimable.create(beneficiary1, 90, 30, 1000, 20, false);
+        claimable.create(beneficiary1, 90, 30, 1000, 20,0, false);
     }
 
     function test_BatchCreateSameAmount() public {
@@ -84,7 +85,7 @@ contract ClaimableTest is Test {
 
         // Create batch tickets
         vm.prank(owner);
-        claimable.batchCreateSameAmount(beneficiaries, 30, 90, 1000, 20, false);
+        claimable.batchCreateSameAmount(beneficiaries, 30, 90, 1000, 20,0, false);
 
         // Verify ticket creation
         vm.prank(beneficiary1);
@@ -100,57 +101,54 @@ contract ClaimableTest is Test {
     // 17, 3241, 124, false -fuzz fail
     // 2, 3139, 1037
     function testFuzz_Claim() public {
-        uint256 cliff = 0;
-        uint256 vesting = 1;
-        uint256 amount = 1 *10**18;
+        uint256 cliff = 90;
+        uint256 vesting = 180;
+        uint256 amount = 100_000;
 
         address claimer = makeAddr("Claimer");
 
         // Create ticket
         vm.prank(owner);
-        uint256 ticketId = claimable.create(beneficiary1, cliff, vesting, amount, 20, false);
+        uint256 ticketId = claimable.create(beneficiary1, cliff, vesting, amount, 50,0, false);
 
         uint256 availableAmount = claimable.available(ticketId);
-        // assertEq(availableAmount, 50000, "Incorrect Amount");
+        assertEq(availableAmount, 50000, "Incorrect Amount");
         console.log("availableAmount : ", availableAmount);
 
         vm.prank(beneficiary1);
-        claimable.delegateClaim(ticketId, claimer);
+        claimable.claimTicket(ticketId, claimer);
 
-        vm.prank(claimer);
-        claimable.acceptClaim(ticketId);
+        vm.warp(block.timestamp + (cliff) * 86400);
 
-        // vm.warp(block.timestamp + (cliff) * 86400);
+        availableAmount = claimable.available(ticketId);
+        assertEq(availableAmount, 0, "Incorrect Amount");
 
-        // availableAmount = claimable.available(ticketId);
-        // assertEq(availableAmount, 0, "Incorrect Amount");
+        vm.warp(block.timestamp + 90 * 86400);
 
-        // vm.warp(block.timestamp + 90 * 86400);
+        availableAmount = claimable.available(ticketId);
+        assertEq(availableAmount, 25000, "Incorrect Amount");
 
-        // availableAmount = claimable.available(ticketId);
-        // assertEq(availableAmount, 25000, "Incorrect Amount");
+        vm.prank(beneficiary1);
+        claimable.claimTicket(ticketId, beneficiary1);
 
-        // vm.prank(beneficiary1);
-        // claimable.delegateClaim(ticketId, beneficiary1);
+        assertEq(token.balanceOf(beneficiary1), 25000, "InValid Amount");
+        assertEq(token.balanceOf(claimer), 50000, "InValid Amount");
 
-        // assertEq(token.balanceOf(beneficiary1), 25000, "InValid Amount");
-        // assertEq(token.balanceOf(claimer), 50000, "InValid Amount");
+        vm.warp(block.timestamp + 90 * 86400);
 
-        // vm.warp(block.timestamp + 90 * 86400);
+        availableAmount = claimable.available(ticketId);
+        assertEq(availableAmount, 25000, "Invalid Amount");
 
-        // availableAmount = claimable.available(ticketId);
-        // assertEq(availableAmount, 25000, "Invalid Amount");
+        vm.warp(block.timestamp + 365 * 86400);
+        assertEq(availableAmount, 25000, "Invalid Amount");
 
-        // vm.warp(block.timestamp + 365 * 86400);
-        // assertEq(availableAmount, 25000, "Invalid Amount");
+        vm.prank(beneficiary1);
+        claimable.claimTicket(ticketId, beneficiary1);
 
-        // vm.prank(beneficiary1);
-        // claimable.delegateClaim(ticketId, beneficiary1);
+        assertEq(token.balanceOf(beneficiary1), 50000, "InValid Amount");
 
-        // assertEq(token.balanceOf(beneficiary1), 50000, "InValid Amount");
-
-        // availableAmount = claimable.available(ticketId);
-        // assertEq(availableAmount, 0, "Invalid Amount");
+        availableAmount = claimable.available(ticketId);
+        assertEq(availableAmount, 0, "Invalid Amount");
     }
 
     // function testFuzz_DelegateClaim(uint256 amount) public {
@@ -188,7 +186,7 @@ contract ClaimableTest is Test {
 
         // Create ticket
         vm.prank(owner);
-        uint256 ticketId = claimable.create(beneficiary1, 30, 90, 1000, 10, false);
+        uint256 ticketId = claimable.create(beneficiary1, 30, 90, 1000, 10,0, false);
 
         // Track initial owner balance
         uint256 initialOwnerBalance = token.balanceOf(owner);

@@ -30,7 +30,7 @@ contract TestHSTK is Test {
     function testInitialization() public view {
         // Test token name
         bytes memory tokenName1 = abi.encode(hstkToken.name());
-        bytes memory tokenName2 = abi.encode("MOCK");
+        bytes memory tokenName2 = abi.encode("HSTK");
         assertEq(tokenName1, tokenName2, "Token name mismatch");
 
         // Test token symbol
@@ -40,8 +40,8 @@ contract TestHSTK is Test {
 
         // Test other initial values
         assertEq(hstkToken.decimals(), 18, "Token decimal mismatch");
-        // assertEq(hstkToken.balanceOf(admin), 10 ** hstkToken.decimals(), "Initial admin balance mismatch");
-        // assertEq(hstkToken.totalSupply(), 1 * 10 ** hstkToken.decimals(), "Initial total supply mismatch");
+        assertEq(hstkToken.balanceOf(admin), 10 ** hstkToken.decimals(), "Initial admin balance mismatch");
+        assertEq(hstkToken.totalSupply(), 1 * 10 ** hstkToken.decimals(), "Initial total supply mismatch");
     }
 
     function testFuzzMintWithAdmin(uint256 amount) public {

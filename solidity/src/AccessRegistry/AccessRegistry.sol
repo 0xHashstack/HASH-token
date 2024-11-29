@@ -38,19 +38,12 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
         _;
     }
 
-    function _guardInitializeSuperAdmin() internal pure virtual override returns (bool) {
-        return true;
-    }
-
-    function _guardInitializeFallbackAdmin() internal pure virtual override returns (bool) {
-        return true;
-    }
-
     function _initializeAccessRegistry(address _superAdmin, address _fallbackAdmin) internal virtual {
-        _initializeSuperAdmin(_superAdmin);
-        _initializeFallbackAdmin(_fallbackAdmin);
+
         assembly {
             sstore(_TOTAL_SIGNER_SLOT, add(sload(_TOTAL_SIGNER_SLOT), 1))
+            sstore(_FALLBACKADMIN_SLOT,_fallbackAdmin)
+            sstore(_SUPERADMIN_SLOT,_superAdmin)
         }
         signers[_superAdmin] = true;
     }
@@ -63,24 +56,24 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
     }
 
     function addBatchSigners(address[] calldata newSigners) external virtual onlySuperAdmin {
-        uint256 totalSigners = newSigners.length;
+        uint256 totalSigner = newSigners.length;
 
-        for (uint256 i = 0; i < totalSigners; i++) {
+        for (uint256 i = 0; i < totalSigner; i++) {
             _addSigner(newSigners[i]);
         }
         assembly {
-            sstore(_TOTAL_SIGNER_SLOT, add(sload(_TOTAL_SIGNER_SLOT), totalSigners))
+            sstore(_TOTAL_SIGNER_SLOT, add(sload(_TOTAL_SIGNER_SLOT), totalSigner))
         }
     }
 
     function removeBatchSigners(address[] calldata exisitingSigner) external virtual onlySuperAdmin {
-        uint256 totalSigners = exisitingSigner.length;
+        uint256 totalSigner = exisitingSigner.length;
 
-        for (uint256 i = 0; i < totalSigners; i++) {
+        for (uint256 i = 0; i < totalSigner; i++) {
             _removeSigner(exisitingSigner[i]);
         }
         assembly {
-            sstore(_TOTAL_SIGNER_SLOT, sub(sload(_TOTAL_SIGNER_SLOT), totalSigners))
+            sstore(_TOTAL_SIGNER_SLOT, sub(sload(_TOTAL_SIGNER_SLOT), totalSigner))
         }
     }
 

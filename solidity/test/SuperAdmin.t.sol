@@ -1,99 +1,107 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
 pragma solidity ^0.8.20;
 
-import {SuperAdminMock} from "./Mock/SuperAdminMock.t.sol";
+import {SuperAdmin2Step} from "../src/AccessRegistry/helpers/superAdmin2Step.sol";
 import {Test, console} from "forge-std/Test.sol";
 
-contract SuperAdminTest is Test {
-    SuperAdminMock superAdminMock;
 
-    address public oldAdmin = makeAddr("oldAdmin");
-    address public newAdmin = makeAddr("newAdmin");
-    address public unauthorizedUser = makeAddr("unauthorizedUser");
-    address public otherSigner = makeAddr("otherSigner");
+contract MockSuperAdmin2Step is SuperAdmin2Step{
+    constructor(address admin){
+        _setSuperAdmin(admin);
+    } 
+}
+
+contract SuperAdmin2StepTest is Test {
+
+    event SuperAdminshipHandoverRequested(address indexed pendingSuperAdmin);
+    event SuperAdminshipTransferred(address indexed oldSuperAdmin, address indexed newSuperAdmin);
+
+    MockSuperAdmin2Step fallbackContract;
+
+    address public superAdmin = makeAddr("superAdmin");
 
     function setUp() public {
         // Set up the mock contract and initialize it with oldAdmin as the initial super admin
-        superAdminMock = new SuperAdminMock();
-        superAdminMock.initializeAdmin(oldAdmin);
-    }
-
-    function test_initialSuperAdmin() public view {
-        // Check that the initial admin is correctly set
-        assertEq(superAdminMock.superAdmin(), oldAdmin);
+        fallbackContract = new MockSuperAdmin2Step(superAdmin);
     }
 
     function test_superAdminTransfer() public {
         // Begin transaction with oldAdmin as the sender
-        vm.startPrank(oldAdmin);
 
-        // Initiate ownership transfer to newAdmin
-        superAdminMock.sendSuperAdminOwnership(newAdmin);
-        assert(superAdminMock.superAdminshipHandoverExpiresAt(newAdmin) > 0);
+        address claimer1 = makeAddr("claimer1");
+        address claimer2 = makeAddr("claimer2");
 
-        // Stop acting as oldAdmin
-        vm.stopPrank();
+        vm.expectEmit(true, false, false, false);
+        emit SuperAdminshipHandoverRequested(claimer1);
 
-        // Test: Unauthorized user should not be able to accept ownership handover
-        vm.expectRevert();
-        vm.prank(unauthorizedUser);
-        superAdminMock.acceptOwnershipHandover();
+        vm.prank(superAdmin);
+        fallbackContract.requestSuperAdminTransfer(claimer1);
 
-        // NewAdmin accepts ownership handover
-        vm.startPrank(newAdmin);
-        superAdminMock.acceptOwnershipHandover();
+        vm.expectEmit(true, false, false, false);
+        emit SuperAdminshipHandoverRequested(claimer2);
 
-        // Verify newAdmin is now the super admin
-        assertEq(superAdminMock.superAdmin(), newAdmin);
+        vm.prank(superAdmin);
+        fallbackContract.requestSuperAdminTransfer(claimer2);
 
-        // Test that newAdmin has super admin rights
-        superAdminMock.isSuperAdmin();
+        vm.expectRevert(SuperAdmin2Step.SuperAdmin2Step_Unauthorized.selector);
+        // vm.expectRevert();
+        vm.prank(claimer1);
+        fallbackContract.acceptSuperAdminTransfer();
 
-        vm.stopPrank();
+
+        
+        vm.expectEmit(true, true, false, false);
+        emit SuperAdminshipTransferred(superAdmin,claimer2);
+
+        vm.prank(claimer2);
+        fallbackContract.acceptSuperAdminTransfer();
+
+        assertEq(fallbackContract.superAdmin(),claimer2,"Error");
     }
 
     function test_revokeSuperAdminOwnership() public {
-        // New admin takes over first
-        vm.startPrank(oldAdmin);
-        superAdminMock.sendSuperAdminOwnership(newAdmin);
-        vm.stopPrank();
 
-        // Revoke super admin and check if it resets
-        vm.prank(oldAdmin);
-        superAdminMock.cancelOwnershipHandover();
+        address random = makeAddr("random");
+        address claimer = makeAddr("claimer");
 
-        vm.startPrank(newAdmin);
-        //should fail as adminship is accepted
+        vm.expectRevert(SuperAdmin2Step.SuperAdmin2Step_Unauthorized.selector);
+        vm.prank(random);
+        fallbackContract.requestSuperAdminTransfer(random);
 
-        vm.expectRevert();
-        superAdminMock.acceptOwnershipHandover();
+        vm.prank(superAdmin);
+        fallbackContract.requestSuperAdminTransfer(claimer);
 
-        vm.stopPrank();
+        vm.expectRevert(SuperAdmin2Step.SuperAdmin2Step_Unauthorized.selector);
+        vm.prank(random);
+        fallbackContract.acceptSuperAdminTransfer();
+
+        // vm.warp(block.timestamp + 86400 + 1);
+
+        // vm.expectRevert(SuperAdmin2Step.SuperAdmin2Step_NoHandoverRequest.selector);
+        // vm.prank(claimer);
+        // fallbackContract.completeSuperAdminshipHandover();
+
+        vm.warp(block.timestamp + 86400 - 1);
+
+        vm.prank(claimer);
+        fallbackContract.acceptSuperAdminTransfer();
+
+        assertEq(fallbackContract.superAdmin(),claimer,"Error");
+
     }
 
-    function test_multipleAdminTransferAttempts() public {
+    function test_TransferRequest() public {
         // Start as oldAdmin
-        vm.startPrank(oldAdmin);
+        address claimer = makeAddr("claimer");
+        vm.prank(superAdmin);
+        fallbackContract.requestSuperAdminTransfer(claimer);
 
-        // Initiate transfer to newAdmin
-        superAdminMock.sendSuperAdminOwnership(newAdmin);
-        assert(superAdminMock.superAdminshipHandoverExpiresAt(newAdmin) > 0);
-        vm.stopPrank();
-
-        // Another signer tries to accept admin without permission
+        vm.prank(claimer);
         vm.expectRevert();
-        vm.prank(otherSigner);
-        superAdminMock.acceptOwnershipHandover();
+        fallbackContract.cancelSuperAdminTransfer();
 
-        // Now newAdmin accepts ownership
-        vm.startPrank(newAdmin);
-        superAdminMock.acceptOwnershipHandover();
-        assertEq(superAdminMock.superAdmin(), newAdmin);
-        vm.stopPrank();
+        vm.prank(superAdmin);
+        fallbackContract.cancelSuperAdminTransfer();
 
-        // Ensure oldAdmin no longer has control
-        vm.expectRevert();
-        vm.prank(oldAdmin);
-        superAdminMock.cancelOwnershipHandover();
     }
 }
