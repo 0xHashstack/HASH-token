@@ -70,7 +70,6 @@ HSTK Token is an ERC20-compliant token implementation built on the Ethereum bloc
 ## Security Considerations
 
 1. **Access Control**
-   - All administrative functions are restricted to the multisig wallet
    - Blacklisting provides additional control over token movement
 
 2. **Supply Management**
