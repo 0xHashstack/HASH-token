@@ -129,16 +129,13 @@ contract HstkToken is ERC20, Pausable, BlackListed {
 
     /**
      * @dev Burns tokens
-     * @param account The address whose tokens will be burned
      * @param value The amount of tokens to burn
      * Requirements:
-     * - Can only be called by the admin
-     * - Contract must not be paused
-     * - `account` cannot be the zero address
+     * - Contract must not be fully paused
      */
-    function burn(address account, uint256 value) external allowedInActiveOrPartialPause onlyMultiSig {
-        _burn(account, value);
-        emit Burn(account, value);
+    function burn(uint256 value) external allowedInActiveOrPartialPause {
+        _burn(_msgSender(), value);
+        emit Burn(_msgSender(), value);
     }
 
     /**
