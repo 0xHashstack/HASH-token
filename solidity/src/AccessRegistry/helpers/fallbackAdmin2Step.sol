@@ -18,7 +18,6 @@ abstract contract FallbackAdmin2Step {
     // /// @dev The `pendingFallbackAdmin` does not have a valid handover request.
     // error FallbackAdmin2Step_UnauthorizedCaller();
 
-   
     /*                           EVENTS                           */
 
     /// @dev The fallbackAdminship is transferred from `oldFallbackAdmin` to `newFallbackAdmin`.
@@ -42,28 +41,29 @@ abstract contract FallbackAdmin2Step {
     bytes32 internal constant _HANDOVERTIME_SLOT_SEED =
         0xb68db56c216d94fd58fbccf93d4d61cc735c0033b18392e5b676895a446bd87f;
 
-
     /*                     INTERNAL FUNCTIONS                     */
-
 
     /// @dev Sets the fallbackAdmin directly without authorization guard.
     function _setFallbackAdmin(address _newFallbackAdmin) internal virtual {
-        assembly{
+        assembly {
             if eq(_newFallbackAdmin, 0) {
-            // Load pre-defined error selector for zero address
-            mstore(0x00, 0xf6c0e670) // NewFallbackAdminIsZeroAddress error
-            revert(0x1c, 0x04)
-        }
-              /// @dev `keccak256(bytes("FallbackAdminshipTransferred(address,address)"))
-            log3(0, 0, 0xb3b235ec28c0c439d776d6b08d1186ca9e254ab0a45799e7c012c767fd388ab4, sload(_FALLBACKADMIN_SLOT),_newFallbackAdmin )
-            sstore(_FALLBACKADMIN_SLOT,_newFallbackAdmin)
-          
+                // Load pre-defined error selector for zero address
+                mstore(0x00, 0xf6c0e670) // NewFallbackAdminIsZeroAddress error
+                revert(0x1c, 0x04)
+            }
+            /// @dev `keccak256(bytes("FallbackAdminshipTransferred(address,address)"))
+            log3(
+                0,
+                0,
+                0xb3b235ec28c0c439d776d6b08d1186ca9e254ab0a45799e7c012c767fd388ab4,
+                sload(_FALLBACKADMIN_SLOT),
+                _newFallbackAdmin
+            )
+            sstore(_FALLBACKADMIN_SLOT, _newFallbackAdmin)
         }
     }
-    
 
     /*                     PUBLIC FUNCTIONS                     */
-
 
     /// @dev Throws if the sender is not the fallbackAdmin.
     function _checkFallbackAdmin() internal view virtual {
@@ -87,13 +87,13 @@ abstract contract FallbackAdmin2Step {
 
     /// @dev Request a two-step fallbackAdminship handover to the caller.
     /// The request will automatically expire in 48 hours (172800 seconds) by default.
-    function requestFallbackAdminTransfer(address _pendingOwner) public virtual onlyFallbackAdmin{
+    function requestFallbackAdminTransfer(address _pendingOwner) public virtual onlyFallbackAdmin {
         unchecked {
             uint256 expires = block.timestamp + _fallbackAdminHandoverValidFor();
             /// @solidity memory-safe-assembly
             assembly {
-                sstore(_PENDINGADMIN_SLOT,_pendingOwner)
-                sstore(_HANDOVERTIME_SLOT_SEED,expires)
+                sstore(_PENDINGADMIN_SLOT, _pendingOwner)
+                sstore(_HANDOVERTIME_SLOT_SEED, expires)
                 // Emit the {FallbackAdminshipHandoverRequested} event.
                 log2(0, 0, 0x28dbfd0a9abc89d42b4958ac24ccb5370d4381d6d9780ec9495d9f865294ec73, _pendingOwner)
             }
@@ -101,12 +101,12 @@ abstract contract FallbackAdmin2Step {
     }
 
     /// @dev Cancels the two-step fallbackAdminship handover to the caller, if any.
-    function cancelFallbackAdminTransfer() public virtual onlyFallbackAdmin{
+    function cancelFallbackAdminTransfer() public virtual onlyFallbackAdmin {
         /// @solidity memory-safe-assembly
         assembly {
             // Compute and set the handover slot to 0.
-            sstore(_PENDINGADMIN_SLOT,0x0)
-            sstore(_HANDOVERTIME_SLOT_SEED,0x0)
+            sstore(_PENDINGADMIN_SLOT, 0x0)
+            sstore(_HANDOVERTIME_SLOT_SEED, 0x0)
             // Emit the {FallbackAdminshipHandoverCanceled} event.
             log2(0, 0, 0xfff645f1f5f25235a50da3b568627809458a7da704bb0700eb960289b102bb52, caller())
         }
@@ -114,18 +114,18 @@ abstract contract FallbackAdmin2Step {
 
     /// @dev Allows the fallbackAdmin to complete the two-step fallbackAdminship handover to `pendingFallbackAdmin`.
     /// Reverts if there is no existing fallbackAdminship handover requested by `pendingFallbackAdmin`.
-    function acceptFallbackAdminTransfer() public virtual{
+    function acceptFallbackAdminTransfer() public virtual {
         /// @solidity memory-safe-assembly
 
         address pendingAdmin;
         assembly {
             pendingAdmin := sload(_PENDINGADMIN_SLOT)
-        
-        // Check that the sender is the pending admin
-        if iszero(eq(caller(), pendingAdmin)) {
-            mstore(0x00, 0xf6c0e670) // Unauthorized error
-            revert(0x1c, 0x04)
-        }
+
+            // Check that the sender is the pending admin
+            if iszero(eq(caller(), pendingAdmin)) {
+                mstore(0x00, 0xf6c0e670) // Unauthorized error
+                revert(0x1c, 0x04)
+            }
             // If the handover does not exist, or has expired.
             if gt(timestamp(), sload(_HANDOVERTIME_SLOT_SEED)) {
                 mstore(0x00, 0x292ff959) // `FallbackAdmin2Step_NoHandoverRequest()`.
@@ -133,7 +133,7 @@ abstract contract FallbackAdmin2Step {
             }
             // Set the handover slot to 0.
             sstore(_HANDOVERTIME_SLOT_SEED, 0)
-            sstore(_PENDINGADMIN_SLOT,0)
+            sstore(_PENDINGADMIN_SLOT, 0)
         }
         _setFallbackAdmin(pendingAdmin);
     }
@@ -148,12 +148,7 @@ abstract contract FallbackAdmin2Step {
     }
 
     /// @dev Returns the expiry timestamp for the two-step fallbackAdminship handover to `pendingFallbackAdmin`.
-    function fallbackAdminHandoverExpiresAt()
-        public
-        view
-        virtual
-        returns (uint256 result)
-    {
+    function fallbackAdminHandoverExpiresAt() public view virtual returns (uint256 result) {
         /// @solidity memory-safe-assembly
         assembly {
             // Load the handover slot.

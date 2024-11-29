@@ -16,7 +16,7 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     uint256 private constant SECONDS_PER_DAY = 86400;
     uint256 private constant PERCENTAGE_DENOMINATOR = 100;
 
-    enum TicketType{
+    enum TicketType {
         Investors,
         Others
     }
@@ -40,7 +40,7 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     mapping(address => uint256[]) public beneficiaryTickets;
     mapping(uint256 => Ticket) private tickets;
 
-    event TicketCreated(uint256 indexed id, uint256 amount, uint256 tgePercentage,uint8 ticketType, bool irrevocable);
+    event TicketCreated(uint256 indexed id, uint256 amount, uint256 tgePercentage, uint8 ticketType, bool irrevocable);
     event Claimed(uint256 indexed id, uint256 amount, address claimer);
     event ClaimDelegated(uint256 indexed id, uint256 amount, address pendingClaimer);
     event Revoked(uint256 indexed id, uint256 amount);
@@ -83,7 +83,7 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         if (_amount == 0) revert InvalidAmount();
         if (_vesting < _cliff) revert InvalidVestingPeriod();
         if (_tgePercentage > PERCENTAGE_DENOMINATOR) revert InvalidTGEPercentage();
-        if (_ticketType > 1) revert InvalidTicketType(); 
+        if (_ticketType > 1) revert InvalidTicketType();
 
         ticketId = ++currentId;
         Ticket storage ticket = tickets[ticketId];
@@ -100,7 +100,7 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
         beneficiaryTickets[_beneficiary].push(ticketId);
 
-        emit TicketCreated(ticketId, _amount, _tgePercentage,_ticketType, _irrevocable);
+        emit TicketCreated(ticketId, _amount, _tgePercentage, _ticketType, _irrevocable);
     }
 
     /// @notice allow batch create tickets with the same terms same amount
@@ -116,7 +116,7 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         /// @dev set maximum array length?
         require(_beneficiaries.length > 0, "At least one beneficiary is required");
         for (uint256 i = 0; i < _beneficiaries.length; i++) {
-            create(_beneficiaries[i], _cliff, _vesting, _amount, _tgePercentage,_ticketType, _irrevocable);
+            create(_beneficiaries[i], _cliff, _vesting, _amount, _tgePercentage, _ticketType, _irrevocable);
         }
     }
 
@@ -134,7 +134,7 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
         for (uint256 i = 0; i < _beneficiaries.length; i++) {
             if (_amounts[i] > 0) {
-                create(_beneficiaries[i], _cliff, _vesting, _amounts[i], _tgePercentage,_ticketType, _irrevocable);
+                create(_beneficiaries[i], _cliff, _vesting, _amounts[i], _tgePercentage, _ticketType, _irrevocable);
             }
         }
     }
@@ -207,7 +207,7 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         if (_recipient == msg.sender) {
             _processClaim(_id, claimableAmount, msg.sender);
         } else {
-            _processClaim(_id,claimableAmount,_recipient);
+            _processClaim(_id, claimableAmount, _recipient);
         }
         return true;
     }

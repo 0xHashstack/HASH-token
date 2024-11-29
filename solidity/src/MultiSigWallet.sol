@@ -30,15 +30,15 @@ import {Initializable} from "./utils/Initializable.sol";
  */
 contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     // ========== CONSTANTS ==========
-    
+
     /// @dev Time window for regular signers to approve transactions
     /// @notice After this period, transactions without sufficient approvals expire
     uint256 private constant SIGNER_WINDOW = 24 hours;
-    
+
     /// @dev Extended time window for fallback admin proposed transactions
     /// @notice Longer window for critical mint/burn operations
     uint256 private constant FALLBACK_ADMIN_WINDOW = 72 hours;
-    
+
     /// @dev Minimum percentage of signers required for approval
     /// @notice Set to 60% for balanced security and efficiency
     uint256 private constant APPROVAL_THRESHOLD = 60;
@@ -61,98 +61,95 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
     bytes32 public constant TOKEN_CONTRACT_SLOT = 0x2e621e7466541a75ed3060ecb302663cf45f24d90bdac97ddad9918834bc5d75;
 
     // ========== ENUMS ==========
-    
+
     /// @notice Defines possible states of a transaction
     /// @dev State transitions follow a strict flow
     enum TransactionState {
-        Pending,     // Just created, awaiting first signature
-        Active,      // Has at least one signature, within time window
-        Queued,      // Has enough signatures, ready for execution
-        Expired,     // Time window passed without enough signatures
-        Executed     // Successfully executed
+        Pending, // Just created, awaiting first signature
+        Active, // Has at least one signature, within time window
+        Queued, // Has enough signatures, ready for execution
+        Expired, // Time window passed without enough signatures
+        Executed // Successfully executed
+
     }
 
     // ========== STRUCTS ==========
-    
+
     /// @notice Complete transaction information structure
     /// @dev Optimized for minimal storage usage while maintaining functionality
     struct Transaction {
-        uint256 proposedAt;      // Timestamp when transaction was proposed
-        uint256 firstSignAt;     // Timestamp of first approval
-        uint256 approvals;       // Current number of approvals
-        address proposer;        // Address that proposed the transaction
-        bytes4 selector;         // Target function selector
-        TransactionState state;  // Current transaction state
-        bool isFallbackAdmin;    // Flag for fallback admin proposals
-        bytes params;            // Encoded function parameters
+        uint256 proposedAt; // Timestamp when transaction was proposed
+        uint256 firstSignAt; // Timestamp of first approval
+        uint256 approvals; // Current number of approvals
+        address proposer; // Address that proposed the transaction
+        bytes4 selector; // Target function selector
+        TransactionState state; // Current transaction state
+        bool isFallbackAdmin; // Flag for fallback admin proposals
+        bytes params; // Encoded function parameters
     }
 
     // ========== STATE VARIABLES ==========
-    
+
     /// @notice Primary transaction storage
     /// @dev Maps transaction ID to transaction details
     mapping(uint256 => Transaction) private transactions;
-    
+
     /// @notice Tracks individual signer approvals
     /// @dev Double mapping for efficient approval checking
     mapping(uint256 => mapping(address => bool)) hasApproved;
-    
+
     /// @notice Registry of valid transaction IDs
     /// @dev Used for quick existence checks
     mapping(uint256 => bool) transactionIdExists;
-    
+
     /// @notice Function permission mappings
     /// @dev Maps function selectors to permission flags
     mapping(bytes4 => bool) fallbackAdminFunctions;
     mapping(bytes4 => bool) signerFunctions;
 
     // ========== EVENTS ==========
-    
+
     /// @notice Emitted when a new transaction is proposed
     /// @param txId Unique identifier of the transaction
     /// @param proposer Address that proposed the transaction
     /// @param proposedAt Timestamp of proposal
     event TransactionProposed(uint256 indexed txId, address proposer, uint256 proposedAt);
-    
+
     /// @notice Emitted when a transaction receives an approval
     event TransactionApproved(uint256 indexed txId, address signer);
-    
+
     /// @notice Emitted when an approval is revoked
     event TransactionRevoked(uint256 indexed txId, address revoker);
-    
+
     /// @notice Emitted when a transaction is successfully executed
     event TransactionExecuted(uint256 indexed txId);
-    
+
     /// @notice Emitted when a transaction expires
     event TransactionExpired(uint256 indexed txId);
-    
+
     /// @notice Emitted when a transaction's state changes
     event TransactionStateChanged(uint256 indexed txId, TransactionState newState);
-    
+
     /// @notice Emitted when a transaction fails to get sufficient approvals
     event InsufficientApprovals(uint256 indexed txId, uint256 approvals);
-    
+
     /// @notice Emitted for direct super admin transactions
     event TransactionProposedBySuperAdmin(uint256 proposedAt);
 
     // ========== ERRORS ==========
-    
+
     /// @dev Custom errors for gas-efficient error handling
-    error UnauthorizedCall();            // Caller lacks necessary permissions
-    error InvalidToken();                // Invalid token contract address
-    error InvalidState();                // Invalid transaction state for operation
-    error AlreadyApproved();            // Signer has already approved
-    error TransactionNotSigned();        // Transaction hasn't been signed by caller
-    error WindowExpired();               // Time window for operation has passed
-    error TransactionAlreadyExist();     // Transaction ID already exists
-    error TransactionIdNotExist();       // Transaction ID doesn't exist
-    error FunctionAlreadyExists();       // Function already registered
-    error FunctionDoesNotExist();        // Function not registered
-    error ZeroAmountTransaction();       // Zero amount in transaction
-    error InvalidParams();               // Invalid parameters provided
+    error UnauthorizedCall(); // Caller lacks necessary permissions
+   
+    error InvalidState(uint256 txId); // Invalid transaction state for operation
+    error AlreadyApproved(address signer); // Signer has already approved
+    error TransactionNotSigned(address signer); // Transaction hasn't been signed by caller
+    error TransactionAlreadyExist(uint256 txId); // Transaction ID already exists
+    error TransactionIdNotExist(uint256 txId); // Transaction ID doesn't exist
+    error InvalidParams(); // Invalid parameters provided
 
     // ========== INITIALIZATION ==========
-    
+
     /// @notice Constructor
     /// @dev Disables initialization of implementation contract
     constructor() {
@@ -166,14 +163,16 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
      * @param _fallbackAdmin Address to be granted fallback admin role
      * @param _tokenContract Address of the token contract to be managed
      */
-    function initialize(
-        address _superAdmin,
-        address _fallbackAdmin,
-        address _tokenContract
-    ) external initializer notZeroAddress(_superAdmin) notZeroAddress(_fallbackAdmin) notZeroAddress(_tokenContract) {
+    function initialize(address _superAdmin, address _fallbackAdmin, address _tokenContract)
+        external
+        initializer
+        notZeroAddress(_superAdmin)
+        notZeroAddress(_fallbackAdmin)
+        notZeroAddress(_tokenContract)
+    {
         // Initialize access control
         _initializeAccessRegistry(_superAdmin, _fallbackAdmin);
-        
+
         // Configure fallback admin permissions
         fallbackAdminFunctions[MINT_SELECTOR] = true;
 
@@ -240,7 +239,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         // Update state if changed
         if (newState != transaction.state) {
             transaction.state = newState;
-            emit TransactionStateChanged(txId, transaction.state);
+            emit TransactionStateChanged(txId, newState);
         }
 
         return transaction.state;
@@ -253,10 +252,10 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
      * @param _params Array of encoded function parameters
      * @return txId Array of created transaction IDs
      */
-    function createBatchTransaction(
-        bytes4[] calldata _selector,
-        bytes[] calldata _params
-    ) external returns (uint256[] memory txId) {
+    function createBatchTransaction(bytes4[] calldata _selector, bytes[] calldata _params)
+        external
+        returns (uint256[] memory txId)
+    {
         uint256 size = _selector.length;
         if (size == 0 || size != _params.length) revert InvalidParams();
 
@@ -266,7 +265,9 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
         if (sender == superAdmin()) {
             for (uint256 i; i < size;) {
                 _call(_selector[i], _params[i]);
-                unchecked { ++i; }
+                unchecked {
+                    ++i;
+                }
             }
             emit TransactionProposedBySuperAdmin(block.timestamp);
             return new uint256[](0);
@@ -280,7 +281,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
 
         for (uint256 i; i < size;) {
             bytes4 selector = _selector[i];
-            
+
             // Verify permissions
             bool isValidFunction = isSigner ? signerFunctions[selector] : fallbackAdminFunctions[selector];
             if (!isValidFunction || (!isSigner && !isFallbackAdmin)) {
@@ -291,7 +292,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
             txId[i] = uint256(keccak256(abi.encode(timestamp, sender, selector, _params[i])));
 
             if (transactionIdExists[txId[i]]) {
-                revert TransactionAlreadyExist();
+                revert TransactionAlreadyExist(txId[i]);
             }
 
             // Store transaction
@@ -305,33 +306,34 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
 
             emit TransactionProposed(txId[i], sender, timestamp);
 
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
     }
 
-/** 
-@notice Approves multiple transactions in a batch
-@dev Only signers can approve transactions
-@param txIds Array of transaction IDs to approve
-*/
-
-function approveBatchTransaction(uint256[] calldata txIds) public {
-    address sender = _msgSender();
-    if (!isSigner(sender)) revert UnauthorizedCall();
+    /**
+     * @notice Approves multiple transactions in a batch
+     * @dev Only signers can approve transactions
+     * @param txIds Array of transaction IDs to approve
+     */
+    function approveBatchTransaction(uint256[] calldata txIds) public {
+        address sender = _msgSender();
+        if (!isSigner(sender)) revert UnauthorizedCall();
 
         uint256 len = txIds.length;
         uint256 currentTime = block.timestamp;
 
         for (uint256 i; i < len;) {
             uint256 txId = txIds[i];
-            if (!transactionIdExists[txId]) revert TransactionIdNotExist();
-            if (hasApproved[txId][sender]) revert AlreadyApproved();
+            if (!transactionIdExists[txId]) revert TransactionIdNotExist(txId);
+            if (hasApproved[txId][sender]) revert AlreadyApproved(sender);
 
             Transaction storage transaction = transactions[txId];
             TransactionState currentState = updateTransactionState(txId);
 
             if (currentState != TransactionState.Pending && currentState != TransactionState.Active) {
-                revert InvalidState();
+                revert InvalidState(txId);
             }
 
             // Update first signature time if this is the first approval
@@ -346,18 +348,17 @@ function approveBatchTransaction(uint256[] calldata txIds) public {
 
             hasApproved[txId][sender] = true;
             emit TransactionApproved(txId, sender);
-            updateTransactionState(txId);
         }
     }
 
-/*
+    /*
      
-@notice Revokes approvals for multiple transactions
-@dev Only signers who have approved can revoke their approval
-@param txIds Array of transaction IDs to revoke approval from
-*/
+    @notice Revokes approvals for multiple transactions
+    @dev Only signers who have approved can revoke their approval
+    @param txIds Array of transaction IDs to revoke approval from
+    */
 
- // /**
+    // /**
     //  * @notice Revokes a previously approved transaction
     //  * @param txId The transaction ID to revoke
     //  */
@@ -368,14 +369,14 @@ function approveBatchTransaction(uint256[] calldata txIds) public {
         uint256 len = txIds.length;
         for (uint256 i; i < len;) {
             uint256 txId = txIds[i];
-            if (!transactionIdExists[txId]) revert TransactionIdNotExist();
-            if (!hasApproved[txId][revoker]) revert TransactionNotSigned();
+            if (!transactionIdExists[txId]) revert TransactionIdNotExist(txId);
+            if (!hasApproved[txId][revoker]) revert TransactionNotSigned(revoker);
 
             Transaction storage transaction = transactions[txId];
             TransactionState currentState = updateTransactionState(txId);
 
             if (currentState != TransactionState.Active) {
-                revert InvalidState();
+                revert InvalidState(txId);
             }
 
             unchecked {
@@ -385,7 +386,6 @@ function approveBatchTransaction(uint256[] calldata txIds) public {
 
             hasApproved[txId][revoker] = false;
             emit TransactionRevoked(txId, revoker);
-            updateTransactionState(txId);
         }
     }
 
@@ -397,13 +397,13 @@ function approveBatchTransaction(uint256[] calldata txIds) public {
         uint256 len = txIds.length;
         for (uint256 i; i < len;) {
             uint256 txId = txIds[i];
-            if (!transactionIdExists[txId]) revert TransactionIdNotExist();
+            if (!transactionIdExists[txId]) revert TransactionIdNotExist(txId);
 
             Transaction storage transaction = transactions[txId];
             TransactionState currentState = updateTransactionState(txId);
 
             if (currentState != TransactionState.Queued) {
-                revert InvalidState();
+                revert InvalidState(txId);
             }
 
             transaction.state = TransactionState.Executed;
@@ -471,11 +471,9 @@ function approveBatchTransaction(uint256[] calldata txIds) public {
      * @param txId The transaction ID to check
      * @return flag True if the transaction ID is valid, false otherwise
      */
-
     function isValidTransaction(uint256 txId) public view returns (bool flag) {
         return transactionIdExists[txId];
     }
-
 
     /**
      * @notice Authorizes contract upgrade
@@ -485,7 +483,7 @@ function approveBatchTransaction(uint256[] calldata txIds) public {
 
     modifier txExist(uint256 txId) {
         if (!isValidTransaction(txId)) {
-            revert TransactionIdNotExist();
+            revert TransactionIdNotExist(txId);
         }
         _;
     }
@@ -504,11 +502,3 @@ function approveBatchTransaction(uint256[] calldata txIds) public {
         }
     }
 }
-
-
-
-
-
-
-
-    

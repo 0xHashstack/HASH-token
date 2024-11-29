@@ -360,11 +360,9 @@ contract MultiSigContractTest is StdInvariant, Test {
         address to = makeAddr("to");
 
         vm.prank(to);
-        token.burn(500 * 10**18);
+        token.burn(500 * 10 ** 18);
 
-
-        assertEq(token.balanceOf(to),500*10**18,"Incorrect amount");
-
+        assertEq(token.balanceOf(to), 500 * 10 ** 18, "Incorrect amount");
     }
 
     // function test_fallbackAdminBurnTransaction() public {
@@ -495,7 +493,7 @@ contract MultiSigContractTest is StdInvariant, Test {
 
         vm.prank(signer1);
         wrappedMultiSig.approveBatchTransaction(txId);
-        (,,,,,, state,) = wrappedMultiSig.getTransaction(txId[0]);
+        state = wrappedMultiSig.updateTransactionState(txId[0]);
         assertEq(uint8(state), 1, "Transaction need to be in Active State");
 
         vm.warp(block.timestamp + 24 hours + 1);

@@ -87,8 +87,7 @@ abstract contract Pausable is Context {
 
     /**
      * @dev Update the Contract Pause State.
-    */
-
+     */
     function _updateOperationalState(uint8 _state) internal {
         if (_state > 2) revert InvalidStateChange();
         _currentState = PauseState(_state);

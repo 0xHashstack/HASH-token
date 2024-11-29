@@ -34,8 +34,7 @@ contract ClaimableTest is Test {
         claimable = Claimable(address(claimableContract_));
 
         vm.prank(owner);
-        token.mint(address(claimable),10_000_000 * 10 ** 18);
-
+        token.mint(address(claimable), 10_000_000 * 10 ** 18);
     }
 
     function testInitialization() public view {
@@ -48,7 +47,7 @@ contract ClaimableTest is Test {
     function test_CreateTicket() public {
         // Create ticket
         vm.prank(owner);
-        uint256 ticketId = claimable.create(beneficiary1, 30, 90, 1000, 20,0, false);
+        uint256 ticketId = claimable.create(beneficiary1, 30, 90, 1000, 20, 0, false);
 
         // Verify ticket details
         Claimable.Ticket memory ticket = claimable.viewTicket(ticketId);
@@ -63,19 +62,19 @@ contract ClaimableTest is Test {
     function test_CreateTicket_Reverts_ZeroBeneficiary() public {
         vm.prank(owner);
         vm.expectRevert(Claimable.InvalidBeneficiary.selector);
-        claimable.create(address(0), 30, 90, 1000, 20,0, false);
+        claimable.create(address(0), 30, 90, 1000, 20, 0, false);
     }
 
     function test_CreateTicket_Reverts_ZeroAmount() public {
         vm.prank(owner);
         vm.expectRevert(Claimable.InvalidAmount.selector);
-        claimable.create(beneficiary1, 30, 90, 0, 20,0, false);
+        claimable.create(beneficiary1, 30, 90, 0, 20, 0, false);
     }
 
     function test_CreateTicket_Reverts_InvalidVestingPeriod() public {
         vm.prank(owner);
         vm.expectRevert(Claimable.InvalidVestingPeriod.selector);
-        claimable.create(beneficiary1, 90, 30, 1000, 20,0, false);
+        claimable.create(beneficiary1, 90, 30, 1000, 20, 0, false);
     }
 
     function test_BatchCreateSameAmount() public {
@@ -85,7 +84,7 @@ contract ClaimableTest is Test {
 
         // Create batch tickets
         vm.prank(owner);
-        claimable.batchCreateSameAmount(beneficiaries, 30, 90, 1000, 20,0, false);
+        claimable.batchCreateSameAmount(beneficiaries, 30, 90, 1000, 20, 0, false);
 
         // Verify ticket creation
         vm.prank(beneficiary1);
@@ -109,7 +108,7 @@ contract ClaimableTest is Test {
 
         // Create ticket
         vm.prank(owner);
-        uint256 ticketId = claimable.create(beneficiary1, cliff, vesting, amount, 50,0, false);
+        uint256 ticketId = claimable.create(beneficiary1, cliff, vesting, amount, 50, 0, false);
 
         uint256 availableAmount = claimable.available(ticketId);
         assertEq(availableAmount, 50000, "Incorrect Amount");
@@ -186,7 +185,7 @@ contract ClaimableTest is Test {
 
         // Create ticket
         vm.prank(owner);
-        uint256 ticketId = claimable.create(beneficiary1, 30, 90, 1000, 10,0, false);
+        uint256 ticketId = claimable.create(beneficiary1, 30, 90, 1000, 10, 0, false);
 
         // Track initial owner balance
         uint256 initialOwnerBalance = token.balanceOf(owner);

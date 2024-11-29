@@ -71,8 +71,8 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
         // Initialize contract with first signer (super admin) and set admin roles
         assembly {
             sstore(_TOTAL_SIGNER_SLOT, add(sload(_TOTAL_SIGNER_SLOT), 1))
-            sstore(_FALLBACKADMIN_SLOT,_fallbackAdmin)
-            sstore(_SUPERADMIN_SLOT,_superAdmin)
+            sstore(_FALLBACKADMIN_SLOT, _fallbackAdmin)
+            sstore(_SUPERADMIN_SLOT, _superAdmin)
         }
         signers[_superAdmin] = true;
     }
@@ -98,7 +98,9 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
         for (uint256 i = 0; i < totalSigner;) {
             _addSigner(newSigners[i]);
 
-            unchecked{++i;}
+            unchecked {
+                ++i;
+            }
         }
         assembly {
             sstore(_TOTAL_SIGNER_SLOT, add(sload(_TOTAL_SIGNER_SLOT), totalSigner))
@@ -115,7 +117,9 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
         for (uint256 i = 0; i < totalSigner;) {
             _removeSigner(exisitingSigner[i]);
 
-            unchecked{++i;}
+            unchecked {
+                ++i;
+            }
         }
         assembly {
             sstore(_TOTAL_SIGNER_SLOT, sub(sload(_TOTAL_SIGNER_SLOT), totalSigner))
@@ -144,7 +148,7 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
 
         signers[_msgSender()] = false;
         signers[_newSigner] = true;
-        
+
         // Emit event using assembly for gas optimization
         assembly {
             log3(
@@ -195,9 +199,9 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
     function _addSigner(address signer) internal {
         if (signer == address(0)) revert CallerZeroAddress();
         if (isSigner(signer)) revert AlreadySigner(signer);
-        
+
         signers[signer] = true;
-        
+
         // Emit event using assembly for gas optimization
         assembly {
             log2(
@@ -218,9 +222,9 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
         if (!isSigner(_signer)) revert NonExistingSigner(_signer);
         if (_signer == _msgSender()) revert SuperAdminCannotRemoved();
         // if (totalSigners() == 1) revert WalletCannotBeSignerLess();
-        
+
         signers[_signer] = false;
-        
+
         // Emit event using assembly for gas optimization
         assembly {
             log2(
@@ -232,4 +236,3 @@ abstract contract AccessRegistry is Context, SuperAdmin2Step, FallbackAdmin2Step
         }
     }
 }
-
