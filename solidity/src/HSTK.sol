@@ -133,7 +133,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
      * Requirements:
      * - Contract must not be fully paused
      */
-    function burn(uint256 value) external allowedInActiveOrPartialPause {
+    function burn(uint256 value) external allowedInActiveOrPartialPause{
         _burn(_msgSender(), value);
         emit Burn(_msgSender(), value);
     }
