@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.4;
+pragma solidity 0.8.28;
 
 import {Script, console} from "forge-std/Script.sol";
 import {MultiSigWallet} from "../src/MultiSigWallet.sol";
@@ -15,14 +15,14 @@ contract DeployHSTK is Script {
 
     function deployMultiSig() public returns (address) {
         multiSigContract = new MultiSigWallet();
-        // bytes memory multiSigCalldata = abi.encodeWithSelector(MultiSigWallet.initialize.selector, admin);
+
 
         multiSig = new ERC1967Proxy(address(multiSigContract), "");
         hashToken = new HstkToken(address(multiSig));
 
         MultiSigWallet(address(multiSig)).initialize(superAdmin, fallbackAdmin, address(hashToken));
 
-        vm.label(address(multiSig), "MultiSig");
+        vm.label(address(multiSig), "MultiSig Proxy");
         vm.label(address(hashToken), "HASH Token Address:");
 
         return address(multiSig);

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.4;
+pragma solidity 0.8.28;
 
 import {Pausable} from "./utils/Pausable.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -53,7 +53,7 @@ contract HstkToken is ERC20, Pausable, BlackListed {
      * @dev Constructor that gives the admin the initial supply of tokens
      * @param _multisig Address of the multiSig account
      */
-    constructor(address _multisig) ERC20("HSTK", "HSTK") Pausable() BlackListed(_multisig) {
+    constructor(address _multisig) ERC20("Hashstack", "HSTK") Pausable() BlackListed(_multisig) {
         require(_multisig != address(0), "Address cannot be zero address");
         _mint(_multisig, 1 * 10 ** decimals());
     }
@@ -162,5 +162,12 @@ contract HstkToken is ERC20, Pausable, BlackListed {
      */
     function updateOperationalState(uint8 newState) external onlyMultiSig {
         _updateOperationalState(newState);
+    }
+
+     /**
+     * @dev Returns the max supply of tokens
+     */
+    function supplyHardCap() external pure returns(uint256){
+        return MAX_SUPPLY;
     }
 }

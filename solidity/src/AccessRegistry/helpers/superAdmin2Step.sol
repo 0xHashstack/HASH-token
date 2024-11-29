@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.4;
+pragma solidity 0.8.28;
 
 /// @notice Simple single superAdmin authorization mixin.
 /// @author Hashstack

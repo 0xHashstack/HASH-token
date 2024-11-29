@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.4;
+pragma solidity 0.8.28;
 
 import {AccessRegistry} from "./AccessRegistry/AccessRegistry.sol";
 import {UUPSUpgradeable} from "./utils/UUPSUpgradeable.sol";
@@ -33,11 +33,11 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
 
     /// @dev Time window for regular signers to approve transactions
     /// @notice After this period, transactions without sufficient approvals expire
-    uint256 private constant SIGNER_WINDOW = 24 hours;
+    uint256 private constant SIGNER_WINDOW = 300 seconds;
 
     /// @dev Extended time window for fallback admin proposed transactions
     /// @notice Longer window for critical mint/burn operations
-    uint256 private constant FALLBACK_ADMIN_WINDOW = 72 hours;
+    uint256 private constant FALLBACK_ADMIN_WINDOW = 120 seconds;
 
     /// @dev Minimum percentage of signers required for approval
     /// @notice Set to 60% for balanced security and efficiency
@@ -58,7 +58,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
 
     /// @dev Storage slot for token contract address
     /// @notice Uses assembly-optimized storage pattern
-    bytes32 public constant TOKEN_CONTRACT_SLOT = 0x2e621e7466541a75ed3060ecb302663cf45f24d90bdac97ddad9918834bc5d75;
+    bytes32 private constant TOKEN_CONTRACT_SLOT = 0x2e621e7466541a75ed3060ecb302663cf45f24d90bdac97ddad9918834bc5d75;
 
     // ========== ENUMS ==========
 

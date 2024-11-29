@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.4;
+pragma solidity 0.8.28;
 
 /// @dev Note:
 /// - This implementation is intended to be used with ERC1967 proxies.

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.4;
+pragma solidity 0.8.28;
 
 /// @notice Simple single fallbackAdmin authorization mixin.
 /// @author Hashstack
@@ -16,7 +16,6 @@ abstract contract FallbackAdmin2Step {
     error FallbackAdmin2Step_NoHandoverRequest();
 
     // /// @dev The `pendingFallbackAdmin` does not have a valid handover request.
-    // error FallbackAdmin2Step_UnauthorizedCaller();
 
     /*                           EVENTS                           */
 

@@ -30,7 +30,7 @@ contract TestHSTK is Test {
     function testInitialization() public view {
         // Test token name
         bytes memory tokenName1 = abi.encode(hstkToken.name());
-        bytes memory tokenName2 = abi.encode("HSTK");
+        bytes memory tokenName2 = abi.encode("Hashstack");
         assertEq(tokenName1, tokenName2, "Token name mismatch");
 
         // Test token symbol

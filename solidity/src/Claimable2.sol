@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.4;
+pragma solidity 0.8.28;
 
 import {SafeMath} from "./utils/SafeMath.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
