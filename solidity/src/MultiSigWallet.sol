@@ -33,11 +33,11 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
 
     /// @dev Time window for regular signers to approve transactions
     /// @notice After this period, transactions without sufficient approvals expire
-    uint256 private constant SIGNER_WINDOW = 300 seconds;
+    uint256 private constant SIGNER_WINDOW = 24 hours;
 
     /// @dev Extended time window for fallback admin proposed transactions
     /// @notice Longer window for critical mint/burn operations
-    uint256 private constant FALLBACK_ADMIN_WINDOW = 120 seconds;
+    uint256 private constant FALLBACK_ADMIN_WINDOW = 72 hours;
 
     /// @dev Minimum percentage of signers required for approval
     /// @notice Set to 60% for balanced security and efficiency
