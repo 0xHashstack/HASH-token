@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
 
 import {Script, console} from "forge-std/Script.sol";
 import {MultiSigWallet} from "../src/MultiSigWallet.sol";
@@ -8,8 +8,8 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/Proxy/ERC1967/ERC1967Proxy.s
 
 contract DeployHSTK is Script {
     HstkToken public hashToken;
-    address superAdmin = address(0x6C231C5e75e2b92B8e16508539b5431298dFF1E4); // Replace this with Address of the owner
-    address fallbackAdmin = address(0xE4f3B256c27cE7c76C5D16Ae81838aA14d8846C8);
+    address superAdmin = address(0x14e7bBbDAc66753AcABcbf3DFDb780C6bD357d8E); // Replace this with Address of the owner
+    address fallbackAdmin = address(0x9CE26bf410428d57B3E28b8c3A59457A7C476B65);
     MultiSigWallet multiSigContract;
     ERC1967Proxy multiSig;
 

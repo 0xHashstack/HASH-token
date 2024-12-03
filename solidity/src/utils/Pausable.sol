@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
-
-pragma solidity ^0.8.20;
+pragma solidity 0.8.28;
 
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 
@@ -14,7 +13,7 @@ import {Context} from "@openzeppelin/contracts/utils/Context.sol";
  */
 abstract contract Pausable is Context {
     enum PauseState {
-        ACTIVE, // Normal operation state (unpaused)
+        ACTIVE, // Normal operation state
         PARTIAL_PAUSE, // Partially paused state
         FULL_PAUSE // Fully paused state
 
@@ -68,14 +67,14 @@ abstract contract Pausable is Context {
     /**
      * @dev Returns the current pause state of the contract.
      */
-    function getCurrentState() external view virtual returns (PauseState) {
+    function getCurrentState() external view returns (PauseState) {
         return _currentState;
     }
 
     /**
      * @dev Throws if the contract is not active.
      */
-    function _requireActive() internal view virtual {
+    function _requireActive() internal view {
         if (_currentState != PauseState.ACTIVE) {
             if (_currentState == PauseState.FULL_PAUSE) {
                 revert EnforcedPause();
@@ -85,6 +84,9 @@ abstract contract Pausable is Context {
         }
     }
 
+    /**
+     * @dev Update the Contract Pause State.
+     */
     function _updateOperationalState(uint8 _state) internal {
         if (_state > 2) revert InvalidStateChange();
         _currentState = PauseState(_state);

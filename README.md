@@ -6,7 +6,7 @@
 HSTK Token is an ERC20-compliant token implementation built on the Ethereum blockchain. The token includes advanced features such as pausability, blacklisting functionality, and controlled token supply management.
 
 ## Token Details
-
+- **Address**: 0xF38774A034F5F533D7F9E2ba6b7f3a7542714fA9
 - **Name**: HSTK
 - **Symbol**: HSTK
 - **Decimals**: 18
@@ -70,7 +70,6 @@ HSTK Token is an ERC20-compliant token implementation built on the Ethereum bloc
 ## Security Considerations
 
 1. **Access Control**
-   - All administrative functions are restricted to the multisig wallet
    - Blacklisting provides additional control over token movement
 
 2. **Supply Management**

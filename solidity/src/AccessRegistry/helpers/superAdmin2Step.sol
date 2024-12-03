@@ -1,15 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
+pragma solidity 0.8.28;
 
 /// @notice Simple single superAdmin authorization mixin.
 /// @author Hashstack
 /// @dev Note:
-/// This implementation does NOT auto-initialize the superAdmin to `msg.sender`.
-/// You MUST call the `_initializeSuperAdmin` in the constructor / initializer.
-///
-/// While the ownable portion follows
-/// [EIP-173](https://eips.ethereum.org/EIPS/eip-173) for compatibility,
-/// the nomenclature for the 2-step superAdminship handover may be unique to this codebase.
+
 abstract contract SuperAdmin2Step {
     /*                       CUSTOM ERRORS                        */
 
@@ -20,13 +15,11 @@ abstract contract SuperAdmin2Step {
     error SuperAdmin2Step_NoHandoverRequest();
 
     /// @dev Cannot double-initialize.
-    error SuperAdmin2Step_AlreadyInitialized();
+    error SuperAdmin2Step_NewAdminIsZeroAddress();
     /*                           EVENTS                           */
 
     /// @dev The superAdminship is transferred from `oldSuperAdmin` to `newSuperAdmin`.
-    /// This event is intentionally kept the same as OpenZeppelin's Ownable to be
-    /// compatible with indexers and [EIP-173](https://eips.ethereum.org/EIPS/eip-173),
-    /// despite it not being as lightweight as a single argument event.
+
     event SuperAdminshipTransferred(address indexed oldSuperAdmin, address indexed newSuperAdmin);
 
     /// @dev An superAdminship handover to `pendingSuperAdmin` has been requested.
@@ -35,101 +28,42 @@ abstract contract SuperAdmin2Step {
     /// @dev The superAdminship handover to `pendingSuperAdmin` has been canceled.
     event SuperAdminshipHandoverCanceled(address indexed pendingSuperAdmin);
 
-    /// @dev `keccak256(bytes("SuperAdminshipTransferred(address,address)"))`.
-    uint256 private constant _SUPERADMINSHIP_TRANSFERRED_EVENT_SIGNATURE =
-        0x04d129ae6ee1a7d168abd097a088e4f07a0292c23aefc0e49b5603d029b8543f;
-
-    /// @dev `keccak256(bytes("SuperAdminshipHandoverRequested(address)"))`.
-    uint256 private constant _SUPERADMINSHIP_HANDOVER_REQUESTED_EVENT_SIGNATURE =
-        0xa391cf6317e44c1bf84ce787a20d5a7193fa44caff9e68b0597edf3cabd29fb7;
-
-    /// @dev `keccak256(bytes("SuperAdminshipHandoverCanceled(address)"))`.
-    uint256 private constant _SUPERADMINSHIP_HANDOVER_CANCELED_EVENT_SIGNATURE =
-        0x1570624318df302ecdd05ea20a0f8b0f8931a0cb8f4f1f8e07221e636988aa7b;
-
-    /*                          STORAGE                           */
+    // /*                          STORAGE                           */
 
     /// @dev The superAdmin slot is given by:
-    /// `bytes32(~uint256(uint32(bytes4(keccak256("_SUPERADMIN_SLOT_NOT")))))`.
-    /// It is intentionally chosen to be a high value
-    /// to avoid collision with lower slots.
-    /// The choice of manual storage layout is to enable compatibility
-    /// with both regular and upgradeable contracts.
-    bytes32 internal constant _SUPERADMIN_SLOT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffff74873927;
 
-    /// The superAdminship handover slot of `newSuperAdmin` is given by:
-    /// ```
-    ///     mstore(0x00, or(shl(96, user), _HANDOVER_SLOT_SEED))
-    ///     let handoverSlot := keccak256(0x00, 0x20)
-    /// ```
-    /// It stores the expiry timestamp of the two-step superAdminship handover.
-    uint256 private constant _HANDOVER_SLOT_SEED = 0x389a75e1;
+    /// @dev keccak256("Hashstack._SUPERADMIN_SLOT")
+    bytes32 internal constant _SUPERADMIN_SLOT = 0x728a99fd4f405dacd9be416f0ab5362a3b8a45ae01e04e4531610f3b47f0f332;
+    /// @dev keccak256("Hashstack.superAdmin._PENDINGSUPERADMIN_SLOT")
+    bytes32 internal constant _PENDINGSUPERADMIN_SLOT =
+        0xd6dfe080f721daab5530894dccfcc2993346c67103e2bcc8748bf87935f5b4d9;
+    /// @dev keccak256("Hashstack.superAdmin._HANDOVERTIME_SUPERADMINSLOT_SEED")
+    bytes32 internal constant _HANDOVERTIME_SUPERADMINSLOT_SEED =
+        0x6550ab69b2fd0d6b77d1a3569484949e74afb818f9de20661d5d5d6082bcd5de;
 
     /*                     INTERNAL FUNCTIONS                     */
-    /// @dev Override to return true to make `_initializeSuperAdmin` prevent double-initialization.
-    function _guardInitializeSuperAdmin() internal pure virtual returns (bool guard) {}
-
-    /// @dev Initializes the superAdmin directly without authorization guard.
-    /// This function must be called upon initialization,
-    /// regardless of whether the contract is upgradeable or not.
-    /// This is to enable generalization to both regular and upgradeable contracts,
-    /// and to save gas in case the initial superAdmin is not the caller.
-    /// For performance reasons, this function will not check if there
-    /// is an existing superAdmin.
-    function _initializeSuperAdmin(address newSuperAdmin) internal virtual {
-        if (_guardInitializeSuperAdmin()) {
-            /// @solidity memory-safe-assembly
-            assembly {
-                let superAdminSlot := _SUPERADMIN_SLOT
-                if sload(superAdminSlot) {
-                    mstore(0x00, 0xc95d9267) // `AlreadyInitialized()`.
-                    revert(0x1c, 0x04)
-                }
-
-                /// Clean the upper 96 bits.
-                newSuperAdmin := shr(96, shl(96, newSuperAdmin)) // Store the new value.
-                sstore(superAdminSlot, or(newSuperAdmin, shl(255, iszero(newSuperAdmin)))) // Emit the {SuperAdminshipTransferred} event.
-                log3(0, 0, _SUPERADMINSHIP_TRANSFERRED_EVENT_SIGNATURE, 0, newSuperAdmin)
-            }
-        } else {
-            /// @solidity memory-safe-assembly
-            assembly {
-                // Clean the upper 96 bits.
-                newSuperAdmin := shr(96, shl(96, newSuperAdmin))
-                // Store the new value.
-                sstore(_SUPERADMIN_SLOT, newSuperAdmin)
-                // Emit the {SuperAdminshipTransferred} event.
-                log3(0, 0, _SUPERADMINSHIP_TRANSFERRED_EVENT_SIGNATURE, 0, newSuperAdmin)
-            }
-        }
-    }
 
     /// @dev Sets the superAdmin directly without authorization guard.
-    function _setSuperAdmin(address newSuperAdmin) internal virtual {
-        if (_guardInitializeSuperAdmin()) {
-            /// @solidity memory-safe-assembly
-            assembly {
-                let superAdminSlot := _SUPERADMIN_SLOT
-                // Clean the upper 96 bits.
-                newSuperAdmin := shr(96, shl(96, newSuperAdmin))
-                // Emit the {SuperAdminshipTransferred} event.
-                log3(0, 0, _SUPERADMINSHIP_TRANSFERRED_EVENT_SIGNATURE, sload(superAdminSlot), newSuperAdmin)
-                // Store the new value.
-                sstore(superAdminSlot, or(newSuperAdmin, shl(255, iszero(newSuperAdmin))))
+    function _setSuperAdmin(address _newSuperAdmin) internal virtual {
+        assembly {
+            if eq(_newSuperAdmin, 0) {
+                // Load pre-defined error selector for zero address
+                mstore(0x00, 0x4869eb34) // NewSuperAdminIsZeroAddress error
+                revert(0x1c, 0x04)
             }
-        } else {
-            /// @solidity memory-safe-assembly
-            assembly {
-                let superAdminSlot := _SUPERADMIN_SLOT
-                // Clean the upper 96 bits.
-                newSuperAdmin := shr(96, shl(96, newSuperAdmin))
-                // Emit the {SuperAdminshipTransferred} event.
-                log3(0, 0, _SUPERADMINSHIP_TRANSFERRED_EVENT_SIGNATURE, sload(superAdminSlot), newSuperAdmin)
-                // Store the new value.
-                sstore(superAdminSlot, newSuperAdmin)
-            }
+            /// @dev `keccak256(bytes("SuperAdminshipTransferred(address,address)"))
+            log3(
+                0,
+                0,
+                0x04d129ae6ee1a7d168abd097a088e4f07a0292c23aefc0e49b5603d029b8543f,
+                sload(_SUPERADMIN_SLOT),
+                _newSuperAdmin
+            )
+            sstore(_SUPERADMIN_SLOT, _newSuperAdmin)
         }
     }
+
+    /*                     PUBLIC FUNCTIONS                     */
 
     /// @dev Throws if the sender is not the superAdmin.
     function _checkSuperAdmin() internal view virtual {
@@ -137,7 +71,7 @@ abstract contract SuperAdmin2Step {
         assembly {
             // If the caller is not the stored superAdmin, revert.
             if iszero(eq(caller(), sload(_SUPERADMIN_SLOT))) {
-                mstore(0x00, 0x591f9739) // `Unauthorized()`.
+                mstore(0x00, 0x591f9739) // `SuperAdmin2Step_Unauthorized()`.
                 revert(0x1c, 0x04)
             }
         }
@@ -146,62 +80,63 @@ abstract contract SuperAdmin2Step {
     /// @dev Returns how long a two-step superAdminship handover is valid for in seconds.
     /// Override to return a different value if needed.
     /// Made internal to conserve bytecode. Wrap it in a public function if needed.
-    function _superAdminshipHandoverValidFor() internal view virtual returns (uint64) {
-        return 72 * 3600;
+    function _superAdminHandoverValidFor() internal view virtual returns (uint64) {
+        return 3 * 86400;
     }
-
     /*                  PUBLIC UPDATE FUNCTIONS                   */
 
     /// @dev Request a two-step superAdminship handover to the caller.
-    /// The request will automatically expire in 48 hours (172800 seconds) by default.
-    function requestSuperAdminshipHandover() public virtual {
+    /// The request will automatically expire in 72 hoursby default.
+    function requestSuperAdminTransfer(address _pendingOwner) public virtual onlySuperAdmin {
         unchecked {
-            uint256 expires = block.timestamp + _superAdminshipHandoverValidFor();
+            uint256 expires = block.timestamp + _superAdminHandoverValidFor();
             /// @solidity memory-safe-assembly
             assembly {
-                // Compute and set the handover slot to `expires`.
-                mstore(0x0c, _HANDOVER_SLOT_SEED)
-                mstore(0x00, caller())
-                sstore(keccak256(0x0c, 0x20), expires)
+                sstore(_PENDINGSUPERADMIN_SLOT, _pendingOwner)
+                sstore(_HANDOVERTIME_SUPERADMINSLOT_SEED, expires)
                 // Emit the {SuperAdminshipHandoverRequested} event.
-                log2(0, 0, _SUPERADMINSHIP_HANDOVER_REQUESTED_EVENT_SIGNATURE, caller())
+                log2(0, 0, 0xa391cf6317e44c1bf84ce787a20d5a7193fa44caff9e68b0597edf3cabd29fb7, _pendingOwner)
             }
         }
     }
 
     /// @dev Cancels the two-step superAdminship handover to the caller, if any.
-    function cancelSuperAdminshipHandover() public virtual {
+    function cancelSuperAdminTransfer() public virtual onlySuperAdmin {
         /// @solidity memory-safe-assembly
         assembly {
             // Compute and set the handover slot to 0.
-            mstore(0x0c, _HANDOVER_SLOT_SEED)
-            mstore(0x00, caller())
-            sstore(keccak256(0x0c, 0x20), 0)
+            sstore(_PENDINGSUPERADMIN_SLOT, 0x0)
+            sstore(_HANDOVERTIME_SUPERADMINSLOT_SEED, 0x0)
             // Emit the {SuperAdminshipHandoverCanceled} event.
-            log2(0, 0, _SUPERADMINSHIP_HANDOVER_CANCELED_EVENT_SIGNATURE, caller())
+            log2(0, 0, 0x1570624318df302ecdd05ea20a0f8b0f8931a0cb8f4f1f8e07221e636988aa7b, caller())
         }
     }
 
     /// @dev Allows the superAdmin to complete the two-step superAdminship handover to `pendingSuperAdmin`.
     /// Reverts if there is no existing superAdminship handover requested by `pendingSuperAdmin`.
-    function completeSuperAdminshipHandover(address pendingSuperAdmin) public virtual onlySuperAdmin {
+    function acceptSuperAdminTransfer() public virtual {
         /// @solidity memory-safe-assembly
+
+        address pendingAdmin;
         assembly {
-            // Compute and set the handover slot to 0.
-            mstore(0x0c, _HANDOVER_SLOT_SEED)
-            mstore(0x00, pendingSuperAdmin)
-            let handoverSlot := keccak256(0x0c, 0x20)
+            pendingAdmin := sload(_PENDINGSUPERADMIN_SLOT)
+
+            // Check that the sender is the pending admin
+            if iszero(eq(caller(), pendingAdmin)) {
+                mstore(0x00, 0x591f9739) // Unauthorized error
+                revert(0x1c, 0x04)
+            }
             // If the handover does not exist, or has expired.
-            if gt(timestamp(), sload(handoverSlot)) {
-                mstore(0x00, 0x12c74381) // `NoHandoverRequest()`.
+            if gt(timestamp(), sload(_HANDOVERTIME_SUPERADMINSLOT_SEED)) {
+                mstore(0x00, 0x12c74381) // `SuperAdmin2Step_NoHandoverRequest()`.
                 revert(0x1c, 0x04)
             }
             // Set the handover slot to 0.
-            sstore(handoverSlot, 0)
+            sstore(_HANDOVERTIME_SUPERADMINSLOT_SEED, 0)
+            sstore(_PENDINGSUPERADMIN_SLOT, 0)
         }
-        _setSuperAdmin(pendingSuperAdmin);
+        _setSuperAdmin(pendingAdmin);
     }
-
     /*                   PUBLIC READ FUNCTIONS                    */
 
     /// @dev Returns the superAdmin of the contract.
@@ -213,12 +148,9 @@ abstract contract SuperAdmin2Step {
     }
 
     /// @dev Returns the expiry timestamp for the two-step superAdminship handover to `pendingSuperAdmin`.
-    function superAdminshipHandoverExpiresAt(address pendingSuperAdmin) public view virtual returns (uint256 result) {
+    function superAdminHandoverExpiresAt() public view virtual returns (uint256 result) {
         /// @solidity memory-safe-assembly
         assembly {
-            // Compute the handover slot.
-            mstore(0x0c, _HANDOVER_SLOT_SEED)
-            mstore(0x00, pendingSuperAdmin)
             // Load the handover slot.
             result := sload(keccak256(0x0c, 0x20))
         }
