@@ -6,7 +6,6 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {console} from "forge-std/console.sol";
 
 contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     using SafeMath for uint256;
@@ -29,7 +28,7 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         uint256 balance;
         uint256 createdAt;
         uint256 lastClaimedAt;
-        uint256 numClaims;
+        uint256 numClaims;           // Is it needed ????
         uint256 tgePercentage;
         address beneficiary;
         TicketType ticketType;
@@ -163,22 +162,14 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         // Calculate remaining amount that will vest linearly
         uint256 remainingAmount = ticket.amount.sub(tgeAmount);
 
-        console.log("remainingAmount: ", remainingAmount);
-
         // Calculate cliff timestamp
         uint256 cliffTime = ticket.createdAt.add(ticket.cliff.mul(SECONDS_PER_DAY));
-
-        console.log("cliffTime: ", cliffTime);
 
         // Calculate total vesting duration (from cliff end to vesting end)
         uint256 vestingDuration = (ticket.vesting).mul(SECONDS_PER_DAY);
 
-        console.log("vestingDuration: ", vestingDuration);
-
         // Calculate time elapsed since cliff
         uint256 timeSinceCliff = block.timestamp.sub(cliffTime);
-
-        console.log("timeSinceCliff: ", timeSinceCliff);
 
         // If vesting period complete, return full amount
         if (timeSinceCliff >= vestingDuration) {
@@ -187,8 +178,6 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
         // Calculate linear vesting for remaining amount
         uint256 vestedAmount = remainingAmount.mul(timeSinceCliff).div(vestingDuration);
-
-        console.log("vestedAmount: ", vestedAmount);
 
         return tgeAmount.add(vestedAmount);
     }
@@ -225,20 +214,20 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         if (!token.transfer(_claimer, _amount)) revert TransferFailed();
     }
 
-    function revoke(uint256 _id) public notRevoked(_id) returns (bool) {
-        Ticket storage ticket = tickets[_id];
-        if (msg.sender != owner()) revert UnauthorizedAccess();
-        if (ticket.irrevocable) revert IrrevocableTicket();
-        if (ticket.balance == 0) revert NothingToClaim();
+    // function revoke(uint256 _id) public notRevoked(_id) returns (bool) {
+    //     Ticket storage ticket = tickets[_id];
+    //     if (msg.sender != owner()) revert UnauthorizedAccess();
+    //     if (ticket.irrevocable) revert IrrevocableTicket();
+    //     if (ticket.balance == 0) revert NothingToClaim();
 
-        uint256 remainingBalance = ticket.balance;
-        ticket.isRevoked = true;
-        ticket.balance = 0;
+    //     uint256 remainingBalance = ticket.balance;
+    //     ticket.isRevoked = true;
+    //     ticket.balance = 0;
 
-        emit Revoked(_id, remainingBalance);
-        if (!token.transfer(owner(), remainingBalance)) revert TransferFailed();
-        return true;
-    }
+    //     emit Revoked(_id, remainingBalance);
+    //     if (!token.transfer(owner(), remainingBalance)) revert TransferFailed();
+    //     return true;
+    // }
 
     // function claimAllTicket(uint _ids[],address _receipient)
 
