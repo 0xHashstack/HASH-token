@@ -44,7 +44,7 @@ contract ClaimableTest is Test {
     }
 
     // Ticket Creation Tests
-    function test_CreateTicket() public {
+    function test_CreateTicket() public returns (uint256) {
         // Create ticket
         vm.prank(owner);
         uint256 ticketId = claimable.create(beneficiary1, 30, 90, 1000, 20, 0, false);
@@ -57,6 +57,7 @@ contract ClaimableTest is Test {
         assertEq(ticket.amount, 1000);
         assertEq(ticket.balance, 1000);
         assertFalse(ticket.irrevocable);
+        return ticketId;
     }
 
     function test_CreateTicket_Reverts_ZeroBeneficiary() public {
@@ -78,9 +79,11 @@ contract ClaimableTest is Test {
     }
 
     function test_BatchCreateSameAmount() public {
-        address[] memory beneficiaries = new address[](2);
+        address[] memory beneficiaries = new address[](4);
         beneficiaries[0] = beneficiary1;
         beneficiaries[1] = beneficiary2;
+        beneficiaries[2] = makeAddr("beneficiary3");
+        beneficiaries[3] = makeAddr("beneficiary4");
 
         // Create batch tickets
         vm.prank(owner);
@@ -148,6 +151,12 @@ contract ClaimableTest is Test {
 
         availableAmount = claimable.available(ticketId);
         assertEq(availableAmount, 0, "Invalid Amount");
+    }
+
+    function invariant_test_Claim() public {
+        uint256 ticketId = test_CreateTicket();
+        Claimable.Ticket memory ticket = claimable.viewTicket(ticketId);
+        assert(ticket.claimed <= ticket.amount);
     }
 
     // function testFuzz_DelegateClaim(uint256 amount) public {

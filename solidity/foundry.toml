@@ -18,4 +18,8 @@ seed = "1234"
 dictionary_weight = 100
 
 
+[invariant]
+runs = 1000
+depth = 1000
+
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

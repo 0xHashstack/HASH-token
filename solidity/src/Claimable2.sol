@@ -22,8 +22,6 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     }
 
     struct Ticket {
-        address beneficiary;
-        TicketType ticketType;
         uint256 cliff;
         uint256 vesting;
         uint256 amount;
@@ -33,6 +31,8 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         uint256 lastClaimedAt;
         uint256 numClaims;
         uint256 tgePercentage;
+        address beneficiary;
+        TicketType ticketType;
         bool irrevocable;
         bool isRevoked;
     }
@@ -82,7 +82,9 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         if (_beneficiary == address(0)) revert InvalidBeneficiary();
         if (_amount == 0) revert InvalidAmount();
         if (_vesting < _cliff) revert InvalidVestingPeriod();
-        if (_tgePercentage > PERCENTAGE_DENOMINATOR) revert InvalidTGEPercentage();
+        if (_tgePercentage > PERCENTAGE_DENOMINATOR) {
+            revert InvalidTGEPercentage();
+        }
         if (_ticketType > 1) revert InvalidTicketType();
 
         ticketId = ++currentId;
@@ -115,8 +117,11 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     ) public {
         /// @dev set maximum array length?
         require(_beneficiaries.length > 0, "At least one beneficiary is required");
-        for (uint256 i = 0; i < _beneficiaries.length; i++) {
+        for (uint256 i = 0; i < _beneficiaries.length;) {
             create(_beneficiaries[i], _cliff, _vesting, _amount, _tgePercentage, _ticketType, _irrevocable);
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -128,13 +133,14 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         uint256 _tgePercentage,
         uint8 _ticketType,
         bool _irrevocable
-    ) public onlyOwner {
+    ) public {
         if (_beneficiaries.length != _amounts.length) revert InvalidParams();
         if (_beneficiaries.length == 0) revert InvalidParams();
 
-        for (uint256 i = 0; i < _beneficiaries.length; i++) {
-            if (_amounts[i] > 0) {
-                create(_beneficiaries[i], _cliff, _vesting, _amounts[i], _tgePercentage, _ticketType, _irrevocable);
+        for (uint256 i = 0; i < _beneficiaries.length;) {
+            create(_beneficiaries[i], _cliff, _vesting, _amounts[i], _tgePercentage, _ticketType, _irrevocable);
+            unchecked {
+                ++i;
             }
         }
     }
@@ -204,11 +210,7 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         uint256 claimableAmount = available(_id);
         if (claimableAmount == 0) revert NothingToClaim();
 
-        if (_recipient == msg.sender) {
-            _processClaim(_id, claimableAmount, msg.sender);
-        } else {
-            _processClaim(_id, claimableAmount, _recipient);
-        }
+        _processClaim(_id, claimableAmount, _recipient);
         return true;
     }
 
@@ -217,7 +219,7 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         ticket.claimed = ticket.claimed.add(_amount);
         ticket.balance = ticket.balance.sub(_amount);
         ticket.lastClaimedAt = block.timestamp;
-        ticket.numClaims++;
+        ++ticket.numClaims;
 
         emit Claimed(_id, _amount, _claimer);
         if (!token.transfer(_claimer, _amount)) revert TransferFailed();
