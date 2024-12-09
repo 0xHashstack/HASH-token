@@ -164,10 +164,10 @@ contract HstkToken is ERC20, Pausable, BlackListed {
         _updateOperationalState(newState);
     }
 
-     /**
+    /**
      * @dev Returns the max supply of tokens
      */
-    function supplyHardCap() external pure returns(uint256){
+    function supplyHardCap() external pure returns (uint256) {
         return MAX_SUPPLY;
     }
 }

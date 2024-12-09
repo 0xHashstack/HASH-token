@@ -140,7 +140,7 @@ contract MultiSigWallet is Initializable, AccessRegistry, UUPSUpgradeable {
 
     /// @dev Custom errors for gas-efficient error handling
     error UnauthorizedCall(); // Caller lacks necessary permissions
-   
+
     error InvalidState(uint256 txId); // Invalid transaction state for operation
     error AlreadyApproved(address signer); // Signer has already approved
     error TransactionNotSigned(address signer); // Transaction hasn't been signed by caller
