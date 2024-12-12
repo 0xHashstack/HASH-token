@@ -1,0 +1,644 @@
+[
+    {
+      "Network": "starknet",
+      "Address": "0x6e59247255f701f6273c6e785aee307526b290e5ee4cd3a2065589e8cdd55a",
+      "HSTK Allocation": 26755,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x36846c2edfef883ef9476d59e01d04b102538ab024ace2dadfd54f2da1b8024",
+      "HSTK Allocation": 20031,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x85562d36a82a953b34b1afe2d4712b20ad1e8672c68df86638ce9ecee0f88c",
+      "HSTK Allocation": 17019,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x14b3e937a8fb7f6ad7f6a58596bb101e3c63ae78fe583e1a3b40104b0697f98",
+      "HSTK Allocation": 15660,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x35af3fdb8aa88658c6009c3feea9315feb81beb350e2e88dc5d1797aedd6485",
+      "HSTK Allocation": 8940,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x39e96c9257b2ba04e8cf03c391aabeacdb867ded700e094da81fbbe88e00b4e",
+      "HSTK Allocation": 8410,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x2c9b07711f01b87770c6293f6daf0d821e8e9ee5be4f3d43aabec464661b0a7",
+      "HSTK Allocation": 8400,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x2b2a3de55a535c688ceb38971c1d40c00adf02b196179d130f4e5748b3a8328",
+      "HSTK Allocation": 7700,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x5afff6b837635a8fab18f7c1a8b5b977fd06ad7c8bd0bb73b0d9ee8d416695b",
+      "HSTK Allocation": 6430,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x1b77ddfa0359aa340368a28a35aaa5cdf5942794689f8f8281b49ce1a697f67",
+      "HSTK Allocation": 6234,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x409a150ee31cad5d08f6c6f8a609a839802a4bf5f473d5cf809dfe0af2f9160",
+      "HSTK Allocation": 5770,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x57404664e6017e46b72409cc94286a1415f7285d59585abc36cdd2912c940e0",
+      "HSTK Allocation": 5660,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x527b3da294b5af40ca2b4e7ddf2aa98e1d970fa4896538244995ceb3a941a01",
+      "HSTK Allocation": 3270,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x3b4635841fd07ddc35e79c9844385874d478acd1127ccd71e975d6eb8304a6",
+      "HSTK Allocation": 2734,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x41c812a4fb4878b4cef75079cd83c04c0c91a834d21c565084598de5c5419fb",
+      "HSTK Allocation": 2443,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x52d437dbc64b03914fb3a1fb2b61e98638133d776e04a50ed781ba826bdb92a",
+      "HSTK Allocation": 1980,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x06Fb31e9e5aC0c7148cAd5b30A9e8D54A922cC4ace284d83169aaBe2229eB21b",
+      "HSTK Allocation": 1866,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x78c58d7b47978b84ec6b557a5f697dcfe48f8c98ec97f850201d420c31bbac6",
+      "HSTK Allocation": 1298,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x6fb31e9e5ac0c7148cad5b30a9e8d54a922cc4ace284d83169aabe2229eb21b",
+      "HSTK Allocation": 1083,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x3942c0f2ff317206f7757c224605d5b1b617090bfdb4ec311e4075e4b864b4d",
+      "HSTK Allocation": 1040,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x6f48ad20bc4879e17eec2db2618a234ce5f6b5970a6a018fc0bdcb5cd0c71d8",
+      "HSTK Allocation": 941,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x085562d36a82a953b34b1afe2d4712b20ad1e8672c68df86638ce9ecee0f88c",
+      "HSTK Allocation": 590,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x21c055d3b2102a825b4a0e9b387b59099877416da70dbc50845dd60366f736c",
+      "HSTK Allocation": 397,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x5282c74990bd02db8162b2c7d7bd48c1768fec65fb8c5c057a558bffc713321",
+      "HSTK Allocation": 350,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x59a2ea0a733acb8a08308f2f8db961cf943acf6303b408ac4f7c4fc8f618b53",
+      "HSTK Allocation": 313,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x6f64c6d93c397751fadeb6d26a330b3d048845a2f47dc614ad9db8df0359fff",
+      "HSTK Allocation": 286,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x06afcff37fe09b4d92f834475c70452c91ede180ddd387ec09191333f1f908a",
+      "HSTK Allocation": 270,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x1fb62ac54f9fa99e1417f83bcb88485556427397f717ed4e7233bc99be31bff",
+      "HSTK Allocation": 250,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x5b9ab2880a4d557d48ab2062cb40257f6427b317c25cc1631dbe7644bc5d99a",
+      "HSTK Allocation": 250,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x446fc46c2a4e7fb1b5f6348ee0c2cc5ae794a25d21df2f7ffaf4ec70e354d8b",
+      "HSTK Allocation": 236,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x6e487c4fe9db542fa4109bc235dfe2084705633cecde95bae6c5de46608913c",
+      "HSTK Allocation": 230,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x4515abaa82d9f58c63ea17936ea539ea853b4414c8fa247d066cfa8ce12fa42",
+      "HSTK Allocation": 220,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x634c9f26c0710f019ea490018eff84c5af20c904fc6bd3c13bbb2aef06867b9",
+      "HSTK Allocation": 220,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0xcb9c3a0ca13359db4b3e83e8a1fd17665da1d40514e89bf37d7443e22d86a7",
+      "HSTK Allocation": 216,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x01d4eEB166a635f6fe959742e57a5b7B44d8f1D3dB106dD1AbC4Ea94B4B4F623",
+      "HSTK Allocation": 200,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x7b0624db47bdc6947dd9cee83517F236fa066e3161d5c01343dde6572e9e5b2",
+      "HSTK Allocation": 200,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x720eba8edea43289347d8cc5518a1944b3eb5c9bde8f255c4946f9ff21d782d",
+      "HSTK Allocation": 200,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x37de3a366145b0bbd635c309d6e6a4614e2c5b196c14768ffc9c5c50745b660",
+      "HSTK Allocation": 200,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x06485E18fBfa62ECE6D3752469e469FB73A8E932fF5721D32333C7D86A262B72",
+      "HSTK Allocation": 166,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x7e17ab90d2abf29b1a2b418567067d7f1ce49602feb29ac11901e35fb965e",
+      "HSTK Allocation": 162,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x397506a7eb000c1f7732b968b7346bf563f45f6c5f41189cee4ac3d45c20ad6",
+      "HSTK Allocation": 158,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x24ca8641ef8ddab5ddd559bef990dbda607e4cca980c5ad23614e8ece8d0bdd",
+      "HSTK Allocation": 156,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x551801b95c0ca7d0bdc1fe0f95e88dab16c506571ef9487e5dcd35c58c558d5",
+      "HSTK Allocation": 150,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x0292ae749fcbad3f31e9a191451f52470e370ea6d264dfb295b968e8da4b0763",
+      "HSTK Allocation": 150,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x1818f2f5a9ccf3c3f35bde7b64a92395ec35db066271f654952a992ef6b694a",
+      "HSTK Allocation": 138,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x587e7c2d4e55e4710c01c9488ae4ce58578474102d6b7d1a2e9bfac33147a6a",
+      "HSTK Allocation": 130,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x8399cd8a150d89c30227d00270da1fd14df356967af7bef26995950973b4b2",
+      "HSTK Allocation": 127,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x05A139c1817978dBa240899a541753c1d8A3A820463BC662d373422C997Fcc7c",
+      "HSTK Allocation": 126,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x07ca18a73ff4f4a265d4600e4814847b4dbcfce75d346f245d906ae0838b85da",
+      "HSTK Allocation": 114,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x236cd9f8acddb597c49df763e143baf6cc63d2a817e08d384f0e69907104d8c",
+      "HSTK Allocation": 103,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x1564234cc1ecb5ced5e35f131bbd648def87c4f1a596843e672469ca358f2d",
+      "HSTK Allocation": 102,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x05a76A0eec852dEfa82cEab50aF47A4c2a6A728E16038e990E233361546829D5",
+      "HSTK Allocation": 100,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x0b5235e681c3ecdaaea0be117e40fd925ed8eafd6538d8d8b67b4F8df8e312e",
+      "HSTK Allocation": 100,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x1ba61558118559b8f103b41aa8460bf2e8a3c7f4a6a829b24bf8b0af9e0d554",
+      "HSTK Allocation": 100,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x750188bb9df4524c6d4682a44317b273c443132fbb666f72a3a3726ef82cb28",
+      "HSTK Allocation": 100,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x03b4635841fd07ddc35e79c9844385874d478acd1127ccd71e975d6eb8304a6",
+      "HSTK Allocation": 90,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x069da5fb7812f0ff7563c8a84f19e8f3d695453d9541a92404f4ebba519184c5",
+      "HSTK Allocation": 86,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x0460f40b56facb566fa3269ccb89d8fe6c1b50e2cecc47c660be59f17d95ce5e",
+      "HSTK Allocation": 66,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x260597fb3a06b494e27947967f5093d42ea13fbe6ff3c99412b748a429e2d57",
+      "HSTK Allocation": 65,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x016b50d2b75682e07c826323b9e38582a80d351febafe8674ccfbb46396d03ba",
+      "HSTK Allocation": 62,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x68798b90485226fce3b2cd7312088a763f407959ee34582f3be0cc165dc8bc6",
+      "HSTK Allocation": 58,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x04c5a3bbb6e9d12e4d88cce9370092a5edd83f1520f6cac3ff4b763bd408e9d4",
+      "HSTK Allocation": 56,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x2b6c86aef115739e2f5ecab440ea1c47ccb853990145926f13131d09d60e360",
+      "HSTK Allocation": 50,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x665b55afc028c2a8139cf6ba13e08f672cc3aea28ca06cb886c053dceed7c20",
+      "HSTK Allocation": 50,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x061ae7026a94f24aad3fafd1b1a1838c18a1b01de130c0d8dde5b3fd8b608ca",
+      "HSTK Allocation": 50,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x3d70fa7367adde331a4fe62ff5ef9447f7b1ca60d68e0d0ccc134ec5a355aba",
+      "HSTK Allocation": 50,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x0527b3da294b5af40ca2b4e7ddf2aa98e1d970fa4896538244995ceb3a941a01",
+      "HSTK Allocation": 50,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x0a249fe8d12e79ed82a4920c49d4e2363bf4a813f88957c76c413000345b99c",
+      "HSTK Allocation": 50,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x051D7269343884d53681616ebC576A33E5B22AbFC0684684cAaB169Fb2c92797",
+      "HSTK Allocation": 41,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x287dee2d669994bbeaa1dd7d5390353bd257e062a6b5778b78da0e15bd4933a",
+      "HSTK Allocation": 40,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x22f1ed2ce6254295d760cc13cee0e2aa8bf8d24d1abd5e9bbbec7525995bcc8",
+      "HSTK Allocation": 40,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x1303f0614217a3fdff6c24db8c63b49be92db23eba04d7cf07539fd7be1f0d",
+      "HSTK Allocation": 40,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x57032c4f75782ca368cdb31f279ea52c5cbd1b0b454d8729a7033d375f9ff82",
+      "HSTK Allocation": 38,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x2dbf98c39f622c0ec626ffef1577e0d9cf7e65ba2985f56d2c839613725152e",
+      "HSTK Allocation": 37,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x0091549c2fe52f07266a21228406131df81b39a7f4793cf23c8cb30d4c667850",
+      "HSTK Allocation": 33,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x06a98eef8b1ce965ec9f6daf4c896f5c21217f2365652c30d462b13a1858ed7c",
+      "HSTK Allocation": 31,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x002393Ed1531BC163d5dEa98D9620D501e85A175561175e195230C1c09D264dC",
+      "HSTK Allocation": 28,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x01b0F12Cf57a90D6c43De959d4Ea0d438114EFE0cBbF856B4B67C2317FCB7813",
+      "HSTK Allocation": 28,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x037d6e90bfda5a1c498823569873b99b20ae538c0a1dc8e7e0707251e71c2c0f",
+      "HSTK Allocation": 25,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x04E228C158Ad1f8D82f3302EB996deb62587ab2E8C79716772659F9eaC95D3d3",
+      "HSTK Allocation": 25,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x0635D675C62CE73383dce65FA54dd94a98F2c764A37e64B91f0b11c197fEa07B",
+      "HSTK Allocation": 25,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x0411459843c280e712bFFD442ec19FD937EBF5Df78a6624B54E9107B3f2C556b",
+      "HSTK Allocation": 24,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x01644A700ABbA0e656EDb3Db64845d39009760Ae13BeE2555812ec2baa34bF70",
+      "HSTK Allocation": 23,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x4c5a3bbb6e9d12e4d88cce9370092a5edd83f1520f6cac3ff4b763bd408e9d4",
+      "HSTK Allocation": 22,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x00fB997b99A9F4a393B408e5C341F334C0f2a9847954041AEC0bD5550D132093",
+      "HSTK Allocation": 21,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x0688f1bB619fC867C38373177f3d83f1fa3C8B9A9157991A0F84bc98eD226869",
+      "HSTK Allocation": 21,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x073526bD20f1cAb168aFd9F1F7B305ae393155065e1753DEf120329521447655",
+      "HSTK Allocation": 21,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x4c572cacb948fdc3f8db9f8487448fedcc3f8a755992b45de1d8587332ad02c",
+      "HSTK Allocation": 21,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x72f8d4b67b70c0ae3581932bd2823314aebb315d54d5b5f935a4c6dc030b898",
+      "HSTK Allocation": 21,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x153b90dd6820963294f7d4ea0082b9c87d94ff0c8b7a2bc13a586b12b142f4d",
+      "HSTK Allocation": 21,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x4373644964683846e764d9097a1932b7e37f82162ab394ee03a4bc9ec8f7131",
+      "HSTK Allocation": 21,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x48b968285d5e4de9e345cd802cab4f155e38c1a8974a1f6404b4a074d1ad204",
+      "HSTK Allocation": 20,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x21c055d3b2102a825b4a0e9b387b59099877416da70dbc50845dd60366F736c",
+      "HSTK Allocation": 20,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x05b9ab2880a4d557d48ab2062cb40257F6427b317c25cc1631dbe7644bc5d99a",
+      "HSTK Allocation": 20,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x7ec5757b686442740489f0aff8783ce99d956c476f1905d54599635779e7e1",
+      "HSTK Allocation": 20,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x24ecd664e0ec7fbb0a22122e411cddcbbcb0c7e7f3af6fdf642e3c21c11932e",
+      "HSTK Allocation": 20,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x4b855e5d003aefcb9afe687ff93c971155f90ed10ccbea7edd9587b042af5fb",
+      "HSTK Allocation": 0,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x5fdc68b9977551486726d545d8a0c4066fa7c3d766aba4b2c2262aecd54525",
+      "HSTK Allocation": 0,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x2bed0c01ffdbbba8e7c1cc22d32d91e658640b5dcd40bb3bc20d164e96db6c",
+      "HSTK Allocation": 0,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x42f07f55db85fbc0bed6ecf550589265518d97c45e696dc48b8471452a6873a",
+      "HSTK Allocation": 0,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x394d815596c71f0822d8f137d0304b440ae4d38b4cb5927f520397a788a93df",
+      "HSTK Allocation": 0,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x1f7dc4639c229ceeb2667cd730a8cadecd91dfe9286230be9d9b3d43cdeeb8f",
+      "HSTK Allocation": 0,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x311e0c0f7ace6fb6f57418b047cf3a0bc95c4caec8911522a0490fcea6bc302",
+      "HSTK Allocation": 0,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x6586297be58e9ed4c5bd7eb2e802471ab4b321d61f38c4231b5c67a1a07006",
+      "HSTK Allocation": 0,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x48391f6d656d70dac4e9a398f826fbbb1859348cd8c0a6fbfc6e235004cecc7",
+      "HSTK Allocation": 0,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0xa249fe8d12e79ed82a4920c49d4e2363bf4a813f88957c76c413000345b99c",
+      "HSTK Allocation": 0,
+      "Emission rate": 0.5
+    },
+    {
+      "Network": "starknet",
+      "Address": "0x4c5b06c04dae9f1aa01e826deb236dcb653443cfb4ce37f87138559e49b6ae2",
+      "HSTK Allocation": 0,
+      "Emission rate": 0.5
+    }
+  ]

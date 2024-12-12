@@ -216,14 +216,14 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
         if (ticket.isRevoked) revert TicketRevoked();
         if (ticket.balance == 0) revert NothingToClaim();
 
-        uint256 remainingBalance = ticket.balance;
-        ticket.isRevoked = true;
-        ticket.balance = 0;
+    //     uint256 remainingBalance = ticket.balance;
+    //     ticket.isRevoked = true;
+    //     ticket.balance = 0;
 
-        emit Revoked(_id, remainingBalance);
-        if (!token.transfer(owner(), remainingBalance)) revert TransferFailed();
-        return true;
-    }
+    //     emit Revoked(_id, remainingBalance);
+    //     if (!token.transfer(owner(), remainingBalance)) revert TransferFailed();
+    //     return true;
+    // }
 
     // function claimAllTicket(uint _ids[],address _receipient)
 
