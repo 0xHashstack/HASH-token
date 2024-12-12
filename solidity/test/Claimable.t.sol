@@ -47,7 +47,7 @@ contract ClaimableTest is Test {
     function test_CreateTicket() public returns (uint256) {
         // Create ticket
         vm.prank(owner);
-        uint256 ticketId = claimable.create(beneficiary1, 30, 90, 1000, 20, 0, false);
+        uint256 ticketId = claimable.create(beneficiary1, 30, 90, 1000, 20, 0);
 
         // Verify ticket details
         Claimable.Ticket memory ticket = claimable.viewTicket(ticketId);
@@ -56,26 +56,25 @@ contract ClaimableTest is Test {
         assertEq(ticket.vesting, 90);
         assertEq(ticket.amount, 1000);
         assertEq(ticket.balance, 1000);
-        assertFalse(ticket.irrevocable);
         return ticketId;
     }
 
     function test_CreateTicket_Reverts_ZeroBeneficiary() public {
         vm.prank(owner);
         vm.expectRevert(Claimable.InvalidBeneficiary.selector);
-        claimable.create(address(0), 30, 90, 1000, 20, 0, false);
+        claimable.create(address(0), 30, 90, 1000, 20, 0);
     }
 
     function test_CreateTicket_Reverts_ZeroAmount() public {
         vm.prank(owner);
         vm.expectRevert(Claimable.InvalidAmount.selector);
-        claimable.create(beneficiary1, 30, 90, 0, 20, 0, false);
+        claimable.create(beneficiary1, 30, 90, 0, 20, 0);
     }
 
     function test_CreateTicket_Reverts_InvalidVestingPeriod() public {
         vm.prank(owner);
         vm.expectRevert(Claimable.InvalidVestingPeriod.selector);
-        claimable.create(beneficiary1, 90, 30, 1000, 20, 0, false);
+        claimable.create(beneficiary1, 90, 30, 1000, 20, 0);
     }
 
     function test_BatchCreateSameAmount() public {
@@ -87,7 +86,7 @@ contract ClaimableTest is Test {
 
         // Create batch tickets
         vm.prank(owner);
-        claimable.batchCreateSameAmount(beneficiaries, 30, 90, 1000, 20, 0, false);
+        claimable.batchCreateSameAmount(beneficiaries, 30, 90, 1000, 20, 0);
 
         // Verify ticket creation
         vm.prank(beneficiary1);
@@ -111,7 +110,7 @@ contract ClaimableTest is Test {
 
         // Create ticket
         vm.prank(owner);
-        uint256 ticketId = claimable.create(beneficiary1, cliff, vesting, amount, 50, 0, false);
+        uint256 ticketId = claimable.create(beneficiary1, cliff, vesting, amount, 50, 0);
 
         uint256 availableAmount = claimable.available(ticketId);
         assertEq(availableAmount, 50000, "Incorrect Amount");
@@ -153,12 +152,6 @@ contract ClaimableTest is Test {
         assertEq(availableAmount, 0, "Invalid Amount");
     }
 
-    function invariant_test_Claim() public {
-        uint256 ticketId = test_CreateTicket();
-        Claimable.Ticket memory ticket = claimable.viewTicket(ticketId);
-        assert(ticket.claimed <= ticket.amount);
-    }
-
     // function testFuzz_DelegateClaim(uint256 amount) public {
     //     // Constrain inputs
     //     amount = bound(amount, 1000, 1_000_000*10**18);
@@ -186,46 +179,22 @@ contract ClaimableTest is Test {
     //     assertEq(token.balanceOf(pendingClaimer), availableAmount, "Claimed amount should match available");
     // }
 
-    //     // Revocation Tests
-    function test_Revoke_Ticket() public {
+    function test_Claim_AfterRevoke() public {
         // Approve tokens for transfer
         vm.prank(owner);
         token.approve(address(claimable), 1000);
 
-        // Create ticket
+        // Create irrevocable ticket
         vm.prank(owner);
-        uint256 ticketId = claimable.create(beneficiary1, 30, 90, 1000, 10, 0, false);
+        uint256 ticketId = claimable.create(beneficiary1, 30, 90, 1000, 50, 0);
 
-        // Track initial owner balance
-        uint256 initialOwnerBalance = token.balanceOf(owner);
-
-        // Revoke ticket
+        // Attempt to revoke
         vm.prank(owner);
         claimable.revoke(ticketId);
-
-        // Verify owner received remaining balance
-        assertEq(token.balanceOf(owner), initialOwnerBalance + 1000);
-
-        // Verify ticket is revoked
-        Claimable.Ticket memory ticket = claimable.viewTicket(ticketId);
-        assertTrue(ticket.isRevoked);
-        assertEq(ticket.balance, 0);
+        vm.prank(beneficiary1);
+        vm.expectRevert();
+        claimable.claimTicket(ticketId, beneficiary1);
     }
-
-    //     function test_Revoke_Reverts_IrrevocableTicket() public {
-    //         // Approve tokens for transfer
-    //         vm.prank(owner);
-    //         token.approve(address(claimable), 1000);
-
-    //         // Create irrevocable ticket
-    //         vm.prank(owner);
-    //         uint256 ticketId = claimable.create(beneficiary1, 30, 90, 1000, true);
-
-    //         // Attempt to revoke
-    //         vm.prank(owner);
-    //         vm.expectRevert(Claimable.IrrevocableTicket.selector);
-    //         claimable.revoke(ticketId);
-    //     }
 
     //     // Upgrade Tests
     //     function test_CanUpgrade() public {

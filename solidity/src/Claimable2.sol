@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.28;
 
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeMath} from "./utils/SafeMath.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {console} from "forge-std/console.sol";
 
-contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
+contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuard {
     using SafeMath for uint256;
 
     uint256 public currentId;
@@ -18,29 +18,30 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     enum TicketType {
         Investors,
+        CommunityPartners,
+        Airdrop1,
+        ContentCreators,
         Others
     }
 
     struct Ticket {
         uint256 cliff;
         uint256 vesting;
+        uint256 createdAt;
+        uint256 lastClaimedAt;
         uint256 amount;
         uint256 claimed;
         uint256 balance;
-        uint256 createdAt;
-        uint256 lastClaimedAt;
-        uint256 numClaims;
         uint256 tgePercentage;
         address beneficiary;
-        TicketType ticketType;
-        bool irrevocable;
         bool isRevoked;
+        TicketType ticketType;
     }
 
     mapping(address => uint256[]) public beneficiaryTickets;
     mapping(uint256 => Ticket) private tickets;
 
-    event TicketCreated(uint256 indexed id, uint256 amount, uint256 tgePercentage, uint8 ticketType, bool irrevocable);
+    event TicketCreated(uint256 indexed id, uint256 amount, uint256 tgePercentage, uint8 ticketType);
     event Claimed(uint256 indexed id, uint256 amount, address claimer);
     event ClaimDelegated(uint256 indexed id, uint256 amount, address pendingClaimer);
     event Revoked(uint256 indexed id, uint256 amount);
@@ -51,12 +52,11 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     error InvalidAmount();
     error InvalidVestingPeriod();
     error InvalidTGEPercentage();
-    error TicketRevoked();
     error NothingToClaim();
     error TransferFailed();
-    error IrrevocableTicket();
     error InvalidParams();
     error NoPendingClaim();
+    error TicketRevoked();
     error InvalidTicketType();
 
     modifier notRevoked(uint256 _id) {
@@ -76,8 +76,7 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         uint256 _vesting,
         uint256 _amount,
         uint256 _tgePercentage,
-        uint8 _ticketType,
-        bool _irrevocable
+        uint8 _ticketType
     ) public onlyOwner returns (uint256 ticketId) {
         if (_beneficiary == address(0)) revert InvalidBeneficiary();
         if (_amount == 0) revert InvalidAmount();
@@ -85,7 +84,7 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         if (_tgePercentage > PERCENTAGE_DENOMINATOR) {
             revert InvalidTGEPercentage();
         }
-        if (_ticketType > 1) revert InvalidTicketType();
+        if (_ticketType > 4) revert InvalidTicketType();
 
         ticketId = ++currentId;
         Ticket storage ticket = tickets[ticketId];
@@ -96,13 +95,12 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         ticket.amount = _amount;
         ticket.balance = _amount;
         ticket.createdAt = block.timestamp;
-        ticket.irrevocable = _irrevocable;
         ticket.tgePercentage = _tgePercentage;
         ticket.ticketType = TicketType(_ticketType);
 
         beneficiaryTickets[_beneficiary].push(ticketId);
 
-        emit TicketCreated(ticketId, _amount, _tgePercentage, _ticketType, _irrevocable);
+        emit TicketCreated(ticketId, _amount, _tgePercentage, _ticketType);
     }
 
     /// @notice allow batch create tickets with the same terms same amount
@@ -112,13 +110,12 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         uint256 _vesting,
         uint256 _amount,
         uint256 _tgePercentage,
-        uint8 _ticketType,
-        bool _irrevocable
+        uint8 _ticketType
     ) public {
         /// @dev set maximum array length?
         require(_beneficiaries.length > 0, "At least one beneficiary is required");
         for (uint256 i = 0; i < _beneficiaries.length;) {
-            create(_beneficiaries[i], _cliff, _vesting, _amount, _tgePercentage, _ticketType, _irrevocable);
+            create(_beneficiaries[i], _cliff, _vesting, _amount, _tgePercentage, _ticketType);
             unchecked {
                 ++i;
             }
@@ -131,14 +128,13 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         uint256 _vesting,
         uint256[] memory _amounts,
         uint256 _tgePercentage,
-        uint8 _ticketType,
-        bool _irrevocable
+        uint8 _ticketType
     ) public {
         if (_beneficiaries.length != _amounts.length) revert InvalidParams();
         if (_beneficiaries.length == 0) revert InvalidParams();
 
         for (uint256 i = 0; i < _beneficiaries.length;) {
-            create(_beneficiaries[i], _cliff, _vesting, _amounts[i], _tgePercentage, _ticketType, _irrevocable);
+            create(_beneficiaries[i], _cliff, _vesting, _amounts[i], _tgePercentage, _ticketType);
             unchecked {
                 ++i;
             }
@@ -163,22 +159,14 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         // Calculate remaining amount that will vest linearly
         uint256 remainingAmount = ticket.amount.sub(tgeAmount);
 
-        console.log("remainingAmount: ", remainingAmount);
-
         // Calculate cliff timestamp
         uint256 cliffTime = ticket.createdAt.add(ticket.cliff.mul(SECONDS_PER_DAY));
-
-        console.log("cliffTime: ", cliffTime);
 
         // Calculate total vesting duration (from cliff end to vesting end)
         uint256 vestingDuration = (ticket.vesting).mul(SECONDS_PER_DAY);
 
-        console.log("vestingDuration: ", vestingDuration);
-
         // Calculate time elapsed since cliff
         uint256 timeSinceCliff = block.timestamp.sub(cliffTime);
-
-        console.log("timeSinceCliff: ", timeSinceCliff);
 
         // If vesting period complete, return full amount
         if (timeSinceCliff >= vestingDuration) {
@@ -188,12 +176,10 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         // Calculate linear vesting for remaining amount
         uint256 vestedAmount = remainingAmount.mul(timeSinceCliff).div(vestingDuration);
 
-        console.log("vestedAmount: ", vestedAmount);
-
         return tgeAmount.add(vestedAmount);
     }
 
-    function available(uint256 _id) public view notRevoked(_id) returns (uint256) {
+    function available(uint256 _id) public view returns (uint256) {
         Ticket memory ticket = tickets[_id];
         if (ticket.balance == 0) return 0;
 
@@ -201,7 +187,7 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         return unlockedAmount > ticket.claimed ? unlockedAmount.sub(ticket.claimed) : 0;
     }
 
-    function claimTicket(uint256 _id, address _recipient) public notRevoked(_id) returns (bool) {
+    function claimTicket(uint256 _id, address _recipient) public notRevoked(_id) nonReentrant returns (bool) {
         Ticket storage ticket = tickets[_id];
         if (_recipient == address(0)) revert InvalidParams();
         if (ticket.beneficiary != msg.sender) revert UnauthorizedAccess();
@@ -219,7 +205,6 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         ticket.claimed = ticket.claimed.add(_amount);
         ticket.balance = ticket.balance.sub(_amount);
         ticket.lastClaimedAt = block.timestamp;
-        ++ticket.numClaims;
 
         emit Claimed(_id, _amount, _claimer);
         if (!token.transfer(_claimer, _amount)) revert TransferFailed();
@@ -228,7 +213,7 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     function revoke(uint256 _id) public notRevoked(_id) returns (bool) {
         Ticket storage ticket = tickets[_id];
         if (msg.sender != owner()) revert UnauthorizedAccess();
-        if (ticket.irrevocable) revert IrrevocableTicket();
+        if (ticket.isRevoked) revert TicketRevoked();
         if (ticket.balance == 0) revert NothingToClaim();
 
         uint256 remainingBalance = ticket.balance;
