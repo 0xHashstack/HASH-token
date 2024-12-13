@@ -1,2 +1,2 @@
 pub mod ierc20;
-pub mod claimable;
+pub mod claimable2;
