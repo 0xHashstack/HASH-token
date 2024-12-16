@@ -221,7 +221,6 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
         ticket.balance = 0;
 
         emit Revoked(_id, remainingBalance);
-        if (!token.transfer(owner(), remainingBalance)) revert TransferFailed();
         return true;
     }
 

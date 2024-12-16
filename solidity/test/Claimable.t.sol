@@ -6,7 +6,7 @@ import {Claimable} from "../src/Claimable2.sol";
 import {HstkToken} from "../src/HSTK.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/Proxy/ERC1967/ERC1967Proxy.sol";
 
-contract ClaimableTest is Test {
+contract ClaimableTest is Test  {
     Claimable public claimable;
     HstkToken public token;
 
@@ -152,6 +152,21 @@ contract ClaimableTest is Test {
         assertEq(availableAmount, 0, "Invalid Amount");
     }
 
+    function test_BatchCreateGasCheck() public{
+        // Create batch tickets
+        vm.startPrank(owner);
+        for(uint i =0 ; i< 100 ; i++){
+            claimable.create(beneficiary1, 30, 90, 1000, 20, 0);
+        }
+        uint256[] memory ticket1Ids = claimable.myBeneficiaryTickets(beneficiary1);
+        for(uint i =0 ; i< 100 ; i++){
+            console.log("Tickets : ", ticket1Ids[i]);
+        }
+    }
+
+
+
+
     // function testFuzz_DelegateClaim(uint256 amount) public {
     //     // Constrain inputs
     //     amount = bound(amount, 1000, 1_000_000*10**18);
@@ -194,6 +209,35 @@ contract ClaimableTest is Test {
         vm.prank(beneficiary1);
         vm.expectRevert();
         claimable.claimTicket(ticketId, beneficiary1);
+    }
+
+    // Ticket Creation Tests
+    function test_ticketAfterVesting() public returns (uint256) {
+        // Create ticket
+        vm.prank(owner);
+        uint256 ticketId = claimable.create(beneficiary1, 30, 90, 1000, 20, 0);
+        // vm.prank(beneficiary1); 
+        vm.warp(block.timestamp + 15 * 86400);  
+        console.log(claimable.unlocked(ticketId));
+        console.log(claimable.available(ticketId));
+        vm.prank(beneficiary1);
+        claimable.claimTicket(ticketId, beneficiary1);
+        console.log(claimable.unlocked(ticketId));
+        console.log(claimable.available(ticketId));
+        // Claimable.Ticket memory ticket = claimable.viewTicket(ticketId);
+        // console.log(ticket.cliff, 30);
+        // console.log(ticket.vesting, 90);
+        // console.log(ticket.amount, 1000);
+        // console.log(ticket.balance, 1000);
+        vm.warp(block.timestamp + 120 * 86400);  
+        // Verify ticket details
+        console.log(claimable.unlocked(ticketId));
+        console.log(claimable.available(ticketId));
+        vm.prank(beneficiary1);
+        claimable.claimTicket(ticketId, beneficiary1);
+        console.log(claimable.unlocked(ticketId));
+        console.log(claimable.available(ticketId));
+        return ticketId;
     }
 
     //     // Upgrade Tests
