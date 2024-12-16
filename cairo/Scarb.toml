@@ -11,9 +11,19 @@ openzeppelin = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", ta
 
 
 [dev-dependencies]
-snforge_std = "0.31.0"
+snforge_std = "0.33.0"
 
 
 [[target.starknet-contract]]
 sierra = true
 casm = true
+
+
+[scripts]
+test = "snforge test"
+
+# ...
+[tool.snforge]
+fuzzer_runs = 1234
+fuzzer_seed = 1111
+exit_first = true
