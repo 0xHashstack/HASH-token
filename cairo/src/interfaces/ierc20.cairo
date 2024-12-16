@@ -1,27 +1,28 @@
-// SPDX-License-Identifier: MIT
-
 use starknet::ContractAddress;
+
 #[starknet::interface]
-pub trait IMockERC20<TContractState> {
-    fn get_name(self: @TContractState) -> felt252;
-    fn get_symbol(self: @TContractState) -> felt252;
-    fn get_decimals(self: @TContractState) -> u8;
-    fn get_total_supply(self: @TContractState) -> felt252;
-    fn balance_of(self: @TContractState, account: ContractAddress) -> felt252;
-    fn allowance(
-        self: @TContractState, owner: ContractAddress, spender: ContractAddress
-    ) -> felt252;
-    fn transfer(ref self: TContractState, recipient: ContractAddress, amount: felt252);
-    fn transfer_from(
-        ref self: TContractState,
-        sender: ContractAddress,
-        recipient: ContractAddress,
-        amount: felt252
-    );
-    fn approve(ref self: TContractState, spender: ContractAddress, amount: felt252);
-    fn increase_allowance(ref self: TContractState, spender: ContractAddress, added_value: felt252);
-    fn decrease_allowance(
-        ref self: TContractState, spender: ContractAddress, subtracted_value: felt252
-    );
-    fn mint(ref self: TContractState, recipient: ContractAddress, amount: felt252);
+pub trait IHashToken<TContractState> {
+    fn permissioned_mint(ref self: TContractState, account: ContractAddress, amount: u256);
+    fn permissioned_burn(ref self: TContractState, account: ContractAddress, amount: u256);
 }
+
+#[starknet::interface]
+pub trait IHashTokenCamel<TContractState> {
+    fn permissionedMint(ref self: TContractState, account: ContractAddress, amount: u256);
+    fn permissionedBurn(ref self: TContractState, account: ContractAddress, amount: u256);
+}
+
+#[starknet::interface]
+pub trait IERC20<TContractState> {
+    fn total_supply(self: @TContractState) -> u256;
+    fn balance_of(self: @TContractState, account: ContractAddress) -> u256;
+    fn allowance(self: @TContractState, owner: ContractAddress, spender: ContractAddress) -> u256;
+    fn transfer(ref self: TContractState, recipient: ContractAddress, amount: u256) -> bool;
+    fn transfer_from(
+        ref self: TContractState, sender: ContractAddress, recipient: ContractAddress, amount: u256,
+    ) -> bool;
+    fn approve(ref self: TContractState, spender: ContractAddress, amount: u256) -> bool;
+    fn permissioned_mint(ref self: TContractState, account: ContractAddress, amount: u256);
+    fn permissioned_burn(ref self: TContractState, account: ContractAddress, amount: u256);
+}
+
