@@ -57,6 +57,7 @@ pub trait IClaimable<TContractState> {
     fn token(self: @TContractState) -> ContractAddress;
 
     fn claimable_owner(self: @TContractState) -> ContractAddress;
+    fn transfer_ownership(ref self: TContractState,new_owner:ContractAddress);
 }
 
 #[starknet::contract]
@@ -364,6 +365,13 @@ pub mod Claimable {
         fn claimable_owner(self: @ContractState) -> ContractAddress {
             self.owner.read()
         }
+
+        fn transfer_ownership(ref self: ContractState,new_owner:ContractAddress){
+            assert(!new_owner.is_zero(),Errors::ZERO_ADDRESS);
+            self._assert_owner();
+            self.owner.write(new_owner);
+        }
+
     }
 
 
