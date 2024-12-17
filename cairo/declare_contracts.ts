@@ -2,11 +2,11 @@ import { Account, json, RpcProvider } from "starknet";
 import fs from "fs";
 import dotenv from "dotenv";
 
-const path = __dirname + "/../.env.local";
+const path = __dirname + "/.env.local";
 
 dotenv.config({ path: path });
 
-const sepoliaRpc = process.env.SEPOLIA_RPC;
+const sepoliaRpc = process.env.SEPOLIA_RPC as string;
 
 const provider = new RpcProvider({ nodeUrl: sepoliaRpc });
 
@@ -40,7 +40,7 @@ export async function get_claims_class() {
 
   fs.appendFile(
     path,
-    `\nCLAIMS_CLASS_HASH = "${declareResponse.class_hash}"`,
+    `\nCLAIMS_CLASS_HASH = ${declareResponse.class_hash}`,
     function (err) {
       if (err) throw err;
     }

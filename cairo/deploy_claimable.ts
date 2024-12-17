@@ -2,7 +2,7 @@ import { Account, Contract, json, RpcProvider } from "starknet";
 import fs from "fs";
 import dotenv from "dotenv";
 
-const path = __dirname + "/../.env.local";
+const path = __dirname + "/.env.local";
 
 dotenv.config({ path: path });
 
@@ -21,9 +21,9 @@ const deployer = new Account(
 
 const relayer_address = process.env.RELAYER_ADDRESS as string;
 
-const claims_contract_class = process.env.CLAIMS_CONTRACT_CLASS as string;
-const owner = process.env.TOKEN_ADDRESS as string;
-const token = process.env.OWNER_ADDRESS as string;
+const claims_contract_class = process.env.CLAIMS_CLASS_HASH as string;
+const owner = process.env.OWNER_ADDRESS as string;
+const token = process.env.TOKEN_ADDRESS as string;
 
 async function deploy_claims_contract(): Promise<Contract> {
   const compiledContract = await json.parse(

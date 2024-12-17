@@ -152,10 +152,10 @@ pub mod Claimable {
     #[constructor]
     fn constructor(ref self: ContractState, token: ContractAddress, owner_: ContractAddress) {
         assert(!token.is_zero() && !owner_.is_zero(), Errors::ZERO_ADDRESS);
-        println!("I'm here");
+        // println!("I'm here");
         self.owner.write(owner_);
         self.hash_token.write(token);
-        println!("I'm here aswell");
+        // println!("I'm here aswell");
     }
 
     #[abi(embed_v0)]
