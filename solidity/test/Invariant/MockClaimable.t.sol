@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
 pragma solidity ^0.8.20;
 
-import {Claimable} from "../../src/Claimable2.sol";
+import {Claimable} from "../../src/Claimable.sol";
 import {HstkToken} from "../../src/HSTK.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 
