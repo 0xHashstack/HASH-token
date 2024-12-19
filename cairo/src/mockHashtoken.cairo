@@ -12,7 +12,7 @@ pub mod HashToken {
     impl ERC20MixinImpl = ERC20Component::ERC20MixinImpl<ContractState>;
 
     impl ERC20InternalImpl = ERC20Component::InternalImpl<ContractState>;
- 
+
 
     #[storage]
     struct Storage {
@@ -28,15 +28,12 @@ pub mod HashToken {
     }
 
     #[constructor]
-    fn constructor(
-        ref self: ContractState
-    ) {
+    fn constructor(ref self: ContractState) {
         self.erc20.initializer("Hash Token", "HASH");
     }
 
     #[abi(embed_v0)]
     impl HashTokenImpl of IHashToken<ContractState> {
- 
         fn permissioned_mint(ref self: ContractState, account: ContractAddress, amount: u256) {
             self.erc20.mint(account, amount);
         }

@@ -55,7 +55,7 @@ pub trait IClaimable<TContractState> {
     fn revoke(ref self: TContractState, id: u64) -> bool;
     fn token(self: @TContractState) -> ContractAddress;
     fn claimable_owner(self: @TContractState) -> ContractAddress;
-    fn transfer_ownership(ref self: TContractState,new_owner:ContractAddress);
+    fn transfer_ownership(ref self: TContractState, new_owner: ContractAddress);
 }
 
 #[starknet::contract]
@@ -150,7 +150,6 @@ pub mod Claimable {
         pub const ZERO_ADDRESS: felt252 = 'Zero address';
         pub const INVALID_TYPE: felt252 = 'Invalid ticket type';
         pub const ZERO_BALANCE: felt252 = 'Zero Balance in Claims';
-
     }
 
     #[constructor]
@@ -179,7 +178,7 @@ pub mod Claimable {
             ticket_type: u8
         ) -> u64 {
             self._assert_owner();
-            assert(ticket_type < 5,Errors::INVALID_TYPE);
+            assert(ticket_type < 5, Errors::INVALID_TYPE);
             self._validate_basic_params(beneficiary, amount, cliff, vesting, tge_percentage);
             self
                 ._create_single_ticket(
@@ -197,9 +196,9 @@ pub mod Claimable {
             ticket_type: u8,
         ) {
             self._assert_owner();
-            assert(beneficiaries.len() == amounts.len(),Errors::INVALID_CALLDATA);
-            assert(beneficiaries.len() > 0,Errors::INVALID_CALLDATA);
-            assert(ticket_type < 5,Errors::INVALID_TYPE);
+            assert(beneficiaries.len() == amounts.len(), Errors::INVALID_CALLDATA);
+            assert(beneficiaries.len() > 0, Errors::INVALID_CALLDATA);
+            assert(ticket_type < 5, Errors::INVALID_TYPE);
 
             let mut i = 0;
             loop {
@@ -227,7 +226,7 @@ pub mod Claimable {
             ticket_type: u8,
         ) {
             self._assert_owner();
-            assert(beneficiaries.len() > 0,Errors::INVALID_CALLDATA);
+            assert(beneficiaries.len() > 0, Errors::INVALID_CALLDATA);
             assert(ticket_type < 5, Errors::INVALID_TYPE);
             self
                 ._validate_basic_params(
@@ -296,7 +295,7 @@ pub mod Claimable {
             self.reentrancyguard.start();
 
             let mut ticket = self.tickets.read(id);
-            let hash_token:ContractAddress = self.hash_token.read();
+            let hash_token: ContractAddress = self.hash_token.read();
             assert(!recipient.is_zero(), Errors::INVALID_BENEFICIARY);
             assert(!ticket.revoked, Errors::TICKET_REVOKED);
             assert(ticket.beneficiary == get_caller_address(), Errors::UNAUTHORIZED);
@@ -312,7 +311,7 @@ pub mod Claimable {
 
             self.emit(Event::Claimed(Claimed { id, amount: claimable_amount, claimer: recipient }));
 
-            let transfer_result:bool = IERC20Dispatcher { contract_address:hash_token }
+            let transfer_result: bool = IERC20Dispatcher { contract_address: hash_token }
                 .transfer(recipient, claimable_amount);
 
             self.reentrancyguard.end();
@@ -351,7 +350,7 @@ pub mod Claimable {
         fn revoke(ref self: ContractState, id: u64) -> bool {
             self._assert_owner();
             let mut ticket = self.tickets.read(id);
-            assert(!ticket.revoked,Errors::TICKET_REVOKED);
+            assert(!ticket.revoked, Errors::TICKET_REVOKED);
             assert(ticket.balance != 0, Errors::ZERO_BALANCE);
 
             ticket.revoked = true;
@@ -370,12 +369,11 @@ pub mod Claimable {
             self.owner.read()
         }
 
-        fn transfer_ownership(ref self: ContractState,new_owner:ContractAddress){
-            assert(!new_owner.is_zero(),Errors::ZERO_ADDRESS);
+        fn transfer_ownership(ref self: ContractState, new_owner: ContractAddress) {
+            assert(!new_owner.is_zero(), Errors::ZERO_ADDRESS);
             self._assert_owner();
             self.owner.write(new_owner);
         }
-
     }
 
 
