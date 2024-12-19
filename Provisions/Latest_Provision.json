@@ -1,0 +1,287 @@
+[
+  {
+    "address": "0x7C0fef6c18e8494FFE2669eF691c4E5e8877717F",
+    "Investment": 10000,
+    "Price": 0.0018,
+    "Allocation": 5555555.55,
+    "TGE": 0.1
+  },
+  {
+    "address": "0x2FaD2A208eC7712bdba368AAEa219536a8cA7276",
+    "Investment": 10000,
+    "Price": 0.0018,
+    "Allocation": 5555555.55,
+    "TGE": 0.1
+  },
+  {
+    "address": "0x7D3E0F5bD7ACFd5B5a6dD1608f066b0C4CB0d4aB",
+    "Investment": 10000,
+    "Price": 0.0018,
+    "Allocation": 5555555.55,
+    "TGE": 0.1
+  },
+  {
+    "address": "0xeC56f708097287cc8F545A485B02E1cB756d8131",
+    "Investment": 10000,
+    "Price": 0.0018,
+    "Allocation": 5555555.55,
+    "TGE": 0.1
+  },
+  {
+    "address": "0x73F0DFeE659a8E026a0bC1dd5B4D6751C95dB82D",
+    "Investment": 10000,
+    "Price": 0.0018,
+    "Allocation": 5555555.55,
+    "TGE": 0.1
+  },
+  {
+    "address": "0x3B18a96398cC62b08dFF955AcECAC4eDed2c4170",
+    "Investment": 10000,
+    "Price": 0.0018,
+    "Allocation": 5555555.55,
+    "TGE": 0.1
+  },
+  {
+    "address": "0x10ef0913Cc240537AFB956FcEcEB47Cc777d4B36",
+    "Investment": 10000,
+    "Price": 0.0018,
+    "Allocation": 5555555.55,
+    "TGE": 0.1
+  },
+  {
+    "address": "0x73F10f1ac35E8E93aE03a8428D2aF9955092117C",
+    "Investment": 10000,
+    "Price": 0.0018,
+    "Allocation": 5555555.55,
+    "TGE": 0.1
+  },
+  {
+    "address": "0xF16dc527Fa5bDEE8e59c202Af12DC853F9a190C2",
+    "Investment": 10000,
+    "Price": 0.0018,
+    "Allocation": 5555555.55,
+    "TGE": 0.1
+  },
+  {
+    "address": "0x4630920c5336E8F9b94a193f17E78aB5037f3B5F",
+    "Investment": 10000,
+    "Price": 0.0018,
+    "Allocation": 5555555.55,
+    "TGE": 0.1
+  },
+  {
+    "address": "0xF5AcffAB98c4eed15676A7A36052e6D95EdCB253",
+    "Investment": 10000,
+    "Price": 0.0018,
+    "Allocation": 5555555.55,
+    "TGE": 0.1
+  },
+  {
+    "address": "0x4298A47FBB688D037CF1B12Ae203ec6e4C002202",
+    "Investment": 60000,
+    "Price": 0.00056,
+    "Allocation": 107142857.14,
+    "TGE": 0.1
+  },
+  {
+    "address": "0x5F32e7D8d53acFe1C2e0230CF3E907c6AdE9f118",
+    "Investment": 10000,
+    "Price": 0.0018,
+    "Allocation": 5555555.56,
+    "TGE": 0.1
+  },
+  {
+    "address": "0x035000529CffE9f04DB8E81B7A53807E63EeaC12",
+    "Investment": 20000,
+    "Price": 0.0018,
+    "Allocation": 11111111.11,
+    "TGE": 0.1
+  },
+  {
+    "address": "0xA0d8f6c24394EBBeBCE0A4a8618e0A4eD70Ee22A",
+    "Investment": 80000,
+    "Price": 0.0018,
+    "Allocation": 44444444.44,
+    "TGE": 0.1
+  },
+  {
+    "address": "0xc051c72843E97674007921eCee075f4E4Af5c0a6",
+    "Investment": 100000,
+    "Price": 0.0018,
+    "Allocation": 55555555.56,
+    "TGE": 0.1
+  },
+  {
+    "address": "0x1640555d9937Cec3b9ccA3225EDbE9771b1185EC",
+    "Investment": 50000,
+    "Price": 0.0018,
+    "Allocation": 27777777.78,
+    "TGE": 0.1
+  },
+  {
+    "address": "0x6F87bEF18baf73Dc1d4cF0CC3355E92D2898Fd39",
+    "Investment": 250000,
+    "Price": 0.0032,
+    "Allocation": 78125000,
+    "TGE": 0.1
+  },
+  {
+    "address": "0x33E8C0EBEEC0762D3EEA20F66036BEF2BE304048",
+    "Investment": 50000,
+    "Price": 0.0018,
+    "Allocation": 27777777.78,
+    "TGE": 0.1
+  },
+  {
+    "address": "0x33E8C0EBEEC0762D3EEA20F66036BEF2BE304048",
+    "Investment": 50000,
+    "Price": 0.003,
+    "Allocation": 16666666.67,
+    "TGE": 0.1
+  },
+  {
+    "address": "0xf7845cc3D24a511e15a0368871465f0dC5Ae4fB1",
+    "Investment": 75000,
+    "Price": 0.0018,
+    "Allocation": 41666666.67,
+    "TGE": 0.1
+  },
+  {
+    "address": "0x975409e09726f5672299DbEf1359a87151382f46",
+    "Investment": 25000,
+    "Price": 0.0018,
+    "Allocation": 13888888.89,
+    "TGE": 0.1
+  },
+  {
+    "address": "0x975409e09726f5672299DbEf1359a87151382f46",
+    "Investment": 125000,
+    "Price": 0.0032,
+    "Allocation": 39062500,
+    "TGE": 0.1
+  },
+  {
+    "address": "0x262b01A9Cf74Ab05E678A8Db12a16731D764EAf9",
+    "Investment": 25000,
+    "Price": 0.0018,
+    "Allocation": 13888888.89,
+    "TGE": 0.1
+  },
+  {
+    "address": "0xe2C8f362154aacE6144Cb9d96f45b9568e0Ea721",
+    "Investment": 250000,
+    "Price": 0.0032,
+    "Allocation": 78125000,
+    "TGE": 0.1
+  },
+  {
+    "address": "0xF6aa98cE1cc8eE991f380d5aFD178EF58AF85D93",
+    "Investment": 90000,
+    "Price": 0.0035,
+    "Allocation": 25714285.71,
+    "TGE": 0.1
+  },
+  {
+    "address": "0x244d62C1Ed85F20bd8d0DBa6E912C8afA85bC40e",
+    "Investment": 50000,
+    "Price": 0.0035,
+    "Allocation": 14285714.29,
+    "TGE": 0.1
+  },
+  {
+    "address": "0x93d572C6A9D44D24d54D87435f2837d01650499D",
+    "Investment": 100000,
+    "Price": 0.00056,
+    "Allocation": 178571428.57,
+    "TGE": 0.1
+  },
+  {
+    "address": "0x6edb9faf6619C8D4D68e0DFeBbd43dA819A9A7c1",
+    "Investment": 15000,
+    "Price": 0.00056,
+    "Allocation": 26785714.29,
+    "TGE": 0.1
+  },
+  {
+    "address": "0x9cB69fe731c3Aa425db3a9251103c618Fd930C0a",
+    "Investment": 20000,
+    "Price": 0.00056,
+    "Allocation": 35714285.71,
+    "TGE": 0.1
+  },
+  {
+    "address": "0xEbE698118058dbc8B36B9B6704aC39A07817Df07",
+    "Investment": 10000,
+    "Price": 0.00056,
+    "Allocation": 17857142.86,
+    "TGE": 0.1
+  },
+  {
+    "address": "0xdfe322ceba19166c011fce93c1cc2e9fb2cc8961",
+    "Investment": 5000,
+    "Price": 0.00056,
+    "Allocation": 8928571.43,
+    "TGE": 0.1
+  },
+  {
+    "address": "0x3Fd6Dc6169faa55F27196D7EE44ae29A12F199E3",
+    "Investment": 25000,
+    "Price": 0.00056,
+    "Allocation": 44642857.14,
+    "TGE": 0.1
+  },
+  {
+    "address": "0x3c8972ba9d1ba82acf390ab6e7fcc29dd3a7c53e",
+    "Investment": 70000,
+    "Price": 0.00056,
+    "Allocation": 125000000,
+    "TGE": 0.1
+  },
+  {
+    "address": "0x1074045B6ee28F705c75fe8FFf21A15AF76d4d13",
+    "Investment": 150000,
+    "Price": 0.00056,
+    "Allocation": 267857142.9,
+    "TGE": 0.1
+  },
+  {
+    "address": "0xd1255581cD2a57A6B3ba34C460F643BB86eB89d2",
+    "Investment": 100000,
+    "Price": 0.00056,
+    "Allocation": 178571428.6,
+    "TGE": 0.1
+  },
+  {
+    "address": "0xd1255581cD2a57A6B3ba34C460F643BB86eB89d2",
+    "Allocation": 45000000,
+    "TGE": 0.1
+  },
+  {
+    "address": "0x5D39036947e83862cE5f3DB351cC64E3D4592cD5",
+    "Investment": 10000,
+    "Price": 0.00056,
+    "Allocation": 17857142.86,
+    "TGE": 0.1
+  },
+  {
+    "address": "0x1573f8860223D1398F1f9dB0e4c2508D2d0Bfd8F",
+    "Investment": 10000,
+    "Price": 0.0018,
+    "Allocation": 5555555.56,
+    "TGE": 0.1
+  },
+  {
+    "address": "0xA1626D910b173D076cA0a9A34D42b987Dd76646E",
+    "Investment": 25000,
+    "Price": 0.00056,
+    "Allocation": 44642857.14,
+    "TGE": 0.1
+  },
+  {
+    "address": "0xF6b52E84e9685582b29d28a437660E905B0e132d",
+    "Investment": 1000,
+    "Price": 0.0018,
+    "Allocation": 555555.56,
+    "TGE": 0.1
+  }
+]

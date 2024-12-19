@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import {Test, console} from "forge-std/Test.sol";
-import {Claimable} from "../src/Claimable2.sol";
+import {Claimable} from "../src/Claimable.sol";
 import {HstkToken} from "../src/HSTK.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/Proxy/ERC1967/ERC1967Proxy.sol";
 

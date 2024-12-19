@@ -2,13 +2,13 @@
 pragma solidity ^0.8.4;
 
 import {Script, console} from "forge-std/Script.sol";
-import {Claimable} from "../src/Claimable2.sol";
+import {Claimable} from "../src/Claimable.sol";
 import {HstkToken} from "../src/HSTK.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/Proxy/ERC1967/ERC1967Proxy.sol";
 
 contract DeployClaimable is Script {
     HstkToken public hashToken;
-    address superAdmin = address(0x121631f31B2C8Cb8d2A938C4D3ca5773832F3fa9); // Replace this with Address of the owner
+    address superAdmin = address(0xE4f3B256c27cE7c76C5D16Ae81838aA14d8846C8); // Replace this with Address of the owner
     ERC1967Proxy claimContract;
 
     function deployClaimable() public returns (address) {

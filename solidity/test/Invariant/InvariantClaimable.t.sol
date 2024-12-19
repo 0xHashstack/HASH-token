@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import {Test, console, StdInvariant} from "forge-std/Test.sol";
 import {MockClaimable} from "./MockClaimable.t.sol";
-import {Claimable} from "../../src/Claimable2.sol";
+import {Claimable} from "../../src/Claimable.sol";
 import {HstkToken} from "../../src/HSTK.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
