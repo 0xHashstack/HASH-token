@@ -324,13 +324,11 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
     /**
      * @notice Revoke a ticket, reclaiming unclaimed tokens
      * @param _id Ticket ID to revoke
-     * @return Boolean indicating successful revocation
      */
-    function revoke(uint256 _id) public notRevoked(_id) returns (bool) {
+    function revoke(uint256 _id) public notRevoked(_id) onlyOwner {
         Ticket storage ticket = tickets[_id];
         
         // Validate revocation conditions
-        if (msg.sender != owner()) revert UnauthorizedAccess();
         if (ticket.isRevoked) revert TicketRevoked();
         if (ticket.balance == 0) revert NothingToClaim();
 
@@ -339,7 +337,6 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
         ticket.balance = 0;
 
         emit Revoked(_id, remainingBalance);
-        return true;
     }
 
     /**
