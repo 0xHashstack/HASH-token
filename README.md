@@ -7,7 +7,7 @@ HSTK Token is an ERC20-compliant token implementation built on the Ethereum bloc
 
 ## Token Details
 - **Address**: 0xF38774A034F5F533D7F9E2ba6b7f3a7542714fA9
-- **Name**: HSTK
+- **Name**: Hashstack
 - **Symbol**: HSTK
 - **Decimals**: 18
 - **Maximum Supply**: 9,000,000,000 HSTK (9 billion tokens)
@@ -17,7 +17,6 @@ HSTK Token is an ERC20-compliant token implementation built on the Ethereum bloc
 
 ### Core Functionality
 - Standard ERC20 transfer and approval mechanisms
-- Configurable maximum supply cap
 - Minting and burning capabilities
 - Token recovery functionality for accidentally sent tokens
 
@@ -46,26 +45,7 @@ HSTK Token is an ERC20-compliant token implementation built on the Ethereum bloc
 - `pause()`: Halt all token transfers
 - `unpause()`: Resume all token transfers
 - `partialPause()`: Enable partial pause state
-- `partialUnPause()`: Disable partial pause state
-
-## Modifiers
-
-- `pausedOff`: Ensures the contract is not fully paused
-- `partialPausedOff`: Ensures the contract is not partially paused
-- `onlyMultiSig`: Restricts function access to multisig wallet
-- `notBlackListed`: Ensures address is not blacklisted
-
-## Events
-
-- `TOKEN_RESCUED`: Emitted when tokens are recovered from the contract
-  - Parameters: `token` (address), `to` (address), `amount` (uint256)
-
-## Error Cases
-
-- `MAX_SUPPLY_EXCEEDED`: Thrown when minting would exceed maximum token supply
-- Zero address checks on critical operations
-- Pausability state validation
-- Blacklist restrictions
+- `fullyPause()`: Disable all token functionality
 
 ## Security Considerations
 

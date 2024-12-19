@@ -18,15 +18,15 @@ pub struct Ticket {
 #[starknet::interface]
 pub trait IClaimable<TContractState> {
     fn upgrade_class_hash(ref self: TContractState, new_class_hash: ClassHash);
-    fn create(
-        ref self: TContractState,
-        beneficiary: ContractAddress,
-        cliff: u64,
-        vesting: u64,
-        amount: u256,
-        tge_percentage: u64,
-        ticket_type: u8
-    ) -> u64;
+    // 64;fn create(
+    //     ref self: TContractState,
+    //     beneficiary: ContractAddress,
+    //     cliff: u64,
+    //     vesting: u64,
+    //     amount: u256,
+    //     tge_percentage: u64,
+    //     ticket_type: u8
+    // ) -> u
     fn batch_create(
         ref self: TContractState,
         beneficiaries: Array<ContractAddress>,
@@ -168,23 +168,23 @@ pub mod Claimable {
             self.upgradeable.upgrade(new_class_hash);
         }
 
-        fn create(
-            ref self: ContractState,
-            beneficiary: ContractAddress,
-            cliff: u64,
-            vesting: u64,
-            amount: u256,
-            tge_percentage: u64,
-            ticket_type: u8
-        ) -> u64 {
-            self._assert_owner();
-            assert(ticket_type < 5, Errors::INVALID_TYPE);
-            self._validate_basic_params(beneficiary, amount, cliff, vesting, tge_percentage);
-            self
-                ._create_single_ticket(
-                    beneficiary, cliff, vesting, amount, tge_percentage, ticket_type
-                )
-        }
+        // fn create(
+        //     ref self: ContractState,
+        //     beneficiary: ContractAddress,
+        //     cliff: u64,
+        //     vesting: u64,
+        //     amount: u256,
+        //     tge_percentage: u64,
+        //     ticket_type: u8
+        // ) -> u64 {
+        //     self._assert_owner();
+        //     //check
+        //     self._validate_basic_params(beneficiary, amount, cliff, vesting, tge_percentage,ticket_type);
+        //     self
+        //         ._create_single_ticket(
+        //             beneficiary, cliff, vesting, amount, tge_percentage, ticket_type
+        //         )
+        // }
 
         fn batch_create(
             ref self: ContractState,
@@ -195,10 +195,10 @@ pub mod Claimable {
             tge_percentage: u64,
             ticket_type: u8,
         ) {
-            self._assert_owner();
+            // self._assert_owner();
+            self._validate_params(cliff,vesting,tge_percentage,ticket_type);
             assert(beneficiaries.len() == amounts.len(), Errors::INVALID_CALLDATA);
             assert(beneficiaries.len() > 0, Errors::INVALID_CALLDATA);
-            assert(ticket_type < 5, Errors::INVALID_TYPE);
 
             let mut i = 0;
             loop {
@@ -207,7 +207,7 @@ pub mod Claimable {
                 }
                 let beneficiary = *beneficiaries.at(i);
                 let amount = *amounts.at(i);
-                self._validate_basic_params(beneficiary, amount, cliff, vesting, tge_percentage);
+                self._validate_basic_params(beneficiary, amount);
                 self
                     ._create_single_ticket(
                         beneficiary, cliff, vesting, amount, tge_percentage, ticket_type
@@ -225,20 +225,19 @@ pub mod Claimable {
             tge_percentage: u64,
             ticket_type: u8,
         ) {
-            self._assert_owner();
+            self._validate_params(cliff,vesting,tge_percentage,ticket_type);
             assert(beneficiaries.len() > 0, Errors::INVALID_CALLDATA);
-            assert(ticket_type < 5, Errors::INVALID_TYPE);
-            self
-                ._validate_basic_params(
-                    *beneficiaries.at(0), amount, cliff, vesting, tge_percentage
-                );
-
+            
             let mut i = 0;
             loop {
                 if i >= beneficiaries.len() {
                     break;
                 }
                 let beneficiary = *beneficiaries.at(i);
+                self
+                    ._validate_basic_params(
+                        beneficiary, amount
+                    );
                 self
                     ._create_single_ticket(
                         beneficiary, cliff, vesting, amount, tge_percentage, ticket_type
@@ -296,12 +295,10 @@ pub mod Claimable {
 
             let mut ticket = self.tickets.read(id);
             let hash_token: ContractAddress = self.hash_token.read();
-            assert(!recipient.is_zero(), Errors::INVALID_BENEFICIARY);
+            let claimable_amount = self.available(id);
             assert(!ticket.revoked, Errors::TICKET_REVOKED);
             assert(ticket.beneficiary == get_caller_address(), Errors::UNAUTHORIZED);
-            assert(ticket.balance != 0, Errors::NOTHING_TO_CLAIM);
-
-            let claimable_amount = self.available(id);
+            self._validate_basic_params(recipient, ticket.balance);
             assert(claimable_amount != 0, Errors::NOTHING_TO_CLAIM);
 
             ticket.claimed += claimable_amount;
@@ -343,6 +340,7 @@ pub mod Claimable {
         fn transfer_hash_token(ref self: ContractState, to: ContractAddress, amount: u256) {
             self.reentrancyguard.start();
             self._assert_owner();
+            self._validate_basic_params(to, amount);
             IERC20Dispatcher { contract_address: self.hash_token.read() }.transfer(to, amount);
             self.reentrancyguard.end();
         }
@@ -383,12 +381,20 @@ pub mod Claimable {
             self: @ContractState,
             beneficiary: ContractAddress,
             amount: u256,
-            cliff: u64,
-            vesting: u64,
-            tge_percentage: u64
         ) {
             assert(!beneficiary.is_zero(), Errors::INVALID_BENEFICIARY);
             assert(amount != 0, Errors::INVALID_AMOUNT);
+        }
+
+        fn _validate_params(
+            self: @ContractState,
+            cliff: u64,
+            vesting: u64,
+            tge_percentage: u64,
+            ticket_type: u8
+        ) {
+            self._assert_owner();
+            assert(ticket_type < 5, Errors::INVALID_TYPE);
             assert(vesting >= cliff, Errors::INVALID_VESTING_PERIOD);
             assert(tge_percentage <= PERCENTAGE_DENOMINATOR, Errors::INVALID_TGE_PERCENTAGE);
         }
