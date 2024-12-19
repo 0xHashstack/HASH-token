@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 #[starknet::contract]
 pub mod HashToken {
-    use starknet::{ClassHash, ContractAddress, get_caller_address};
+    use starknet::{ContractAddress};
     use openzeppelin::token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
     use cairo::interfaces::ierc20::{IHashToken, IHashTokenCamel};
 

@@ -53,9 +53,7 @@ pub trait IClaimable<TContractState> {
     fn my_beneficiary_tickets(self: @TContractState, beneficiary: ContractAddress) -> Array<u64>;
     fn transfer_hash_token(ref self: TContractState, to: ContractAddress, amount: u256);
     fn revoke(ref self: TContractState, id: u64) -> bool;
-
     fn token(self: @TContractState) -> ContractAddress;
-
     fn claimable_owner(self: @TContractState) -> ContractAddress;
     fn transfer_ownership(ref self: TContractState,new_owner:ContractAddress);
 }
@@ -71,6 +69,8 @@ pub mod Claimable {
         security::reentrancyguard::ReentrancyGuardComponent,
         upgrades::upgradeable::UpgradeableComponent, introspection::src5::SRC5Component
     };
+    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
 
     const SECONDS_PER_DAY: u64 = 86400;
     const PERCENTAGE_DENOMINATOR: u64 = 100;
@@ -96,9 +96,9 @@ pub mod Claimable {
         current_id: u64,
         hash_token: ContractAddress,
         owner: ContractAddress,
-        tickets: LegacyMap<u64, Ticket>,
-        beneficiary_tickets: LegacyMap<(ContractAddress, u64), u64>,
-        beneficiary_ticket_count: LegacyMap<ContractAddress, u64>
+        tickets: Map<u64, Ticket>,
+        beneficiary_tickets: Map<(ContractAddress, u64), u64>,
+        beneficiary_ticket_count: Map<ContractAddress, u64>
     }
 
     #[event]
@@ -140,13 +140,17 @@ pub mod Claimable {
 
     mod Errors {
         pub const UNAUTHORIZED: felt252 = 'Unauthorized';
+        pub const INVALID_CALLDATA: felt252 = 'Invalid inputs';
         pub const INVALID_BENEFICIARY: felt252 = 'Invalid beneficiary';
         pub const INVALID_AMOUNT: felt252 = 'Invalid amount';
         pub const INVALID_VESTING_PERIOD: felt252 = 'Invalid vesting period';
         pub const INVALID_TGE_PERCENTAGE: felt252 = 'Invalid TGE percentage';
-        pub const TICKET_REVOKED: felt252 = 'Ticket revoked';
+        pub const TICKET_REVOKED: felt252 = 'Ticket is revoked';
         pub const NOTHING_TO_CLAIM: felt252 = 'Nothing to claim';
         pub const ZERO_ADDRESS: felt252 = 'Zero address';
+        pub const INVALID_TYPE: felt252 = 'Invalid ticket type';
+        pub const ZERO_BALANCE: felt252 = 'Zero Balance in Claims';
+
     }
 
     #[constructor]
@@ -175,7 +179,7 @@ pub mod Claimable {
             ticket_type: u8
         ) -> u64 {
             self._assert_owner();
-            assert(ticket_type < 5, 'Error');
+            assert(ticket_type < 5,Errors::INVALID_TYPE);
             self._validate_basic_params(beneficiary, amount, cliff, vesting, tge_percentage);
             self
                 ._create_single_ticket(
@@ -193,9 +197,9 @@ pub mod Claimable {
             ticket_type: u8,
         ) {
             self._assert_owner();
-            assert(beneficiaries.len() == amounts.len(), 'Mismatched array lengths');
-            assert(beneficiaries.len() > 0, 'Empty beneficiary list');
-            assert(ticket_type < 5, 'Error');
+            assert(beneficiaries.len() == amounts.len(),Errors::INVALID_CALLDATA);
+            assert(beneficiaries.len() > 0,Errors::INVALID_CALLDATA);
+            assert(ticket_type < 5,Errors::INVALID_TYPE);
 
             let mut i = 0;
             loop {
@@ -223,8 +227,8 @@ pub mod Claimable {
             ticket_type: u8,
         ) {
             self._assert_owner();
-            assert(beneficiaries.len() > 0, 'Empty beneficiary list');
-            assert(ticket_type < 5, 'Error');
+            assert(beneficiaries.len() > 0,Errors::INVALID_CALLDATA);
+            assert(ticket_type < 5, Errors::INVALID_TYPE);
             self
                 ._validate_basic_params(
                     *beneficiaries.at(0), amount, cliff, vesting, tge_percentage
@@ -294,7 +298,7 @@ pub mod Claimable {
             let mut ticket = self.tickets.read(id);
             let hash_token:ContractAddress = self.hash_token.read();
             assert(!recipient.is_zero(), Errors::INVALID_BENEFICIARY);
-            assert(!ticket.revoked, 'Errors');
+            assert(!ticket.revoked, Errors::TICKET_REVOKED);
             assert(ticket.beneficiary == get_caller_address(), Errors::UNAUTHORIZED);
             assert(ticket.balance != 0, Errors::NOTHING_TO_CLAIM);
 
@@ -347,8 +351,8 @@ pub mod Claimable {
         fn revoke(ref self: ContractState, id: u64) -> bool {
             self._assert_owner();
             let mut ticket = self.tickets.read(id);
-            assert(!ticket.revoked, 'Already revoked');
-            assert(ticket.balance != 0, 'No balance to revoke');
+            assert(!ticket.revoked,Errors::TICKET_REVOKED);
+            assert(ticket.balance != 0, Errors::ZERO_BALANCE);
 
             ticket.revoked = true;
             ticket.balance = 0;
