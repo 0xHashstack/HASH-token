@@ -41,12 +41,6 @@ HSTK Token is an ERC20-compliant token implementation built on the Ethereum bloc
 - `burn(address account, uint256 value)`: Destroy existing tokens
 - `recoverToken(address asset, address to)`: Recover accidentally sent ERC20 tokens
 
-### Contract Control
-- `pause()`: Halt all token transfers
-- `unpause()`: Resume all token transfers
-- `partialPause()`: Enable partial pause state
-- `fullyPause()`: Disable all token functionality
-
 ## Security Considerations
 
 1. **Access Control**
