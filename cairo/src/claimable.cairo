@@ -18,15 +18,7 @@ pub struct Ticket {
 #[starknet::interface]
 pub trait IClaimable<TContractState> {
     fn upgrade_class_hash(ref self: TContractState, new_class_hash: ClassHash);
-    // 64;fn create(
-    //     ref self: TContractState,
-    //     beneficiary: ContractAddress,
-    //     cliff: u64,
-    //     vesting: u64,
-    //     amount: u256,
-    //     tge_percentage: u64,
-    //     ticket_type: u8
-    // ) -> u
+
     fn batch_create(
         ref self: TContractState,
         beneficiaries: Array<ContractAddress>,
@@ -36,6 +28,7 @@ pub trait IClaimable<TContractState> {
         tge_percentage: u64,
         ticket_type: u8,
     );
+
     fn batch_create_same_amount(
         ref self: TContractState,
         beneficiaries: Array<ContractAddress>,
@@ -155,10 +148,8 @@ pub mod Claimable {
     #[constructor]
     fn constructor(ref self: ContractState, token: ContractAddress, owner_: ContractAddress) {
         assert(!token.is_zero() && !owner_.is_zero(), Errors::ZERO_ADDRESS);
-        // println!("I'm here");
         self.owner.write(owner_);
         self.hash_token.write(token);
-        // println!("I'm here aswell");
     }
 
     #[abi(embed_v0)]
@@ -167,24 +158,6 @@ pub mod Claimable {
             self._assert_owner();
             self.upgradeable.upgrade(new_class_hash);
         }
-
-        // fn create(
-        //     ref self: ContractState,
-        //     beneficiary: ContractAddress,
-        //     cliff: u64,
-        //     vesting: u64,
-        //     amount: u256,
-        //     tge_percentage: u64,
-        //     ticket_type: u8
-        // ) -> u64 {
-        //     self._assert_owner();
-        //     //check
-        //     self._validate_basic_params(beneficiary, amount, cliff, vesting, tge_percentage,ticket_type);
-        //     self
-        //         ._create_single_ticket(
-        //             beneficiary, cliff, vesting, amount, tge_percentage, ticket_type
-        //         )
-        // }
 
         fn batch_create(
             ref self: ContractState,
