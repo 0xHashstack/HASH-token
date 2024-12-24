@@ -54,7 +54,7 @@ async function deploy_claims_contract(): Promise<Contract> {
   );
   fs.appendFile(
     path,
-    `\CLAIMS_CONTRACT_ADDRESS = "${contractAddress}"`,
+    `\nCLAIMS_CONTRACT_ADDRESS = "${contractAddress}"`,
     function (err) {
       if (err) throw err;
     }
@@ -63,6 +63,6 @@ async function deploy_claims_contract(): Promise<Contract> {
 }
 
 if (require.main === module) {
-  console.log("Deploying VaultFactory...");
+  console.log("Deploying Claims Contract...");
   deploy_claims_contract();
 }
