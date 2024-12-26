@@ -7,6 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+
 /**
  * @title Claimable Token Vesting Contract
  * @notice A flexible token vesting contract that supports multiple vesting schedules
@@ -20,7 +21,6 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
  * - Revocable tickets
  * - Upgradeable contract architecture
  */
-
 contract NewClaimable is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuard {
     using SafeMath for uint256;
 
@@ -320,13 +320,16 @@ contract NewClaimable is Initializable, UUPSUpgradeable, OwnableUpgradeable, Ree
         if (!token.transfer(_claimer, _amount)) revert TransferFailed();
     }
 
-    function claimAllTickets(address _beneficiary) external {
+    function claimAllTokens(address _beneficiary) external nonReentrant  {
         uint256[] memory _ticketIds = myBeneficiaryTickets(msg.sender);
+        uint _ticketsLength = _ticketIds.length;
         bool flag = _ticketIds.length != 0;
         if (!flag) revert NothingToClaim();
-        for (uint256 i = 0; i < _ticketIds.length;) {
-            if (available(_ticketIds[i]) != 0) {
-                _processClaim(_ticketIds[i], available(_ticketIds[i]), _beneficiary);
+        for (uint256 i = 0; i < _ticketsLength;) {
+            uint _available = available(_ticketIds[i]);
+            Ticket memory _ticket = tickets[_ticketIds[i]];
+            if (_available != 0 && !_ticket.isRevoked) {
+                _processClaim(_ticketIds[i], _available, _beneficiary);
                 flag = true;
             }
             unchecked {
