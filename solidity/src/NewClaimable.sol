@@ -320,6 +320,10 @@ contract NewClaimable is Initializable, UUPSUpgradeable, OwnableUpgradeable, Ree
         if (!token.transfer(_claimer, _amount)) revert TransferFailed();
     }
 
+    /**
+     * @notice Allows a user to claim tokens allocated to their tickets
+     * @param _recipient Address to receive the claimed tokens
+     */
     function claimTokens(address _recipient) external nonReentrant {
         uint256[] memory _ticketIds = myBeneficiaryTickets(msg.sender);
         uint256 _ticketsLength = _ticketIds.length;
