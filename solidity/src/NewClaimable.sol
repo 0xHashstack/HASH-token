@@ -320,13 +320,13 @@ contract NewClaimable is Initializable, UUPSUpgradeable, OwnableUpgradeable, Ree
         if (!token.transfer(_claimer, _amount)) revert TransferFailed();
     }
 
-    function claimAllTokens(address _beneficiary) external nonReentrant  {
+    function claimTokens(address _beneficiary) external nonReentrant {
         uint256[] memory _ticketIds = myBeneficiaryTickets(msg.sender);
-        uint _ticketsLength = _ticketIds.length;
+        uint256 _ticketsLength = _ticketIds.length;
         bool flag = _ticketIds.length != 0;
         if (!flag) revert NothingToClaim();
         for (uint256 i = 0; i < _ticketsLength;) {
-            uint _available = available(_ticketIds[i]);
+            uint256 _available = available(_ticketIds[i]);
             Ticket memory _ticket = tickets[_ticketIds[i]];
             if (_available != 0 && !_ticket.isRevoked) {
                 _processClaim(_ticketIds[i], _available, _beneficiary);

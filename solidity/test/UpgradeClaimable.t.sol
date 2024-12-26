@@ -50,7 +50,7 @@ contract UpgradeClaimableTest is Test {
         }
         vm.stopPrank();
         vm.startPrank(0xe2C8f362154aacE6144Cb9d96f45b9568e0Ea721);
-        newImplementation.claimAllTokens(0xe2C8f362154aacE6144Cb9d96f45b9568e0Ea721);
+        newImplementation.claimTokens(0xe2C8f362154aacE6144Cb9d96f45b9568e0Ea721);
         for (uint256 i = 0; i < userTickets.length; i++) {
             uint256 amountLeft = newImplementation.available(userTickets[i]);
             console.log(amountLeft);
