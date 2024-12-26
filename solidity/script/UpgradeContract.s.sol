@@ -12,8 +12,8 @@ contract TestnetUpgradeScript is Script {
     HstkToken _hashToken;
     // Test addresses
     address[] testAddresses = [
-        0x70997970C51812dc3A010C7d01b50e0d17dc79C8,
-        0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC,
+        0x02847D22C33f5F060Bd27e69F1a413AD44cab213,
+        0xaF7f488eDf63410AF7B82998A6a96a14dcB8e89d,
         0x90F79bf6EB2c4f870365E785982E1f101E93b906,
         0xe2C8f362154aacE6144Cb9d96f45b9568e0Ea721 // Adding the specific address from your test
     ];
@@ -35,7 +35,7 @@ contract TestnetUpgradeScript is Script {
 
         // Step 2.5: Store hash token
         _hashToken = HstkToken(payable(0xC8e007ec54F05e044737cc5Bcf6F8976a4242E99));
-        _hashToken.mint(0xCF97628F60eBaB69f2Eb182a86267a8478d0072e, 12_125_000 * 10 ** 18);
+        _hashToken.mint(PROXY_ADDRESS, 12_125_000 * 10 ** 18);
         // Step 3: Deploy new implementation
         newImplementation = new NewClaimable();
 
@@ -55,8 +55,8 @@ contract TestnetUpgradeScript is Script {
             // Create different types of tickets for each address
             oldImplementation.create(
                 testAddresses[i],
-                0, // cliff
-                1, // 1 day vesting
+                10, // cliff
+                15, // 1 day vesting
                 161 * 10 ** 18, // 61.125M tokens
                 50, // 50% TGE
                 1 // ticket type
@@ -120,6 +120,10 @@ contract TestnetUpgradeScript is Script {
             vm.stopBroadcast();
             vm.startPrank(testAddresses[i]);
             newImplementation.claimTokens(testAddresses[i]);
+
+            vm.expectRevert();
+            newImplementation.claimTokens(testAddresses[i]);
+            console.log("Reverting Successfully");
             vm.stopPrank();
             vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
 
