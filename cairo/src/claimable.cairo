@@ -49,13 +49,16 @@ pub trait IClaimable<TContractState> {
     fn token(self: @TContractState) -> ContractAddress;
     fn claimable_owner(self: @TContractState) -> ContractAddress;
     fn transfer_ownership(ref self: TContractState, new_owner: ContractAddress);
+    fn transfer_tickets(ref self: TContractState, beneficiary: ContractAddress);
 }
 
 #[starknet::contract]
 pub mod Claimable {
     use super::{Ticket, IClaimable};
     use core::traits::Into;
-    use starknet::{get_block_timestamp, get_caller_address, ContractAddress, ClassHash};
+    use starknet::{
+        get_block_timestamp, get_caller_address, ContractAddress, ClassHash, contract_address_const
+    };
     use cairo::interfaces::ierc20::{IERC20Dispatcher, IERC20DispatcherTrait};
     use core::num::traits::Zero;
     use openzeppelin::{
@@ -169,7 +172,7 @@ pub mod Claimable {
             ticket_type: u8,
         ) {
             // self._assert_owner();
-            self._validate_params(cliff,vesting,tge_percentage,ticket_type);
+            self._validate_params(cliff, vesting, tge_percentage, ticket_type);
             assert(beneficiaries.len() == amounts.len(), Errors::INVALID_CALLDATA);
             assert(beneficiaries.len() > 0, Errors::INVALID_CALLDATA);
 
@@ -198,19 +201,16 @@ pub mod Claimable {
             tge_percentage: u64,
             ticket_type: u8,
         ) {
-            self._validate_params(cliff,vesting,tge_percentage,ticket_type);
+            self._validate_params(cliff, vesting, tge_percentage, ticket_type);
             assert(beneficiaries.len() > 0, Errors::INVALID_CALLDATA);
-            
+
             let mut i = 0;
             loop {
                 if i >= beneficiaries.len() {
                     break;
                 }
                 let beneficiary = *beneficiaries.at(i);
-                self
-                    ._validate_basic_params(
-                        beneficiary, amount
-                    );
+                self._validate_basic_params(beneficiary, amount);
                 self
                     ._create_single_ticket(
                         beneficiary, cliff, vesting, amount, tge_percentage, ticket_type
@@ -267,26 +267,101 @@ pub mod Claimable {
             self.reentrancyguard.start();
 
             let mut ticket = self.tickets.read(id);
-            let hash_token: ContractAddress = self.hash_token.read();
+            // let hash_token: ContractAddress = self.hash_token.read();
             let claimable_amount = self.available(id);
             assert(!ticket.revoked, Errors::TICKET_REVOKED);
             assert(ticket.beneficiary == get_caller_address(), Errors::UNAUTHORIZED);
             self._validate_basic_params(recipient, ticket.balance);
             assert(claimable_amount != 0, Errors::NOTHING_TO_CLAIM);
-
-            ticket.claimed += claimable_amount;
-            ticket.balance -= claimable_amount;
-            ticket.last_claimed_at = get_block_timestamp();
-            self.tickets.write(id, ticket);
-
-            self.emit(Event::Claimed(Claimed { id, amount: claimable_amount, claimer: recipient }));
-
-            let transfer_result: bool = IERC20Dispatcher { contract_address: hash_token }
-                .transfer(recipient, claimable_amount);
+            let transfer_result:bool = self._process_claim(id,claimable_amount,recipient);
 
             self.reentrancyguard.end();
             transfer_result
         }
+
+        fn transfer_tickets(ref self: ContractState, beneficiary: ContractAddress, ticket_type:u8){
+            self._assert_owner();
+            let count: u64 = self.beneficiary_ticket_count.read(beneficiary);
+            let mut i: u64 = 0;
+            let mut new_count: u64 = 0;
+            let mut first_type3_found = false;
+            let mut consolidated_ticket_id = 0;
+            let mut new_balance = 0;
+            let mut new_amount = 0;
+            let mut claimed_amount = 0;
+
+            // First pass: Identify all type 3 tickets and sum their balances
+            loop {
+                if i >= count {
+                    break;
+                }
+                let ticket_id = self.beneficiary_tickets.read((beneficiary, i));
+                let mut ticket_info: Ticket = self.tickets.read(ticket_id);
+                
+                if ticket_info.ticket_type == ticket_type {
+                    if !first_type3_found {
+                        first_type3_found = true;
+                        consolidated_ticket_id = ticket_id;
+                    }
+                    new_balance += ticket_info.balance;
+                    claimed_amount += ticket_info.claimed;
+                    new_amount += ticket_info.amount; 
+                    
+                    if ticket_id != consolidated_ticket_id {
+                        
+                        ticket_info.beneficiary = contract_address_const::<0>();
+                        ticket_info.balance = 0;
+                        ticket_info.claimed = 0;
+                        ticket_info.amount = 0; 
+                        self.tickets.write(ticket_id, ticket_info);
+                    }
+                } else {
+                    self.beneficiary_tickets.write((beneficiary, new_count), ticket_id);
+                    new_count += 1;
+                }
+                i += 1;
+            };
+
+            if first_type3_found {
+                
+                let mut consolidated_ticket = self.tickets.read(consolidated_ticket_id);
+                consolidated_ticket.balance = new_balance;
+                consolidated_ticket.claimed = claimed_amount;
+                consolidated_ticket.amount = new_amount;
+                self.tickets.write(consolidated_ticket_id, consolidated_ticket);
+                
+                self.beneficiary_tickets.write((beneficiary, new_count), consolidated_ticket_id);
+                new_count += 1;
+            }
+            // 185 000 000 000 000 000 000
+            // 1300 000 000 000 000 000 000
+            self.beneficiary_ticket_count.write(beneficiary, new_count);
+        }
+        
+
+
+        // fn claim_tokens(ref self:ContractState, receipient:ContractAddress){
+            
+        //     self.reentrancyguard.start();
+        //     let caller:ContractAddress = get_caller_address();
+        //     let result:Array<u64> =self.my_beneficiary_tickets(caller);
+        //     let length: u64 = self.beneficiary_ticket_count.read(beneficiary);
+        //     let mut i: u64 = 0;
+        //     loop {
+        //         if i >= length {
+        //             break;
+        //         }
+        //         let ticket_id:u64 = self.beneficiary_tickets.read((caller, i));
+        //         let claimable_amount:u256 = self.available(ticket_id);
+        //         if(claimable_amount!=0){
+        //         let ticket_id:u64 = self.beneficiary_tickets.read((caller, i));
+        //             self._process_claim(ticket_id,claimable_amount,receipient);
+        //         }
+        //         i += 1;
+        //     };
+
+        //     self.reentrancyguard.end();
+        // }
 
         fn view_ticket(self: @ContractState, id: u64) -> Ticket {
             self.tickets.read(id)
@@ -306,7 +381,6 @@ pub mod Claimable {
                 result.append(self.beneficiary_tickets.read((beneficiary, i)));
                 i += 1;
             };
-
             result
         }
 
@@ -351,24 +425,17 @@ pub mod Claimable {
     #[generate_trait]
     impl InternalFunctionsImpl of InternalFunctions {
         fn _validate_basic_params(
-            self: @ContractState,
-            beneficiary: ContractAddress,
-            amount: u256,
+            self: @ContractState, beneficiary: ContractAddress, amount: u256,
         ) {
             assert(!beneficiary.is_zero(), Errors::INVALID_BENEFICIARY);
             assert(amount != 0, Errors::INVALID_AMOUNT);
         }
 
         fn _validate_params(
-            self: @ContractState,
-            cliff: u64,
-            vesting: u64,
-            tge_percentage: u64,
-            ticket_type: u8
+            self: @ContractState, cliff: u64, vesting: u64, tge_percentage: u64, ticket_type: u8
         ) {
             self._assert_owner();
             assert(ticket_type < 5, Errors::INVALID_TYPE);
-            assert(vesting >= cliff, Errors::INVALID_VESTING_PERIOD);
             assert(tge_percentage <= PERCENTAGE_DENOMINATOR, Errors::INVALID_TGE_PERCENTAGE);
         }
 
@@ -416,6 +483,24 @@ pub mod Claimable {
                 );
 
             ticket_id
+        }
+
+        fn _process_claim(ref self: ContractState , id:u64, claimable_amount:u256, recipient:ContractAddress)->bool{
+
+            let mut ticket:Ticket = self.tickets.read(id);
+            let hash_token:ContractAddress = self.hash_token.read();
+            ticket.claimed += claimable_amount;
+            ticket.balance -= claimable_amount;
+            ticket.last_claimed_at = get_block_timestamp();
+            self.tickets.write(id, ticket);
+
+            self.emit(Event::Claimed(Claimed { id, amount: claimable_amount, claimer: recipient }));
+
+            let transfer_result: bool = IERC20Dispatcher { contract_address: hash_token }
+                .transfer(recipient, claimable_amount);
+
+             transfer_result
+
         }
     }
 }

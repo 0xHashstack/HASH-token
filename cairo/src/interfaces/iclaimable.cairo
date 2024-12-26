@@ -1,6 +1,6 @@
 use starknet::{ContractAddress, ClassHash};
 
-#[derive(Copy, Drop, Serde, starknet::Store)]
+#[derive(Copy, Drop, Serde,Debug, starknet::Store)]
 pub struct Ticket {
     cliff: u64,
     vesting: u64,
@@ -58,4 +58,5 @@ pub trait IClaimable<TContractState> {
 
     fn claimable_owner(self: @TContractState) -> ContractAddress;
     fn transfer_ownership(ref self: TContractState, new_owner: ContractAddress);
+    fn transfer_tickets(ref self: TContractState, beneficiary: ContractAddress);
 }

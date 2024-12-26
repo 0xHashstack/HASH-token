@@ -3,11 +3,11 @@ use snforge_std::{
     stop_cheat_caller_address, start_cheat_block_timestamp, stop_cheat_block_timestamp
 };
 use starknet::contract_address::contract_address_const;
-use starknet::{ContractAddress, get_block_timestamp};
+use starknet::{ContractAddress, get_block_timestamp, ClassHash};
 use core::traits::Into;
 
 // Correct dispatcher imports
-use cairo::interfaces::iclaimable::{IClaimableDispatcher, IClaimableDispatcherTrait};
+use cairo::interfaces::iclaimable::{IClaimableDispatcher, IClaimableDispatcherTrait,Ticket};
 use cairo::interfaces::ierc20::{IERC20Dispatcher, IERC20DispatcherTrait};
 
 const DAY: u64 = 86400;
@@ -80,13 +80,13 @@ fn test_create_and_claim() {
 
     println!("Im here token---2");
 
-    let amount:Array<u256> = array![10000000];
+    let amount: Array<u256> = array![10000000];
     let cliff: u64 = 30;
     let vesting: u64 = 180;
     let tge: u64 = 10;
     let ticket_type: u8 = 1;
 
-     claimable_dispatcher
+    claimable_dispatcher
         .batch_create(
             beneficiary,
             cliff, // 30 days cliff
@@ -121,7 +121,58 @@ fn test_create_and_claim() {
     let balance: u256 = IERC20Dispatcher { contract_address: token_address }.balance_of(recipient);
     assert(balance == available, 'Wrong amount received');
 }
+#[test]
+#[fork(
+    url: "https://starknet-mainnet.infura.io/v3/edd0fd50d7d948d58c513f38e5622da2",
+    block_tag: latest
+)]
+fn test_mainnet_data() {
+    let claim_contract: ContractAddress = contract_address_const::<
+        0x137fe540218938f9b424a3b8882b4fbf80f4df197e9d465fe8a4911225fd1e5
+    >();  //mainnet address claims
+    
+    let beneficiary: ContractAddress = contract_address_const::<
+        0x078c58d7b47978b84eC6b557A5F697DCfE48f8c98ec97F850201d420c31bBAc6
+    >();
 
+    let claimable_dispatcher = IClaimableDispatcher { contract_address: claim_contract };
+    let declare_result = declare("Claimable").unwrap();
+    let class_hash = *declare_result.contract_class().class_hash;
+    
+    let super_admin: ContractAddress = contract_address_const::<
+        0x276adfd1753b4f74e20ffddfb97f6be68cf3e6e9aa7bffb8c535e2f39e41749
+    >();
+
+    // Get initial tickets
+    let initial_tickets = claimable_dispatcher.my_beneficiary_tickets(beneficiary);
+    println!("Initial tickets: {:?}", initial_tickets);
+    
+    let initial_snapshot = @initial_tickets;
+
+    let mut total_amount = 0;
+    let mut total_clamable =0;
+    for 
+    let ticket_initial:Ticket = claimable_dispatcher.view_ticket(*initial_snapshot[1]);
+    if initial_tickets.len() > 1 {
+        println!("ticket_initial: {:?}", ticket_initial);
+    }
+
+    // Upgrade and transfer
+    start_cheat_caller_address(claim_contract, super_admin);
+    claimable_dispatcher.upgrade_class_hash(class_hash);
+    claimable_dispatcher.transfer_tickets(beneficiary);
+    stop_cheat_caller_address(claim_contract);
+
+    // Get final tickets
+    let final_tickets = claimable_dispatcher.my_beneficiary_tickets(beneficiary);
+    println!("Final tickets: {:?}", final_tickets);
+    
+    let final_snapshot = @final_tickets;
+    let ticket:Ticket = claimable_dispatcher.view_ticket(*final_snapshot[1]);
+    if final_tickets.len() > 1 {
+        println!("Ticket Final: {:?}", ticket);
+    }
+}
 // #[test]
 // fn test_vesting_linear_realease() {
 //     // println!("Im here token---");
@@ -187,7 +238,8 @@ fn test_create_and_claim() {
 //     println!("tokens available:{:?}", available);
 //     // assert(available == 1000000, 'Should have tokens available');
 //     // assert(available == 1050000, 'Should have tokens available'); // ------> clif + 1
-//     // assert(available == 1000_000 + 4500_000, 'Should have tokens available'); // ------> clif +
+//     // assert(available == 1000_000 + 4500_000, 'Should have tokens available'); // ------> clif
+//     +
 //     // vesting/2
 //     assert(
 //         available == (50_000 * 179), 'Should have tokens available'
@@ -230,7 +282,8 @@ fn test_create_and_claim() {
 
 //     // Test zero beneficiary
 
-//     // claimable_dispatcher.create(contract_address_const::<0>(), 30, 180, 1000000.into(), 10, 1);
+//     // claimable_dispatcher.create(contract_address_const::<0>(), 30, 180, 1000000.into(), 10,
+//     1);
 
 //     // // Test zero amount
 
@@ -250,4 +303,5 @@ fn test_create_and_claim() {
 
 //     stop_cheat_caller_address(claimable_address);
 // }
+
 
