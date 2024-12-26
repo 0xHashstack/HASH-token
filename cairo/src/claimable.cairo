@@ -49,7 +49,7 @@ pub trait IClaimable<TContractState> {
     fn token(self: @TContractState) -> ContractAddress;
     fn claimable_owner(self: @TContractState) -> ContractAddress;
     fn transfer_ownership(ref self: TContractState, new_owner: ContractAddress);
-    fn transfer_tickets(ref self: TContractState, beneficiary: ContractAddress);
+    fn transfer_tickets(ref self: TContractState, beneficiary: ContractAddress, ticket_type:u8);
 }
 
 #[starknet::contract]

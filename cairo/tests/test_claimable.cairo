@@ -132,7 +132,7 @@ fn test_mainnet_data() {
     >();  //mainnet address claims
     
     let beneficiary: ContractAddress = contract_address_const::<
-        0x078c58d7b47978b84eC6b557A5F697DCfE48f8c98ec97F850201d420c31bBAc6
+    0x0fB997b99A9F4a393B408e5C341F334C0f2a9847954041AEC0bD5550D132093
     >();
 
     let claimable_dispatcher = IClaimableDispatcher { contract_address: claim_contract };
@@ -149,18 +149,26 @@ fn test_mainnet_data() {
     
     let initial_snapshot = @initial_tickets;
 
-    let mut total_amount = 0;
-    let mut total_clamable =0;
-    for 
-    let ticket_initial:Ticket = claimable_dispatcher.view_ticket(*initial_snapshot[1]);
-    if initial_tickets.len() > 1 {
+
+    let ticket_initial:Ticket = claimable_dispatcher.view_ticket( *initial_snapshot[0]);
+    // if initial_tickets.len() > 1 {
         println!("ticket_initial: {:?}", ticket_initial);
-    }
+    // }
+
+    // claim the tge amount for ticket 4501
+
+    println!("avaialbe amount Before states {:?}",claimable_dispatcher.available( *initial_snapshot[0]));
+
+    start_cheat_caller_address(claim_contract, beneficiary);
+    claimable_dispatcher.claim_ticket( *initial_snapshot[0],beneficiary);
+    stop_cheat_caller_address(claim_contract);
+
 
     // Upgrade and transfer
     start_cheat_caller_address(claim_contract, super_admin);
     claimable_dispatcher.upgrade_class_hash(class_hash);
-    claimable_dispatcher.transfer_tickets(beneficiary);
+    let ticket_type:u8 = 3;
+    claimable_dispatcher.transfer_tickets(beneficiary,ticket_type);
     stop_cheat_caller_address(claim_contract);
 
     // Get final tickets
@@ -168,10 +176,15 @@ fn test_mainnet_data() {
     println!("Final tickets: {:?}", final_tickets);
     
     let final_snapshot = @final_tickets;
-    let ticket:Ticket = claimable_dispatcher.view_ticket(*final_snapshot[1]);
-    if final_tickets.len() > 1 {
+    let ticket:Ticket = claimable_dispatcher.view_ticket(*final_snapshot[0]);
+    // if final_tickets.len() > 1 {
         println!("Ticket Final: {:?}", ticket);
-    }
+    // }
+
+    // assertEq(claimable_dispatcher.available(ticket_4501)>0,"Some Error occurred");
+
+    println!("avaialbe amount after migrating states {:?}",claimable_dispatcher.available(*final_snapshot[0]));
+
 }
 // #[test]
 // fn test_vesting_linear_realease() {
