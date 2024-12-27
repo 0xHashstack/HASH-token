@@ -344,8 +344,7 @@ contract NewClaimable is Initializable, UUPSUpgradeable, OwnableUpgradeable, Ree
         if (!flag) revert NothingToClaim();
         for (uint256 i = 0; i < _ticketsLength;) {
             uint256 _available = amounts[i];
-            Ticket memory _ticket = tickets[_ticketIds[i]];
-            if (_available != 0 && !_ticket.isRevoked) {
+            if (_available != 0) {
                 _processClaim(_ticketIds[i], _available, _recipient);
             }
             unchecked {
