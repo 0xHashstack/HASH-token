@@ -123,7 +123,7 @@ fn test_create_and_claim() {
 }
 #[test]
 #[fork(
-    url: "https://starknet-mainnet.infura.io/v3/edd0fd50d7d948d58c513f38e5622da2", block_tag: latest
+    url: "", block_tag: latest
 )]
 fn test_mainnet_data() {
     let claim_contract: ContractAddress = contract_address_const::<
