@@ -326,23 +326,30 @@ contract NewClaimable is Initializable, UUPSUpgradeable, OwnableUpgradeable, Ree
      */
     function claimTokens(address _recipient) external nonReentrant {
         uint256[] memory _ticketIds = myBeneficiaryTickets(msg.sender);
+        uint256[] memory amounts = new uint256[](_ticketIds.length);
         uint256 _ticketsLength = _ticketIds.length;
-        bool flag = _ticketsLength != 0;
-        if (!flag) revert NothingToClaim();
-        flag = false;
+        if (_ticketsLength == 0) revert NothingToClaim();
+        bool flag;
         for (uint256 i = 0; i < _ticketsLength;) {
             uint256 _available = available(_ticketIds[i]);
-            Ticket memory _ticket = tickets[_ticketIds[i]];
-            if (_available != 0 && !_ticket.isRevoked) {
-                _processClaim(_ticketIds[i], _available, _recipient);
+            amounts[i] = _available;
+            if (_available != 0) {
                 flag = true;
             }
             unchecked {
                 ++i;
             }
         }
-        if (!flag) {
-            revert NothingToClaim();
+        if (!flag) revert NothingToClaim();
+        for (uint256 i = 0; i < _ticketsLength;) {
+            uint256 _available = amounts[i];
+            Ticket memory _ticket = tickets[_ticketIds[i]];
+            if (_available != 0 && !_ticket.isRevoked) {
+                _processClaim(_ticketIds[i], _available, _recipient);
+            }
+            unchecked {
+                ++i;
+            }
         }
     }
 
