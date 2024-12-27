@@ -49,7 +49,8 @@ pub trait IClaimable<TContractState> {
     fn token(self: @TContractState) -> ContractAddress;
     fn claimable_owner(self: @TContractState) -> ContractAddress;
     fn transfer_ownership(ref self: TContractState, new_owner: ContractAddress);
-    fn transfer_tickets(ref self: TContractState, beneficiary: ContractAddress, ticket_type:u8);
+    fn transfer_tickets(ref self: TContractState, beneficiary: ContractAddress, ticket_type: u8);
+    fn claim_tokens(ref self: TContractState, receipient: ContractAddress);
 }
 
 #[starknet::contract]
@@ -273,13 +274,15 @@ pub mod Claimable {
             assert(ticket.beneficiary == get_caller_address(), Errors::UNAUTHORIZED);
             self._validate_basic_params(recipient, ticket.balance);
             assert(claimable_amount != 0, Errors::NOTHING_TO_CLAIM);
-            let transfer_result:bool = self._process_claim(id,claimable_amount,recipient);
+            let transfer_result: bool = self._process_claim(id, claimable_amount, recipient);
 
             self.reentrancyguard.end();
             transfer_result
         }
 
-        fn transfer_tickets(ref self: ContractState, beneficiary: ContractAddress, ticket_type:u8){
+        fn transfer_tickets(
+            ref self: ContractState, beneficiary: ContractAddress, ticket_type: u8
+        ) {
             self._assert_owner();
             let count: u64 = self.beneficiary_ticket_count.read(beneficiary);
             let mut i: u64 = 0;
@@ -297,7 +300,7 @@ pub mod Claimable {
                 }
                 let ticket_id = self.beneficiary_tickets.read((beneficiary, i));
                 let mut ticket_info: Ticket = self.tickets.read(ticket_id);
-                
+
                 if ticket_info.ticket_type == ticket_type {
                     if !first_type3_found {
                         first_type3_found = true;
@@ -305,14 +308,13 @@ pub mod Claimable {
                     }
                     new_balance += ticket_info.balance;
                     claimed_amount += ticket_info.claimed;
-                    new_amount += ticket_info.amount; 
-                    
+                    new_amount += ticket_info.amount;
+
                     if ticket_id != consolidated_ticket_id {
-                        
                         ticket_info.beneficiary = contract_address_const::<0>();
                         ticket_info.balance = 0;
                         ticket_info.claimed = 0;
-                        ticket_info.amount = 0; 
+                        ticket_info.amount = 0;
                         self.tickets.write(ticket_id, ticket_info);
                     }
                 } else {
@@ -323,45 +325,44 @@ pub mod Claimable {
             };
 
             if first_type3_found {
-                
                 let mut consolidated_ticket = self.tickets.read(consolidated_ticket_id);
                 consolidated_ticket.balance = new_balance;
                 consolidated_ticket.claimed = claimed_amount;
                 consolidated_ticket.amount = new_amount;
                 self.tickets.write(consolidated_ticket_id, consolidated_ticket);
-                
+
                 self.beneficiary_tickets.write((beneficiary, new_count), consolidated_ticket_id);
                 new_count += 1;
             }
-            // 185 000 000 000 000 000 000
-            // 1300 000 000 000 000 000 000
             self.beneficiary_ticket_count.write(beneficiary, new_count);
         }
-        
 
 
-        // fn claim_tokens(ref self:ContractState, receipient:ContractAddress){
-            
-        //     self.reentrancyguard.start();
-        //     let caller:ContractAddress = get_caller_address();
-        //     let result:Array<u64> =self.my_beneficiary_tickets(caller);
-        //     let length: u64 = self.beneficiary_ticket_count.read(beneficiary);
-        //     let mut i: u64 = 0;
-        //     loop {
-        //         if i >= length {
-        //             break;
-        //         }
-        //         let ticket_id:u64 = self.beneficiary_tickets.read((caller, i));
-        //         let claimable_amount:u256 = self.available(ticket_id);
-        //         if(claimable_amount!=0){
-        //         let ticket_id:u64 = self.beneficiary_tickets.read((caller, i));
-        //             self._process_claim(ticket_id,claimable_amount,receipient);
-        //         }
-        //         i += 1;
-        //     };
+        fn claim_tokens(ref self: ContractState, receipient: ContractAddress) {
+            self.reentrancyguard.start();
+            let caller: ContractAddress = get_caller_address();
+            let result: Array<u64> = self.my_beneficiary_tickets(caller);
+            let length: u64 = self.beneficiary_ticket_count.read(caller);
+            assert(length > 0, Errors::NOTHING_TO_CLAIM);
+            let mut flag: bool = false;
+            let mut i: u64 = 0;
+            loop {
+                if i >= length {
+                    break;
+                }
+                let ticket_id: u64 = self.beneficiary_tickets.read((caller, i));
+                let claimable_amount: u256 = self.available(ticket_id);
+                if (claimable_amount != 0) {
+                    let ticket_id: u64 = self.beneficiary_tickets.read((caller, i));
+                    self._process_claim(ticket_id, claimable_amount, receipient);
+                    flag = true;
+                }
+                i += 1;
+            };
+            assert(flag, Errors::NOTHING_TO_CLAIM);
 
-        //     self.reentrancyguard.end();
-        // }
+            self.reentrancyguard.end();
+        }
 
         fn view_ticket(self: @ContractState, id: u64) -> Ticket {
             self.tickets.read(id)
@@ -485,10 +486,11 @@ pub mod Claimable {
             ticket_id
         }
 
-        fn _process_claim(ref self: ContractState , id:u64, claimable_amount:u256, recipient:ContractAddress)->bool{
-
-            let mut ticket:Ticket = self.tickets.read(id);
-            let hash_token:ContractAddress = self.hash_token.read();
+        fn _process_claim(
+            ref self: ContractState, id: u64, claimable_amount: u256, recipient: ContractAddress
+        ) -> bool {
+            let mut ticket: Ticket = self.tickets.read(id);
+            let hash_token: ContractAddress = self.hash_token.read();
             ticket.claimed += claimable_amount;
             ticket.balance -= claimable_amount;
             ticket.last_claimed_at = get_block_timestamp();
@@ -499,8 +501,7 @@ pub mod Claimable {
             let transfer_result: bool = IERC20Dispatcher { contract_address: hash_token }
                 .transfer(recipient, claimable_amount);
 
-             transfer_result
-
+            transfer_result
         }
     }
 }

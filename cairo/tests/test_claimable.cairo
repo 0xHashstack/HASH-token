@@ -7,7 +7,7 @@ use starknet::{ContractAddress, get_block_timestamp, ClassHash};
 use core::traits::Into;
 
 // Correct dispatcher imports
-use cairo::interfaces::iclaimable::{IClaimableDispatcher, IClaimableDispatcherTrait,Ticket};
+use cairo::interfaces::iclaimable::{IClaimableDispatcher, IClaimableDispatcherTrait, Ticket};
 use cairo::interfaces::ierc20::{IERC20Dispatcher, IERC20DispatcherTrait};
 
 const DAY: u64 = 86400;
@@ -123,22 +123,21 @@ fn test_create_and_claim() {
 }
 #[test]
 #[fork(
-    url: "https://starknet-mainnet.infura.io/v3/edd0fd50d7d948d58c513f38e5622da2",
-    block_tag: latest
+    url: "https://starknet-mainnet.infura.io/v3/edd0fd50d7d948d58c513f38e5622da2", block_tag: latest
 )]
 fn test_mainnet_data() {
     let claim_contract: ContractAddress = contract_address_const::<
         0x137fe540218938f9b424a3b8882b4fbf80f4df197e9d465fe8a4911225fd1e5
-    >();  //mainnet address claims
-    
+    >(); //mainnet address claims
+
     let beneficiary: ContractAddress = contract_address_const::<
-    0x0fB997b99A9F4a393B408e5C341F334C0f2a9847954041AEC0bD5550D132093
+        0x078c58d7b47978b84eC6b557A5F697DCfE48f8c98ec97F850201d420c31bBAc6
     >();
 
     let claimable_dispatcher = IClaimableDispatcher { contract_address: claim_contract };
     let declare_result = declare("Claimable").unwrap();
     let class_hash = *declare_result.contract_class().class_hash;
-    
+
     let super_admin: ContractAddress = contract_address_const::<
         0x276adfd1753b4f74e20ffddfb97f6be68cf3e6e9aa7bffb8c535e2f39e41749
     >();
@@ -146,46 +145,59 @@ fn test_mainnet_data() {
     // Get initial tickets
     let initial_tickets = claimable_dispatcher.my_beneficiary_tickets(beneficiary);
     println!("Initial tickets: {:?}", initial_tickets);
-    
+
     let initial_snapshot = @initial_tickets;
 
+    let ticket_initial: Ticket = claimable_dispatcher.view_ticket(*initial_snapshot[1]);
 
-    let ticket_initial:Ticket = claimable_dispatcher.view_ticket( *initial_snapshot[0]);
-    // if initial_tickets.len() > 1 {
-        println!("ticket_initial: {:?}", ticket_initial);
-    // }
+    println!("ticket_initial: {:?}", ticket_initial);
 
     // claim the tge amount for ticket 4501
 
-    println!("avaialbe amount Before states {:?}",claimable_dispatcher.available( *initial_snapshot[0]));
+    println!(
+        "avaialbe amount Before states {:?}", claimable_dispatcher.available(*initial_snapshot[0])
+    );
 
-    start_cheat_caller_address(claim_contract, beneficiary);
-    claimable_dispatcher.claim_ticket( *initial_snapshot[0],beneficiary);
-    stop_cheat_caller_address(claim_contract);
+    println!(
+        "avaialbe amount Before states {:?}", claimable_dispatcher.available(*initial_snapshot[1])
+    );
 
+    // start_cheat_caller_address(claim_contract, beneficiary);
+    // claimable_dispatcher.claim_ticket(*initial_snapshot[1], beneficiary);
+    // stop_cheat_caller_address(claim_contract);
 
     // Upgrade and transfer
     start_cheat_caller_address(claim_contract, super_admin);
     claimable_dispatcher.upgrade_class_hash(class_hash);
-    let ticket_type:u8 = 3;
-    claimable_dispatcher.transfer_tickets(beneficiary,ticket_type);
+    let ticket_type: u8 = 3;
+    claimable_dispatcher.transfer_tickets(beneficiary, ticket_type);
     stop_cheat_caller_address(claim_contract);
 
     // Get final tickets
     let final_tickets = claimable_dispatcher.my_beneficiary_tickets(beneficiary);
     println!("Final tickets: {:?}", final_tickets);
-    
+
     let final_snapshot = @final_tickets;
-    let ticket:Ticket = claimable_dispatcher.view_ticket(*final_snapshot[0]);
-    // if final_tickets.len() > 1 {
-        println!("Ticket Final: {:?}", ticket);
-    // }
+    // let ticket: Ticket = claimable_dispatcher.view_ticket(*final_snapshot[1]);
+    // println!("Ticket Final: {:?}", ticket);
+
+    start_cheat_caller_address(claim_contract, beneficiary);
+    claimable_dispatcher.claim_tokens(beneficiary);
+    stop_cheat_caller_address(claim_contract);
 
     // assertEq(claimable_dispatcher.available(ticket_4501)>0,"Some Error occurred");
 
-    println!("avaialbe amount after migrating states {:?}",claimable_dispatcher.available(*final_snapshot[0]));
-
+    println!(
+        "avaialbe amount after migrating states {:?}",
+        claimable_dispatcher.available(*final_snapshot[0])
+    );
+    println!(
+        "avaialbe amount after migrating states {:?}",
+        claimable_dispatcher.available(*final_snapshot[1])
+    );
 }
+//46 250 000 000 000 000 000
+//278 750 000 000 000 000 000
 // #[test]
 // fn test_vesting_linear_realease() {
 //     // println!("Im here token---");
