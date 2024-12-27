@@ -8,7 +8,7 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/Proxy/ERC1967/ERC1967Proxy.s
 
 contract DeployClaimable is Script {
     HstkToken public hashToken;
-    address superAdmin = address(0xE4f3B256c27cE7c76C5D16Ae81838aA14d8846C8); // Replace this with Address of the owner
+    address superAdmin = address(0x02847D22C33f5F060Bd27e69F1a413AD44cab213); // Replace this with Address of the owner
     ERC1967Proxy claimContract;
 
     function deployClaimable() public returns (address) {
