@@ -325,6 +325,7 @@ contract NewClaimable is Initializable, UUPSUpgradeable, OwnableUpgradeable, Ree
      * @param _recipient Address to receive the claimed tokens
      */
     function claimTokens(address _recipient) external nonReentrant {
+        if (_recipient == address(0)) revert InvalidParams();
         uint256[] memory _ticketIds = myBeneficiaryTickets(msg.sender);
         uint256[] memory amounts = new uint256[](_ticketIds.length);
         uint256 _ticketsLength = _ticketIds.length;
