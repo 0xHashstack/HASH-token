@@ -18,15 +18,7 @@ pub struct Ticket {
 #[starknet::interface]
 pub trait IClaimable<TContractState> {
     fn upgrade_class_hash(ref self: TContractState, new_class_hash: ClassHash);
-    fn create(
-        ref self: TContractState,
-        beneficiary: ContractAddress,
-        cliff: u64,
-        vesting: u64,
-        amount: u256,
-        tge_percentage: u64,
-        ticket_type: u8
-    ) -> u64;
+
     fn batch_create(
         ref self: TContractState,
         beneficiaries: Array<ContractAddress>,
@@ -36,6 +28,7 @@ pub trait IClaimable<TContractState> {
         tge_percentage: u64,
         ticket_type: u8,
     );
+
     fn batch_create_same_amount(
         ref self: TContractState,
         beneficiaries: Array<ContractAddress>,
@@ -53,24 +46,28 @@ pub trait IClaimable<TContractState> {
     fn my_beneficiary_tickets(self: @TContractState, beneficiary: ContractAddress) -> Array<u64>;
     fn transfer_hash_token(ref self: TContractState, to: ContractAddress, amount: u256);
     fn revoke(ref self: TContractState, id: u64) -> bool;
-
     fn token(self: @TContractState) -> ContractAddress;
-
     fn claimable_owner(self: @TContractState) -> ContractAddress;
-    fn transfer_ownership(ref self: TContractState,new_owner:ContractAddress);
+    fn transfer_ownership(ref self: TContractState, new_owner: ContractAddress);
+    fn transfer_tickets(ref self: TContractState, beneficiaries:Array<ContractAddress>, ticket_type: u8);
+    fn claim_tokens(ref self: TContractState, receipient: ContractAddress);
 }
 
 #[starknet::contract]
 pub mod Claimable {
     use super::{Ticket, IClaimable};
     use core::traits::Into;
-    use starknet::{get_block_timestamp, get_caller_address, ContractAddress, ClassHash};
+    use starknet::{
+        get_block_timestamp, get_caller_address, ContractAddress, ClassHash, contract_address_const
+    };
     use cairo::interfaces::ierc20::{IERC20Dispatcher, IERC20DispatcherTrait};
     use core::num::traits::Zero;
     use openzeppelin::{
         security::reentrancyguard::ReentrancyGuardComponent,
         upgrades::upgradeable::UpgradeableComponent, introspection::src5::SRC5Component
     };
+    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
 
     const SECONDS_PER_DAY: u64 = 86400;
     const PERCENTAGE_DENOMINATOR: u64 = 100;
@@ -96,9 +93,9 @@ pub mod Claimable {
         current_id: u64,
         hash_token: ContractAddress,
         owner: ContractAddress,
-        tickets: LegacyMap<u64, Ticket>,
-        beneficiary_tickets: LegacyMap<(ContractAddress, u64), u64>,
-        beneficiary_ticket_count: LegacyMap<ContractAddress, u64>
+        tickets: Map<u64, Ticket>,
+        beneficiary_tickets: Map<(ContractAddress, u64), u64>,
+        beneficiary_ticket_count: Map<ContractAddress, u64>
     }
 
     #[event]
@@ -140,22 +137,23 @@ pub mod Claimable {
 
     mod Errors {
         pub const UNAUTHORIZED: felt252 = 'Unauthorized';
+        pub const INVALID_CALLDATA: felt252 = 'Invalid inputs';
         pub const INVALID_BENEFICIARY: felt252 = 'Invalid beneficiary';
         pub const INVALID_AMOUNT: felt252 = 'Invalid amount';
         pub const INVALID_VESTING_PERIOD: felt252 = 'Invalid vesting period';
         pub const INVALID_TGE_PERCENTAGE: felt252 = 'Invalid TGE percentage';
-        pub const TICKET_REVOKED: felt252 = 'Ticket revoked';
+        pub const TICKET_REVOKED: felt252 = 'Ticket is revoked';
         pub const NOTHING_TO_CLAIM: felt252 = 'Nothing to claim';
         pub const ZERO_ADDRESS: felt252 = 'Zero address';
+        pub const INVALID_TYPE: felt252 = 'Invalid ticket type';
+        pub const ZERO_BALANCE: felt252 = 'Zero Balance in Claims';
     }
 
     #[constructor]
     fn constructor(ref self: ContractState, token: ContractAddress, owner_: ContractAddress) {
         assert(!token.is_zero() && !owner_.is_zero(), Errors::ZERO_ADDRESS);
-        // println!("I'm here");
         self.owner.write(owner_);
         self.hash_token.write(token);
-        // println!("I'm here aswell");
     }
 
     #[abi(embed_v0)]
@@ -163,24 +161,6 @@ pub mod Claimable {
         fn upgrade_class_hash(ref self: ContractState, new_class_hash: ClassHash) {
             self._assert_owner();
             self.upgradeable.upgrade(new_class_hash);
-        }
-
-        fn create(
-            ref self: ContractState,
-            beneficiary: ContractAddress,
-            cliff: u64,
-            vesting: u64,
-            amount: u256,
-            tge_percentage: u64,
-            ticket_type: u8
-        ) -> u64 {
-            self._assert_owner();
-            assert(ticket_type < 5, 'Error');
-            self._validate_basic_params(beneficiary, amount, cliff, vesting, tge_percentage);
-            self
-                ._create_single_ticket(
-                    beneficiary, cliff, vesting, amount, tge_percentage, ticket_type
-                )
         }
 
         fn batch_create(
@@ -192,10 +172,10 @@ pub mod Claimable {
             tge_percentage: u64,
             ticket_type: u8,
         ) {
-            self._assert_owner();
-            assert(beneficiaries.len() == amounts.len(), 'Mismatched array lengths');
-            assert(beneficiaries.len() > 0, 'Empty beneficiary list');
-            assert(ticket_type < 5, 'Error');
+            // self._assert_owner();
+            self._validate_params(cliff, vesting, tge_percentage, ticket_type);
+            assert(beneficiaries.len() == amounts.len(), Errors::INVALID_CALLDATA);
+            assert(beneficiaries.len() > 0, Errors::INVALID_CALLDATA);
 
             let mut i = 0;
             loop {
@@ -204,7 +184,7 @@ pub mod Claimable {
                 }
                 let beneficiary = *beneficiaries.at(i);
                 let amount = *amounts.at(i);
-                self._validate_basic_params(beneficiary, amount, cliff, vesting, tge_percentage);
+                self._validate_basic_params(beneficiary, amount);
                 self
                     ._create_single_ticket(
                         beneficiary, cliff, vesting, amount, tge_percentage, ticket_type
@@ -222,13 +202,8 @@ pub mod Claimable {
             tge_percentage: u64,
             ticket_type: u8,
         ) {
-            self._assert_owner();
-            assert(beneficiaries.len() > 0, 'Empty beneficiary list');
-            assert(ticket_type < 5, 'Error');
-            self
-                ._validate_basic_params(
-                    *beneficiaries.at(0), amount, cliff, vesting, tge_percentage
-                );
+            self._validate_params(cliff, vesting, tge_percentage, ticket_type);
+            assert(beneficiaries.len() > 0, Errors::INVALID_CALLDATA);
 
             let mut i = 0;
             loop {
@@ -236,6 +211,7 @@ pub mod Claimable {
                     break;
                 }
                 let beneficiary = *beneficiaries.at(i);
+                self._validate_basic_params(beneficiary, amount);
                 self
                     ._create_single_ticket(
                         beneficiary, cliff, vesting, amount, tge_percentage, ticket_type
@@ -291,28 +267,74 @@ pub mod Claimable {
         fn claim_ticket(ref self: ContractState, id: u64, recipient: ContractAddress) -> bool {
             self.reentrancyguard.start();
 
-            let mut ticket = self.tickets.read(id);
-            let hash_token:ContractAddress = self.hash_token.read();
-            assert(!recipient.is_zero(), Errors::INVALID_BENEFICIARY);
-            assert(!ticket.revoked, 'Errors');
-            assert(ticket.beneficiary == get_caller_address(), Errors::UNAUTHORIZED);
-            assert(ticket.balance != 0, Errors::NOTHING_TO_CLAIM);
-
+            let ticket = self.tickets.read(id);
             let claimable_amount = self.available(id);
+            assert(!ticket.revoked, Errors::TICKET_REVOKED);
+            assert(ticket.beneficiary == get_caller_address(), Errors::UNAUTHORIZED);
+            self._validate_basic_params(recipient, ticket.balance);
             assert(claimable_amount != 0, Errors::NOTHING_TO_CLAIM);
-
-            ticket.claimed += claimable_amount;
-            ticket.balance -= claimable_amount;
-            ticket.last_claimed_at = get_block_timestamp();
-            self.tickets.write(id, ticket);
-
-            self.emit(Event::Claimed(Claimed { id, amount: claimable_amount, claimer: recipient }));
-
-            let transfer_result:bool = IERC20Dispatcher { contract_address:hash_token }
-                .transfer(recipient, claimable_amount);
+            let transfer_result: bool = self._process_claim(id, claimable_amount, recipient);
 
             self.reentrancyguard.end();
             transfer_result
+        }
+
+
+        fn transfer_tickets(ref self: ContractState,beneficiaries:Array<ContractAddress>,ticket_type:u8){
+            self._assert_owner();
+            let count = beneficiaries.len();
+            let mut i=0;
+            loop{
+                if i == count {
+                    break;
+                }
+                self._transfer_tickets(*beneficiaries.at(i),ticket_type);
+                i += 1;
+            };   
+
+        }
+
+        fn claim_tokens(ref self: ContractState, receipient: ContractAddress) {
+           
+            self.reentrancyguard.start();
+            let caller: ContractAddress = get_caller_address();
+            let result: Array<u64> = self.my_beneficiary_tickets(caller);
+            let length = result.len();
+            assert(length > 0, Errors::NOTHING_TO_CLAIM);
+            let mut claimable_amounts:Array<u256> = ArrayTrait::new();
+
+            let mut flag:bool = false;
+            let mut i:u32 = 0;
+
+            loop {
+                if i == length.try_into().unwrap() {
+                    break;
+                }
+                let ticket_id: u64 = self.beneficiary_tickets.read((caller, i.into()));
+                let available:u256 = self.available(ticket_id);
+                    claimable_amounts.append(available);
+                    if(available !=0 ){
+                        flag = true;
+                }
+                i += 1;
+            };
+
+            assert(flag,Errors::NOTHING_TO_CLAIM);
+
+            i = 0;
+            loop {
+                if i == length.try_into().unwrap() {
+                    break;
+                }
+                let claimable_amount: u256 = *claimable_amounts.at(i);
+                if (claimable_amount != 0) {
+                    let ticket_id: u64 = self.beneficiary_tickets.read((caller, i.into()));
+                    self._process_claim(ticket_id, claimable_amount, receipient);
+                }
+                i += 1;
+            };
+
+            self.reentrancyguard.end();
         }
 
         fn view_ticket(self: @ContractState, id: u64) -> Ticket {
@@ -333,13 +355,13 @@ pub mod Claimable {
                 result.append(self.beneficiary_tickets.read((beneficiary, i)));
                 i += 1;
             };
-
             result
         }
 
         fn transfer_hash_token(ref self: ContractState, to: ContractAddress, amount: u256) {
             self.reentrancyguard.start();
             self._assert_owner();
+            self._validate_basic_params(to, amount);
             IERC20Dispatcher { contract_address: self.hash_token.read() }.transfer(to, amount);
             self.reentrancyguard.end();
         }
@@ -347,8 +369,8 @@ pub mod Claimable {
         fn revoke(ref self: ContractState, id: u64) -> bool {
             self._assert_owner();
             let mut ticket = self.tickets.read(id);
-            assert(!ticket.revoked, 'Already revoked');
-            assert(ticket.balance != 0, 'No balance to revoke');
+            assert(!ticket.revoked, Errors::TICKET_REVOKED);
+            assert(ticket.balance != 0, Errors::ZERO_BALANCE);
 
             ticket.revoked = true;
             ticket.balance = 0;
@@ -366,28 +388,28 @@ pub mod Claimable {
             self.owner.read()
         }
 
-        fn transfer_ownership(ref self: ContractState,new_owner:ContractAddress){
-            assert(!new_owner.is_zero(),Errors::ZERO_ADDRESS);
+        fn transfer_ownership(ref self: ContractState, new_owner: ContractAddress) {
+            assert(!new_owner.is_zero(), Errors::ZERO_ADDRESS);
             self._assert_owner();
             self.owner.write(new_owner);
         }
-
     }
 
 
     #[generate_trait]
     impl InternalFunctionsImpl of InternalFunctions {
         fn _validate_basic_params(
-            self: @ContractState,
-            beneficiary: ContractAddress,
-            amount: u256,
-            cliff: u64,
-            vesting: u64,
-            tge_percentage: u64
+            self: @ContractState, beneficiary: ContractAddress, amount: u256,
         ) {
             assert(!beneficiary.is_zero(), Errors::INVALID_BENEFICIARY);
             assert(amount != 0, Errors::INVALID_AMOUNT);
-            assert(vesting >= cliff, Errors::INVALID_VESTING_PERIOD);
+        }
+
+        fn _validate_params(
+            self: @ContractState, cliff: u64, vesting: u64, tge_percentage: u64, ticket_type: u8
+        ) {
+            self._assert_owner();
+            assert(ticket_type < 5, Errors::INVALID_TYPE);
             assert(tge_percentage <= PERCENTAGE_DENOMINATOR, Errors::INVALID_TGE_PERCENTAGE);
         }
 
@@ -435,6 +457,81 @@ pub mod Claimable {
                 );
 
             ticket_id
+        }
+
+        fn _process_claim(
+            ref self: ContractState, id: u64, claimable_amount: u256, recipient: ContractAddress
+        ) -> bool {
+            let mut ticket: Ticket = self.tickets.read(id);
+            let hash_token: ContractAddress = self.hash_token.read();
+            ticket.claimed += claimable_amount;
+            ticket.balance -= claimable_amount;
+            ticket.last_claimed_at = get_block_timestamp();
+            self.tickets.write(id, ticket);
+
+            self.emit(Event::Claimed(Claimed { id, amount: claimable_amount, claimer: recipient }));
+
+            let transfer_result: bool = IERC20Dispatcher { contract_address: hash_token }
+                .transfer(recipient, claimable_amount);
+
+            transfer_result
+        }
+
+
+        fn _transfer_tickets(
+            ref self: ContractState, beneficiary: ContractAddress, ticket_type: u8
+        ) {
+            let count: u64 = self.beneficiary_ticket_count.read(beneficiary);
+            let mut i: u64 = 0;
+            let mut new_count: u64 = 0;
+            let mut first_type3_found = false;
+            let mut consolidated_ticket_id = 0;
+            let mut new_balance = 0;
+            let mut new_amount = 0;
+            let mut claimed_amount = 0;
+
+            // First pass: Identify all type 3 tickets and sum their balances
+            loop {
+                if i >= count {
+                    break;
+                }
+                let ticket_id = self.beneficiary_tickets.read((beneficiary, i));
+                let mut ticket_info: Ticket = self.tickets.read(ticket_id);
+
+                if ticket_info.ticket_type == ticket_type {
+                    if !first_type3_found {
+                        first_type3_found = true;
+                        consolidated_ticket_id = ticket_id;
+                    }
+                    new_balance += ticket_info.balance;
+                    claimed_amount += ticket_info.claimed;
+                    new_amount += ticket_info.amount;
+
+                    if ticket_id != consolidated_ticket_id {
+                        ticket_info.beneficiary = contract_address_const::<0>();
+                        ticket_info.balance = 0;
+                        ticket_info.claimed = 0;
+                        ticket_info.amount = 0;
+                        self.tickets.write(ticket_id, ticket_info);
+                    }
+                } else {
+                    self.beneficiary_tickets.write((beneficiary, new_count), ticket_id);
+                    new_count += 1;
+                }
+                i += 1;
+            };
+
+            if first_type3_found {
+                let mut consolidated_ticket = self.tickets.read(consolidated_ticket_id);
+                consolidated_ticket.balance = new_balance;
+                consolidated_ticket.claimed = claimed_amount;
+                consolidated_ticket.amount = new_amount;
+                self.tickets.write(consolidated_ticket_id, consolidated_ticket);
+
+                self.beneficiary_tickets.write((beneficiary, new_count), consolidated_ticket_id);
+                new_count += 1;
+            }
+            self.beneficiary_ticket_count.write(beneficiary, new_count);
         }
     }
 }

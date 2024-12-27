@@ -6,6 +6,7 @@ solc = "0.8.28"
 
 gas_reports = ["*"]
 no_test = true
+evm_version = "shanghai"
 
 
 [rpc_endpoints]
