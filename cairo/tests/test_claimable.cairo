@@ -130,9 +130,12 @@ fn test_mainnet_data() {
         0x137fe540218938f9b424a3b8882b4fbf80f4df197e9d465fe8a4911225fd1e5
     >(); //mainnet address claims
 
-    let beneficiary: ContractAddress = contract_address_const::<
-        0x078c58d7b47978b84eC6b557A5F697DCfE48f8c98ec97F850201d420c31bBAc6
-    >();
+    let beneficiaries: Array<ContractAddress> = array![contract_address_const::<0x078c58d7b47978b84eC6b557A5F697DCfE48f8c98ec97F850201d420c31bBAc6
+    >()];
+
+    let beneficiary:ContractAddress = *beneficiaries.at(0);
+
+    println!("beneficiary:{:?} ",beneficiary);
 
     let claimable_dispatcher = IClaimableDispatcher { contract_address: claim_contract };
     let declare_result = declare("Claimable").unwrap();
@@ -170,7 +173,7 @@ fn test_mainnet_data() {
     start_cheat_caller_address(claim_contract, super_admin);
     claimable_dispatcher.upgrade_class_hash(class_hash);
     let ticket_type: u8 = 3;
-    claimable_dispatcher.transfer_tickets(beneficiary, ticket_type);
+    claimable_dispatcher.transfer_tickets(beneficiaries, ticket_type);
     stop_cheat_caller_address(claim_contract);
 
     // Get final tickets
@@ -181,23 +184,33 @@ fn test_mainnet_data() {
     // let ticket: Ticket = claimable_dispatcher.view_ticket(*final_snapshot[1]);
     // println!("Ticket Final: {:?}", ticket);
 
-    start_cheat_caller_address(claim_contract, beneficiary);
-    claimable_dispatcher.claim_tokens(beneficiary);
-    stop_cheat_caller_address(claim_contract);
-
     // assertEq(claimable_dispatcher.available(ticket_4501)>0,"Some Error occurred");
 
     println!(
-        "avaialbe amount after migrating states {:?}",
+        "available amount after migrating states {:?}",
         claimable_dispatcher.available(*final_snapshot[0])
     );
     println!(
-        "avaialbe amount after migrating states {:?}",
+        "available amount after migrating states {:?}",
         claimable_dispatcher.available(*final_snapshot[1])
     );
+
+    start_cheat_caller_address(claim_contract,beneficiary);
+    claimable_dispatcher.claim_tokens(beneficiary);
+    stop_cheat_caller_address(claim_contract);
+
+
+    println!(
+        "available amount after migrating states {:?}",
+        claimable_dispatcher.view_ticket(*final_snapshot[0])
+    );
+    println!(
+        "available amount after migrating states {:?}",
+        claimable_dispatcher.view_ticket(*final_snapshot[1])
+    );
+
+    
 }
-//46 250 000 000 000 000 000
-//278 750 000 000 000 000 000
 // #[test]
 // fn test_vesting_linear_realease() {
 //     // println!("Im here token---");

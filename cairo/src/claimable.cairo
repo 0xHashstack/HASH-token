@@ -49,7 +49,7 @@ pub trait IClaimable<TContractState> {
     fn token(self: @TContractState) -> ContractAddress;
     fn claimable_owner(self: @TContractState) -> ContractAddress;
     fn transfer_ownership(ref self: TContractState, new_owner: ContractAddress);
-    fn transfer_tickets(ref self: TContractState, beneficiary: ContractAddress, ticket_type: u8);
+    fn transfer_tickets(ref self: TContractState, beneficiaries:Array<ContractAddress>, ticket_type: u8);
     fn claim_tokens(ref self: TContractState, receipient: ContractAddress);
 }
 
@@ -267,8 +267,7 @@ pub mod Claimable {
         fn claim_ticket(ref self: ContractState, id: u64, recipient: ContractAddress) -> bool {
             self.reentrancyguard.start();
 
-            let mut ticket = self.tickets.read(id);
-            // let hash_token: ContractAddress = self.hash_token.read();
+            let ticket = self.tickets.read(id);
             let claimable_amount = self.available(id);
             assert(!ticket.revoked, Errors::TICKET_REVOKED);
             assert(ticket.beneficiary == get_caller_address(), Errors::UNAUTHORIZED);
@@ -280,86 +279,58 @@ pub mod Claimable {
             transfer_result
         }
 
-        fn transfer_tickets(
-            ref self: ContractState, beneficiary: ContractAddress, ticket_type: u8
-        ) {
-            self._assert_owner();
-            let count: u64 = self.beneficiary_ticket_count.read(beneficiary);
-            let mut i: u64 = 0;
-            let mut new_count: u64 = 0;
-            let mut first_type3_found = false;
-            let mut consolidated_ticket_id = 0;
-            let mut new_balance = 0;
-            let mut new_amount = 0;
-            let mut claimed_amount = 0;
 
-            // First pass: Identify all type 3 tickets and sum their balances
-            loop {
+        fn transfer_tickets(ref self: ContractState,beneficiaries:Array<ContractAddress>,ticket_type:u8){
+            self._assert_owner();
+            let count = beneficiaries.len();
+            let mut i=0;
+            loop{
                 if i >= count {
                     break;
                 }
-                let ticket_id = self.beneficiary_tickets.read((beneficiary, i));
-                let mut ticket_info: Ticket = self.tickets.read(ticket_id);
-
-                if ticket_info.ticket_type == ticket_type {
-                    if !first_type3_found {
-                        first_type3_found = true;
-                        consolidated_ticket_id = ticket_id;
-                    }
-                    new_balance += ticket_info.balance;
-                    claimed_amount += ticket_info.claimed;
-                    new_amount += ticket_info.amount;
-
-                    if ticket_id != consolidated_ticket_id {
-                        ticket_info.beneficiary = contract_address_const::<0>();
-                        ticket_info.balance = 0;
-                        ticket_info.claimed = 0;
-                        ticket_info.amount = 0;
-                        self.tickets.write(ticket_id, ticket_info);
-                    }
-                } else {
-                    self.beneficiary_tickets.write((beneficiary, new_count), ticket_id);
-                    new_count += 1;
-                }
+                self._transfer_tickets(*beneficiaries.at(i),ticket_type);
                 i += 1;
-            };
+            };   
 
-            if first_type3_found {
-                let mut consolidated_ticket = self.tickets.read(consolidated_ticket_id);
-                consolidated_ticket.balance = new_balance;
-                consolidated_ticket.claimed = claimed_amount;
-                consolidated_ticket.amount = new_amount;
-                self.tickets.write(consolidated_ticket_id, consolidated_ticket);
-
-                self.beneficiary_tickets.write((beneficiary, new_count), consolidated_ticket_id);
-                new_count += 1;
-            }
-            self.beneficiary_ticket_count.write(beneficiary, new_count);
         }
 
-
         fn claim_tokens(ref self: ContractState, receipient: ContractAddress) {
+           
             self.reentrancyguard.start();
             let caller: ContractAddress = get_caller_address();
             let result: Array<u64> = self.my_beneficiary_tickets(caller);
-            let length: u64 = self.beneficiary_ticket_count.read(caller);
+            let length = result.len();
+            println!("lenght :{:?} ", length);
             assert(length > 0, Errors::NOTHING_TO_CLAIM);
-            let mut flag: bool = false;
-            let mut i: u64 = 0;
+            let mut claimable_amounts:Array<u256> = ArrayTrait::new();
+
+            let mut flag:bool = false;
+            let mut i:u32 = 0;
+
             loop {
-                if i >= length {
+                if i >= length.try_into().unwrap() {
                     break;
                 }
-                let ticket_id: u64 = self.beneficiary_tickets.read((caller, i));
-                let claimable_amount: u256 = self.available(ticket_id);
-                if (claimable_amount != 0) {
-                    let ticket_id: u64 = self.beneficiary_tickets.read((caller, i));
-                    self._process_claim(ticket_id, claimable_amount, receipient);
-                    flag = true;
+                let ticket_id: u64 = self.beneficiary_tickets.read((caller, i.into()));
+                let available:u256 = self.available(ticket_id);
+                    claimable_amounts.append(available);
+                    if(available !=0 ){
+                        flag = true;
                 }
                 i += 1;
             };
-            assert(flag, Errors::NOTHING_TO_CLAIM);
+            i = 0;
+            loop {
+                if i >= length.try_into().unwrap() {
+                    break;
+                }
+                let claimable_amount: u256 = *claimable_amounts.at(i);
+                if (claimable_amount != 0) {
+                    let ticket_id: u64 = self.beneficiary_tickets.read((caller, i.into()));
+                    self._process_claim(ticket_id, claimable_amount, receipient);
+                }
+                i += 1;
+            };
 
             self.reentrancyguard.end();
         }
@@ -502,6 +473,63 @@ pub mod Claimable {
                 .transfer(recipient, claimable_amount);
 
             transfer_result
+        }
+
+
+        fn _transfer_tickets(
+            ref self: ContractState, beneficiary: ContractAddress, ticket_type: u8
+        ) {
+            let count: u64 = self.beneficiary_ticket_count.read(beneficiary);
+            let mut i: u64 = 0;
+            let mut new_count: u64 = 0;
+            let mut first_type3_found = false;
+            let mut consolidated_ticket_id = 0;
+            let mut new_balance = 0;
+            let mut new_amount = 0;
+            let mut claimed_amount = 0;
+
+            // First pass: Identify all type 3 tickets and sum their balances
+            loop {
+                if i >= count {
+                    break;
+                }
+                let ticket_id = self.beneficiary_tickets.read((beneficiary, i));
+                let mut ticket_info: Ticket = self.tickets.read(ticket_id);
+
+                if ticket_info.ticket_type == ticket_type {
+                    if !first_type3_found {
+                        first_type3_found = true;
+                        consolidated_ticket_id = ticket_id;
+                    }
+                    new_balance += ticket_info.balance;
+                    claimed_amount += ticket_info.claimed;
+                    new_amount += ticket_info.amount;
+
+                    if ticket_id != consolidated_ticket_id {
+                        ticket_info.beneficiary = contract_address_const::<0>();
+                        ticket_info.balance = 0;
+                        ticket_info.claimed = 0;
+                        ticket_info.amount = 0;
+                        self.tickets.write(ticket_id, ticket_info);
+                    }
+                } else {
+                    self.beneficiary_tickets.write((beneficiary, new_count), ticket_id);
+                    new_count += 1;
+                }
+                i += 1;
+            };
+
+            if first_type3_found {
+                let mut consolidated_ticket = self.tickets.read(consolidated_ticket_id);
+                consolidated_ticket.balance = new_balance;
+                consolidated_ticket.claimed = claimed_amount;
+                consolidated_ticket.amount = new_amount;
+                self.tickets.write(consolidated_ticket_id, consolidated_ticket);
+
+                self.beneficiary_tickets.write((beneficiary, new_count), consolidated_ticket_id);
+                new_count += 1;
+            }
+            self.beneficiary_ticket_count.write(beneficiary, new_count);
         }
     }
 }

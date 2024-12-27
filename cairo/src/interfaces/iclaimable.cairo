@@ -58,6 +58,6 @@ pub trait IClaimable<TContractState> {
 
     fn claimable_owner(self: @TContractState) -> ContractAddress;
     fn transfer_ownership(ref self: TContractState, new_owner: ContractAddress);
-    fn transfer_tickets(ref self: TContractState, beneficiary: ContractAddress, ticket_type: u8);
+    fn transfer_tickets(ref self: TContractState, beneficiaries:Array<ContractAddress>, ticket_type: u8);
     fn claim_tokens(ref self: TContractState, receipient: ContractAddress);
 }
