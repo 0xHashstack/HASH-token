@@ -285,7 +285,7 @@ pub mod Claimable {
             let count = beneficiaries.len();
             let mut i=0;
             loop{
-                if i >= count {
+                if i == count {
                     break;
                 }
                 self._transfer_tickets(*beneficiaries.at(i),ticket_type);
@@ -300,7 +300,6 @@ pub mod Claimable {
             let caller: ContractAddress = get_caller_address();
             let result: Array<u64> = self.my_beneficiary_tickets(caller);
             let length = result.len();
-            println!("lenght :{:?} ", length);
             assert(length > 0, Errors::NOTHING_TO_CLAIM);
             let mut claimable_amounts:Array<u256> = ArrayTrait::new();
 
@@ -308,7 +307,7 @@ pub mod Claimable {
             let mut i:u32 = 0;
 
             loop {
-                if i >= length.try_into().unwrap() {
+                if i == length.try_into().unwrap() {
                     break;
                 }
                 let ticket_id: u64 = self.beneficiary_tickets.read((caller, i.into()));
@@ -319,9 +318,12 @@ pub mod Claimable {
                 }
                 i += 1;
             };
+
+            assert(flag,Errors::NOTHING_TO_CLAIM);
+
             i = 0;
             loop {
-                if i >= length.try_into().unwrap() {
+                if i == length.try_into().unwrap() {
                     break;
                 }
                 let claimable_amount: u256 = *claimable_amounts.at(i);
