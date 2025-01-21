@@ -22,60 +22,41 @@ const outputFilePath = path.join(__dirname, "events_data.json");
 
 async function fetchEventsForContract(contractName: string, fromBlock: number, address: string, existingData: Set<string>) {
   try {
-    // Step 1: Fetch events for the first signature (EventPanic)
-    const firstSignature = [num.toHex(hash.starknetKeccak('EventPanic')), '0x9149d2123147c5f43d258257fef0b7b969db78269369ebcf5ebb9eef8592f2'];
-    const secondSignature = [num.toHex(hash.starknetKeccak('EventPanic')), '0x17f87ab38a7f75a63dc465e10aadacecfca64c44ca774040b039bfb004e3367'];
-    const toBlock = 1037689;
-    const chunkSize = 100;
+    const keyFilter = [
+      [num.toHex(hash.starknetKeccak('EventPanic')), '0x9149d2123147c5f43d258257fef0b7b969db78269369ebcf5ebb9eef8592f2']
+    ];
 
+    const toBlock = 1037689; // Define a fixed end block
+    const chunkSize = 100;
     let continuationToken: string | null = null;
 
-    // Fetch and append data from the first signature
     do {
       const eventsResponse = await provider.getEvents({
         address,
         from_block: { block_number: fromBlock },
         to_block: { block_number: toBlock },
-        keys: [firstSignature],
+        keys: keyFilter,
         chunk_size: chunkSize,
-        continuation_token: continuationToken || undefined,
+        continuation_token: continuationToken || undefined, // Ensure it is either string or undefined
       });
 
-      continuationToken = eventsResponse.continuation_token ?? null;
+      continuationToken = eventsResponse.continuation_token ?? null; // Explicitly handle null or undefined
 
       for (const event of eventsResponse.events) {
         const data = event.data;
-        if (!existingData.has(data[1])) {
-          console.log(`[${contractName}] Appending new value :Deposit Event: ${data[1]}`);
-          existingData.add(data[1]);
+
+        if (BigInt(data[0]) === BigInt('0x1b862c518939339b950d0d21a3d4cc8ead102d6270850ac8544636e558fab68')) {
+          // Check if data[1] is already in the set, add if not
+          if (!existingData.has(data[1])) {
+            console.log(`[${contractName}] Appending new value: ${data[1]}`);
+            existingData.add(data[1]);
+          } else {
+            console.log(`[${contractName}] Duplicate value skipped: ${data[1]}`);
+          }
         }
       }
-      console.log(`[${contractName}] Processed chunk for first signature. Continuation token: ${continuationToken}`);
-    } while (continuationToken);
-
-    // Step 2: Fetch events for the second signature and append data[2]
-    continuationToken = null;
-    do {
-      const eventsResponse = await provider.getEvents({
-        address,
-        from_block: { block_number: fromBlock },
-        to_block: { block_number: toBlock },
-        keys: [secondSignature],
-        chunk_size: chunkSize,
-        continuation_token: continuationToken || undefined,
-      });
-
-      continuationToken = eventsResponse.continuation_token ?? null;
-
-      for (const event of eventsResponse.events) {
-        const data = event.data;
-        if (!existingData.has(data[2])) {
-          console.log(`[${contractName}] Appending new value (Withdraw Event): ${data[2]}`);
-          existingData.add(data[2]);
-        }
-      }
-      console.log(`[${contractName}] Processed chunk for second signature. Continuation token: ${continuationToken}`);
-    } while (continuationToken);
+      console.log(`[${contractName}] Processed chunk. Continuation token: ${continuationToken}`);
+    } while (continuationToken); // Continue while there are more events
   } catch (error) {
     console.error(`[${contractName}] Error fetching events:`, error);
   }

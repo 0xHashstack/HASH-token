@@ -21,7 +21,7 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
  * - Revocable tickets
  * - Upgradeable contract architecture
  */
-contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuard {
+contract NewClaimable is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuard {
     using SafeMath for uint256;
 
     // Global ticket counter to generate unique ticket IDs
@@ -318,6 +318,39 @@ contract Claimable is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
         // Emit claim event and transfer tokens
         emit Claimed(_id, _amount, _claimer);
         if (!token.transfer(_claimer, _amount)) revert TransferFailed();
+    }
+
+    /**
+     * @notice Allows a user to claim tokens allocated to their tickets
+     * @param _recipient Address to receive the claimed tokens
+     */
+    function claimTokens(address _recipient) external nonReentrant {
+        if (_recipient == address(0)) revert InvalidParams();
+        uint256[] memory _ticketIds = myBeneficiaryTickets(msg.sender);
+        uint256[] memory amounts = new uint256[](_ticketIds.length);
+        uint256 _ticketsLength = _ticketIds.length;
+        if (_ticketsLength == 0) revert NothingToClaim();
+        bool flag;
+        for (uint256 i = 0; i < _ticketsLength;) {
+            uint256 _available = available(_ticketIds[i]);
+            amounts[i] = _available;
+            if (_available != 0) {
+                flag = true;
+            }
+            unchecked {
+                ++i;
+            }
+        }
+        if (!flag) revert NothingToClaim();
+        for (uint256 i = 0; i < _ticketsLength;) {
+            uint256 _available = amounts[i];
+            if (_available != 0) {
+                _processClaim(_ticketIds[i], _available, _recipient);
+            }
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     /**

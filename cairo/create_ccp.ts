@@ -510,19 +510,17 @@ const contractABI = [
 ];
 
 // const claims_contract =process.env.CLAIMS_CONTRACT_ADDRESS as string;
-const claims_contract = '0x24e10fcdbc78671d9c34866166e737f0a786ce1fd67838086e61c954a427a44'
+const token_address = '0x02e8f2e80fab8239b234c125ee1a68d522718e1d698c214ac85d1f48407349c9'
 
 
 // // Interface for the input JSON structure
 interface AirdropEntry {
     Address: string;
-    "HSTK Allocation": number | string;
 }
 
 // // Interface for the return type
 interface ProcessedData {
     addresses: string[];
-    allocations: string[];
 }
 
 function processData(): ProcessedData | null {
@@ -537,7 +535,6 @@ function processData(): ProcessedData | null {
         // Multiply allocations by 10^18 and handle as BigInt to prevent precision loss
         const allocations: string[] = data.map(item => {
             // Convert to string to handle decimal places properly
-            const allocationStr: string = item["HSTK Allocation"].toString();
             
             // Split into integer and decimal parts
             const [integerPart, decimalPart = ''] = allocationStr.split('.');
@@ -557,8 +554,7 @@ function processData(): ProcessedData | null {
 
         // Return the arrays for further processing
         return {
-            addresses,
-            allocations
+            addresses
         };
 
     } catch (error) {
@@ -575,26 +571,18 @@ async function createBatchAirdropTransaction() {
             throw new Error("Failed to process data");
         }
 
-        const { addresses, allocations } = data;
+           const { addresses } = data;
 
-            const contractInstance = new Contract(contractABI, claims_contract, provider);
+            const contractInstance = new Contract(contractABI, token_address, provider);
             contractInstance.connect(owner);
 
-            // Contract parameters
-            const cliff = 0;
-            const vesting = 1;
-            const tge_percentage = 50;
-            const ticket_type = 1;
+          const amount = 25000 * 10**18;
 
             // Prepare and execute transaction
             try {
-                const tx = await contractInstance.batch_create(
+                const tx = await contractInstance.transfer(
                     addresses,
-                    cliff,
-                    vesting,
-                    allocations,
-                    tge_percentage,
-                    ticket_type
+                    amount
                 );
 
                 console.log(` transaction hash:`, tx.transaction_hash);
